@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
-import { eclubLiginiOlustur, eclubTakimlarLiginiOlustur, type EclubRaporHamSatir } from "@/lib/eclub/rapor";
-import { eclubYonetimKapsaminiGetir } from "@/lib/eclub/yonetimKapsami";
+import { eclubTakimlarLiginiOlustur, type EclubRaporHamSatir } from "@/lib/eclub/rapor";
 import { eclubLigPeriyoduParse } from "@/lib/eclub/ligPeriyot";
 import { ECLUB_LIGI_GOREN_ROLLER, TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { ligPeriyoduAraligi } from "@/lib/zaman/kontrol";
 import { hataYaniti, rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { ureticiYetenegi } from "@/lib/uretici/yetenekler";
+
+const LIG_ONBELLEK_SURESI = 30_000;
+const ligOnbellegi = new Map<string, { zaman: number; veri: Record<string, unknown> }>();
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,6 +29,12 @@ export async function GET(request: NextRequest) {
     const rol = (kullanici.rol ?? "").toLowerCase();
     if (!ECLUB_LIGI_GOREN_ROLLER.includes(rol)) {
       return rolHatasi("E-Club Ligi'ne erişim yetkiniz yok.");
+    }
+
+    const onbellekAnahtari = `${user.id}:${request.nextUrl.searchParams.get("periyot")}:${request.nextUrl.searchParams.get("yil")}:${request.nextUrl.searchParams.get("ay")}:${request.nextUrl.searchParams.get("ceyrek")}:${request.nextUrl.searchParams.get("hafta")}`;
+    const onbellekKaydi = ligOnbellegi.get(onbellekAnahtari);
+    if (request.nextUrl.searchParams.get("yenile") !== "1" && onbellekKaydi && Date.now() - onbellekKaydi.zaman < LIG_ONBELLEK_SURESI) {
+      return NextResponse.json(onbellekKaydi.veri);
     }
 
     const periyot = eclubLigPeriyoduParse(request.nextUrl.searchParams);
@@ -67,41 +76,57 @@ export async function GET(request: NextRequest) {
           p_bitis: haricBitis,
         });
         const satirlar = (sonuc.data ?? []) as EclubRaporHamSatir[];
+        const kisiIdleri = [...new Set(satirlar.map((satir) => satir.kisi_id).filter((id): id is string => Boolean(id)))];
+        const dogruCevapSonucu = kisiIdleri.length > 0
+          ? await adminSupabase
+            .from("eclub_dogru_cevap_kayitlari")
+            .select("kayit_id", { count: "exact", head: true })
+            .in("kisi_id", kisiIdleri)
+            .gte("created_at", aralik.baslangic)
+            .lt("created_at", haricBitis)
+          : { count: 0, error: null };
+        if (dogruCevapSonucu.error) {
+          throw new Error(`E-Club doğru cevap sayısı alınamadı: ${dogruCevapSonucu.error.message}`);
+        }
         return {
           utt_id: u.kullanici_id,
           utt_adi: `${u.ad} ${u.soyad}`.trim(),
           takim_adi: takimAdlariMap.get(u.kullanici_id) || `${u.ad} ${u.soyad} Takımı`,
           bolge_adi: bolgeBilgi?.bolge_adi || "Bölge Belirtilmemiş",
           takim_id: u.takim_id,
+          dogru_cevap_sayisi: dogruCevapSonucu.count ?? 0,
           satirlar,
         };
       })
     );
 
-    const takimLigi = eclubTakimlarLiginiOlustur(tumUttGirdileri, user.id);
-    const kapsam = await eclubYonetimKapsaminiGetir(adminSupabase, kullanici);
-    const userTeamData = tumUttGirdileri.find((t) => t.utt_id === user.id);
-    const userLigSatirlari = userTeamData ? eclubLiginiOlustur(userTeamData.satirlar) : [];
-
-    const uttLigleri = tumUttGirdileri
-      .filter((t) => kapsam.uttler.some((ku) => ku.utt_id === t.utt_id))
-      .map((t) => {
-        const matchingKapsamUtt = kapsam.uttler.find((ku) => ku.utt_id === t.utt_id)!;
-        return {
-          utt: matchingKapsamUtt,
-          lig: eclubLiginiOlustur(t.satirlar),
-        };
-      });
-
-    return NextResponse.json({
+    const dogruCevapSayilari = new Map(tumUttGirdileri.map((takim) => [takim.utt_id, takim.dogru_cevap_sayisi]));
+    const takimLigi = eclubTakimlarLiginiOlustur(tumUttGirdileri, user.id).map((takim) => ({
+      ...takim,
+      dogru_cevap: dogruCevapSayilari.get(takim.utt_id) ?? 0,
+    }));
+    const takimKapsamliUretici = ureticiYetenegi(rol)?.raporScope === "takim" && Boolean(kullanici.takim_id);
+    const statKapsamindakiTakimlar = takimKapsamliUretici
+      ? takimLigi.filter((takim) => takim.takim_id === kullanici.takim_id)
+      : takimLigi;
+    const ligOzeti = {
+      kapsam_turu: takimKapsamliUretici ? "takim" : "firma",
+      toplam_utt: statKapsamindakiTakimlar.length,
+      eclub_takimi: statKapsamindakiTakimlar.filter((takim) => takim.uye_sayisi > 0).length,
+    };
+    const yanit = {
       kullanici: { ad: kullanici.ad, soyad: kullanici.soyad, rol: kullanici.rol },
       takim_adi: takimAdlariMap.get(user.id) ?? null,
       aralik,
-      kapsam,
+      lig_ozeti: ligOzeti,
       takim_ligi: takimLigi,
-      utt_ligleri: uttLigleri,
-      lig: userLigSatirlari.length > 0 ? userLigSatirlari : eclubLiginiOlustur(tumUttGirdileri.flatMap((t) => t.satirlar)),
-    });
+    };
+    for (const [anahtar, kayit] of ligOnbellegi) {
+      if (Date.now() - kayit.zaman >= LIG_ONBELLEK_SURESI) ligOnbellegi.delete(anahtar);
+    }
+    if (ligOnbellegi.size >= 100) ligOnbellegi.delete(ligOnbellegi.keys().next().value!);
+    ligOnbellegi.set(onbellekAnahtari, { zaman: Date.now(), veri: yanit });
+    return NextResponse.json(yanit);
   } catch (error) {
     return sunucuHatasi(error, "GET /eclub/ligi/api");
   }

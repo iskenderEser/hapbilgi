@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Award, CheckCircle2, Download, Eye, Layers, Sparkles, Trophy, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, Download, Eye, Layers, Trophy, Users } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
-import type { EclubLigSatiri, EclubTakimLigSatiri } from "@/lib/eclub/rapor";
-import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
+import type { EclubTakimLigSatiri } from "@/lib/eclub/rapor";
 import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import styles from "./eclub-league.module.css";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
@@ -19,16 +19,15 @@ interface LigData {
   takim_adi: string | null;
   aralik: { baslangic: string; bitis: string };
   takim_ligi: EclubTakimLigSatiri[];
-  lig: EclubLigSatiri[];
-  kapsam: EclubYonetimKapsami;
-  utt_ligleri: Array<{ utt: EclubKapsamUtt; lig: EclubLigSatiri[] }>;
+  lig_ozeti: {
+    kapsam_turu: "takim" | "firma";
+    toplam_utt: number;
+    eclub_takimi: number;
+  };
 }
 
-const harfler = (ad: string) => {
-  const parcalar = ad.trim().split(" ").filter(Boolean);
-  if (parcalar.length === 1) return parcalar[0].slice(0, 2).toLocaleUpperCase("tr");
-  return `${parcalar[0][0] ?? ""}${parcalar[1][0] ?? ""}`.toLocaleUpperCase("tr");
-};
+const ligOnbellegi = new Map<string, { data: LigData; zaman: number }>();
+const ONBELLEK_SURESI = 60_000;
 
 export default function EclubLigiPage() {
   const router = useRouter();
@@ -36,10 +35,9 @@ export default function EclubLigiPage() {
   const bugun = aktifPeriyot();
   const [periyot, setPeriyot] = useState<Periyot>("ay");
   const { yil, ay, ceyrek, hafta } = bugun;
-  const [data, setData] = useState<LigData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [sonuc, setSonuc] = useState<{ anahtar: string; data: LigData | null; hata: string | null }>({ anahtar: "", data: null, hata: null });
+  const istek = useRef<AbortController | null>(null);
   const [yenileniyor, setYenileniyor] = useState(false);
-  const [hata, setHata] = useState<string | null>(null);
   const [takimDuzenleniyor, setTakimDuzenleniyor] = useState(false);
   const [takimTaslak, setTakimTaslak] = useState("");
   const [takimKaydediliyor, setTakimKaydediliyor] = useState(false);
@@ -57,32 +55,52 @@ export default function EclubLigiPage() {
     return params.toString();
   }, [periyot, yil, ay, ceyrek, hafta]);
 
+  const onbellekAnahtari = kullanici
+    ? JSON.stringify([kullanici.id, kullanici.firma_id, kullanici.rol, query])
+    : "";
+  const data = sonuc.anahtar === onbellekAnahtari ? sonuc.data : null;
+  const hata = sonuc.anahtar === onbellekAnahtari ? sonuc.hata : null;
+
   const veriCek = useCallback(async (ilkYukleme = false) => {
-    if (!kullanici) return;
-    if (ilkYukleme) {
-      setLoading(true);
-      setHata(null);
-    } else {
-      setYenileniyor(true);
+    istek.current?.abort();
+    if (!onbellekAnahtari) return;
+    const controller = new AbortController();
+    istek.current = controller;
+    const kayit = ligOnbellegi.get(onbellekAnahtari);
+    if (ilkYukleme && kayit && Date.now() - kayit.zaman < ONBELLEK_SURESI) {
+      setSonuc({ anahtar: onbellekAnahtari, data: kayit.data, hata: null });
+      setTakimTaslak(kayit.data.takim_adi ?? "");
+      setYenileniyor(false);
+      return;
     }
+    setSonuc((onceki) => ({ anahtar: onbellekAnahtari, data: onceki.anahtar === onbellekAnahtari ? onceki.data : null, hata: null }));
+    setYenileniyor(true);
     try {
-      const response = await fetch(`/eclub/ligi/api?${query}`);
+      const istekQuery = ilkYukleme ? query : `${query}&yenile=1`;
+      const response = await fetch(`/eclub/ligi/api?${istekQuery}`, { signal: controller.signal, cache: "no-store" });
       const payload = await response.json();
+      if (controller.signal.aborted) return;
       if (!response.ok) throw new Error(payload.hata ?? "E-Club Lig Verileri Yüklenemedi.");
-      setData(payload as LigData);
+      for (const [anahtar, deger] of ligOnbellegi) {
+        if (Date.now() - deger.zaman >= ONBELLEK_SURESI) ligOnbellegi.delete(anahtar);
+      }
+      if (ligOnbellegi.size >= 20) ligOnbellegi.delete(ligOnbellegi.keys().next().value!);
+      ligOnbellegi.set(onbellekAnahtari, { data: payload as LigData, zaman: Date.now() });
+      setSonuc({ anahtar: onbellekAnahtari, data: payload as LigData, hata: null });
       setTakimTaslak((payload as LigData).takim_adi ?? "");
     } catch (error) {
-      if (ilkYukleme) {
-        setData(null);
-        setHata(error instanceof Error ? error.message : "E-Club Lig Verileri Yüklenemedi.");
-      }
+      if (controller.signal.aborted) return;
+      ligOnbellegi.delete(onbellekAnahtari);
+      setSonuc({ anahtar: onbellekAnahtari, data: null, hata: error instanceof Error ? error.message : "E-Club Lig Verileri Yüklenemedi." });
     } finally {
-      if (ilkYukleme) setLoading(false);
-      else setYenileniyor(false);
+      if (!controller.signal.aborted) setYenileniyor(false);
     }
-  }, [kullanici, query]);
+  }, [onbellekAnahtari, query]);
 
-  useEffect(() => { void veriCek(true); }, [veriCek]);
+  useEffect(() => {
+    void veriCek(true);
+    return () => { istek.current?.abort(); };
+  }, [veriCek]);
 
   const takimAdiKaydet = async () => {
     const takimAdi = takimTaslak.trim();
@@ -96,44 +114,33 @@ export default function EclubLigiPage() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.hata ?? "Takım adı kaydedilemedi.");
-      setData((mevcut) => {
-        if (!mevcut) return mevcut;
+      ligOnbellegi.clear();
+      setSonuc((onceki) => {
+        const mevcut = onceki.data;
+        if (!mevcut || onceki.anahtar !== onbellekAnahtari) return onceki;
         const guncelTakimLigi = (mevcut.takim_ligi ?? []).map((t) =>
           t.utt_id === kullanici?.id ? { ...t, takim_adi: takimAdi } : t
         );
-        return { ...mevcut, takim_adi: takimAdi, takim_ligi: guncelTakimLigi };
+        return { ...onceki, data: { ...mevcut, takim_adi: takimAdi, takim_ligi: guncelTakimLigi } };
       });
       setTakimDuzenleniyor(false);
     } catch (error) {
-      setHata(error instanceof Error ? error.message : "Takım adı kaydedilemedi.");
+      setSonuc((onceki) => onceki.anahtar === onbellekAnahtari ? { ...onceki, hata: error instanceof Error ? error.message : "Takım adı kaydedilemedi." } : onceki);
     } finally {
       setTakimKaydediliyor(false);
     }
   };
 
-  if (authYukleniyor || !kullanici || loading) {
+  if (authYukleniyor || !kullanici) {
     return <div className="flex min-h-screen items-center justify-center bg-[#f6f8fb] text-sm text-[#7d8ba0]">Yükleniyor...</div>;
   }
-  if (hata || !data) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f6f8fb] p-6">
-        <div className="max-w-md rounded-2xl border border-red-100 bg-white p-6 text-center shadow-sm">
-          <div className="text-sm font-extrabold text-[#a43737]">E-Club Ligi yüklenemedi</div>
-          <p className="mt-1 text-xs font-semibold text-[#7d8ba0]">{hata ?? "Beklenmeyen bir hata oluştu."}</p>
-          <button type="button" onClick={() => void veriCek(true)} className="mt-4 rounded-xl bg-[#2f9ae9] px-4 py-2 text-xs font-extrabold text-white">Yeniden dene</button>
-        </div>
-      </div>
-    );
-  }
 
-  const takimLigi = data.takim_ligi ?? [];
-  const takimAdiDuzenleyebilir = TUKETICI_ROLLER.includes((data.kullanici.rol ?? "").toLowerCase());
+  const takimLigi = data?.takim_ligi ?? [];
+  const takimAdiDuzenleyebilir = TUKETICI_ROLLER.includes((data?.kullanici.rol ?? "").toLowerCase());
   const liderTakim = takimLigi[0];
   const toplamUye = takimLigi.reduce((toplam, t) => toplam + t.uye_sayisi, 0);
   const toplamIzleme = takimLigi.reduce((toplam, t) => toplam + t.tamamlanan_izleme, 0);
-  const top3Takim = takimLigi.filter((t) => t.toplam_puan > 0).slice(0, 3);
-  const podiumTakimlari = [top3Takim[1], top3Takim[0], top3Takim[2]].filter(Boolean) as EclubTakimLigSatiri[];
-
+  const bannerBaslikKelimeleri = ["E\u00a0Club", "Dönem", "Liderleri"];
   const periyotSecici = (
     <HbLigiPeriyotSecici
       periyot={periyot}
@@ -146,45 +153,111 @@ export default function EclubLigiPage() {
       <div className={styles.container}>
         <header className={styles.header}>
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
-              <Sparkles className="h-3.5 w-3.5" /> E-Club Şampiyonası · Takımlar Ligi
-            </div>
             <div className="inline-flex items-center">
               <h1 className="m-0 text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">E‑Club Ligi</h1>
               <SayfaRehberi anahtar="eclub-ligi" className="ml-1.5 -translate-y-1" />
             </div>
-            
-            {takimAdiDuzenleyebilir && takimDuzenleniyor ? (
-              <div className={`${styles.teamLine} ${styles.teamEditor}`}>
-                <input className={styles.teamInput} value={takimTaslak} onChange={(event) => setTakimTaslak(event.target.value)} maxLength={100} placeholder="Takımınızın adı" autoFocus />
-                <button type="button" className={`${styles.editorAction} ${styles.editorPrimary}`} onClick={() => void takimAdiKaydet()} disabled={takimKaydediliyor || !takimTaslak.trim()}>Kaydet</button>
-                <button type="button" className={styles.editorAction} onClick={() => { setTakimDuzenleniyor(false); setTakimTaslak(data.takim_adi ?? ""); }}>Vazgeç</button>
-              </div>
-            ) : (
-              <div className={styles.teamLine}>
-                <span>{data.takim_adi || "Takımım"} · {data.kullanici.ad} {data.kullanici.soyad}</span>
-                {takimAdiDuzenleyebilir && (
+            <p className="mt-1 text-xs font-semibold text-[#78889d]">
+              Eczacıların ve teknisyenlerin öğrenme motivasyonunu gözlemleyebilirsiniz.
+            </p>
+
+            {data && takimAdiDuzenleyebilir && (
+              takimDuzenleniyor ? (
+                <div className={`${styles.teamLine} ${styles.teamEditor}`}>
+                  <input className={styles.teamInput} value={takimTaslak} onChange={(event) => setTakimTaslak(event.target.value)} maxLength={100} placeholder="Takımınızın adı" autoFocus />
+                  <button type="button" className={`${styles.editorAction} ${styles.editorPrimary}`} onClick={() => void takimAdiKaydet()} disabled={takimKaydediliyor || !takimTaslak.trim()}>Kaydet</button>
+                  <button type="button" className={styles.editorAction} onClick={() => { setTakimDuzenleniyor(false); setTakimTaslak(data.takim_adi ?? ""); }}>Vazgeç</button>
+                </div>
+              ) : (
+                <div className={styles.teamLine}>
+                  <span>{data.takim_adi || "Takımım"} · {data.kullanici.ad} {data.kullanici.soyad}</span>
                   <button type="button" className={styles.teamButton} onClick={() => setTakimDuzenleniyor(true)}>{data.takim_adi ? "Takım adını düzenle" : "Takım adı ver"}</button>
-                )}
-              </div>
+                </div>
+              )
             )}
-          </div>
-          <div className={`${styles.headerActions} [&_.hb-ligi-periyot-secici]:mb-0`}>
-            {periyotSecici}
-            <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} disabled={takimDuzenleniyor || takimKaydediliyor} />
-            <button type="button" className={styles.excelButton} onClick={() => window.open(`/eclub/ligi/api/export?${query}`, "_blank")}>
-              <Download className="h-3.5 w-3.5" /> Excel
-            </button>
           </div>
         </header>
 
+        <section className={styles.leagueBanner} aria-label="E-Club Ligi podyumu">
+          <div className={styles.leagueBannerHeader}>
+            <div className={styles.leagueBannerIcon}>
+              <Trophy className="h-4 w-4" />
+            </div>
+            <h2 className={styles.leagueBannerTitle}>
+              {bannerBaslikKelimeleri.map((kelime, index) => (
+                <span key={`${kelime}-${index}`}>
+                  {kelime}{index < bannerBaslikKelimeleri.length - 1 ? "\u00a0" : ""}
+                </span>
+              ))}
+            </h2>
+          </div>
+          <div className={styles.leagueBannerArtwork}>
+            <Image
+              src="/eclub-ligi1-0926.webp"
+              alt="E-Club Ligi podyumu"
+              width={2066}
+              height={761}
+              priority
+              unoptimized
+              className={styles.leagueBannerImage}
+            />
+            <svg className={styles.leagueBannerLabels} viewBox="0 0 2066 761" aria-hidden="true">
+              <defs>
+                <path id="eclub-silver-club" d="M 160 545 Q 350 570 540 545" />
+                <path id="eclub-silver-period" d="M 115 585 Q 350 620 585 585" />
+                <path id="eclub-silver-name" d="M 150 630 Q 350 657 550 630" />
+                <path id="eclub-gold-club" d="M 800 485 Q 1033 520 1266 485" />
+                <path id="eclub-gold-period" d="M 730 545 Q 1033 592 1336 545" />
+                <path id="eclub-gold-name" d="M 790 610 Q 1033 648 1276 610" />
+                <path id="eclub-bronze-club" d="M 1510 545 Q 1700 570 1890 545" />
+                <path id="eclub-bronze-period" d="M 1465 585 Q 1700 620 1935 585" />
+                <path id="eclub-bronze-name" d="M 1500 630 Q 1700 657 1900 630" />
+              </defs>
+
+              <text className={`${styles.plateClub} ${styles.plateSilver}`}><textPath href="#eclub-silver-club" startOffset="50%" textAnchor="middle">E CLUB</textPath></text>
+              <text className={`${styles.plateTitle} ${styles.plateSilver}`}><textPath href="#eclub-silver-period" startOffset="50%" textAnchor="middle">1. DÖNEM LİDERİ</textPath></text>
+              <text className={`${styles.plateName} ${styles.plateSilver}`}><textPath href="#eclub-silver-name" startOffset="50%" textAnchor="middle">AD SOYAD</textPath></text>
+
+              <text className={`${styles.plateClub} ${styles.plateGold}`}><textPath href="#eclub-gold-club" startOffset="50%" textAnchor="middle">E CLUB</textPath></text>
+              <text className={`${styles.plateTitle} ${styles.plateGold}`}><textPath href="#eclub-gold-period" startOffset="50%" textAnchor="middle">1. DÖNEM LİDERİ</textPath></text>
+              <text className={`${styles.plateName} ${styles.plateGold}`}><textPath href="#eclub-gold-name" startOffset="50%" textAnchor="middle">AD SOYAD</textPath></text>
+
+              <text className={`${styles.plateClub} ${styles.plateBronze}`}><textPath href="#eclub-bronze-club" startOffset="50%" textAnchor="middle">E CLUB</textPath></text>
+              <text className={`${styles.plateTitle} ${styles.plateBronze}`}><textPath href="#eclub-bronze-period" startOffset="50%" textAnchor="middle">1. DÖNEM LİDERİ</textPath></text>
+              <text className={`${styles.plateName} ${styles.plateBronze}`}><textPath href="#eclub-bronze-name" startOffset="50%" textAnchor="middle">AD SOYAD</textPath></text>
+            </svg>
+          </div>
+        </section>
+
+        <div className={`${styles.headerActions} mb-[14px] [&_.hb-ligi-periyot-secici]:mb-0`}>
+          {periyotSecici}
+          <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} disabled={yenileniyor || takimDuzenleniyor || takimKaydediliyor} />
+          <button type="button" className={styles.excelButton} onClick={() => window.open(`/eclub/ligi/api/export?${query}`, "_blank")}>
+            <Download className="h-3.5 w-3.5" /> Excel
+          </button>
+        </div>
+
+        {hata ? (
+          <div role="alert" className="rounded-2xl border border-red-100 bg-white p-6 text-center">
+            <p className="text-sm text-[#a43737]">{hata}</p>
+            <button type="button" onClick={() => void veriCek()} className="mt-3 rounded-xl bg-[#2f9ae9] px-4 py-2 text-xs font-extrabold text-white">Yeniden dene</button>
+          </div>
+        ) : !data ? (
+          <div role="status" className="rounded-2xl border border-[#e2e8f0] bg-white p-10 text-center text-sm text-[#7d8ba0]">Lig verileri yükleniyor...</div>
+        ) : (
+        <>
         {/* Özet Kartları */}
         <section className={styles.statsGrid} aria-label="E-Club Takımlar Ligi özeti">
           {[
             { label: "Lider Takım Puanı", value: liderTakim ? liderTakim.toplam_puan.toLocaleString("tr-TR") : "0", detail: liderTakim ? liderTakim.takim_adi : "Henüz puan yok", icon: Trophy },
-            { label: "Yarışan Takım", value: String(takimLigi.length), detail: "Firma geneli UTT takımları", icon: Users },
+            {
+              label: "Yarışan Takım",
+              value: String(data.lig_ozeti.eclub_takimi),
+              detail: `${data.lig_ozeti.kapsam_turu === "takim" ? "Takımdaki" : "Firmadaki"} UTT sayısı: ${data.lig_ozeti.toplam_utt} · E-Club takımı olan: ${data.lig_ozeti.eclub_takimi}`,
+              icon: Users,
+            },
             { label: "Toplam E-Club Üyesi", value: toplamUye.toLocaleString("tr-TR"), detail: "Eczacı ve teknisyen kadrosu", icon: Layers },
-            { label: "Tamamlanan İzleme", value: toplamIzleme.toLocaleString("tr-TR"), detail: "Dönemlik toplam tüketim", icon: Eye },
+            { label: "Tamamlanan Yayın", value: toplamIzleme.toLocaleString("tr-TR"), detail: "Dönemlik toplam tüketim", icon: Eye },
           ].map(({ label, value, detail, icon: Icon }) => (
             <article key={label} className={styles.statCard}>
               <div className={styles.statIcon}><Icon className="h-4 w-4" /></div>
@@ -192,32 +265,6 @@ export default function EclubLigiPage() {
             </article>
           ))}
         </section>
-
-        {/* En İyi 3 Takım Podyumu */}
-        {top3Takim.length > 0 && (
-          <section className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div>
-                <div className={styles.eyebrow}>Şampiyonluk Podyumu</div>
-                <h2 className={styles.panelTitle}>En Başarılı E-Club Takımları</h2>
-              </div>
-              <Award className="h-5 w-5 text-[#e1a12a]" />
-            </div>
-            <div className={styles.podium}>
-              {podiumTakimlari.map((takim) => (
-                <div key={takim.utt_id} className={styles.podiumPerson}>
-                  <div className={styles.avatar}>{harfler(takim.takim_adi)}</div>
-                  <div className={styles.podiumName}>{takim.takim_adi}</div>
-                  <div className={styles.podiumPharmacy}>{takim.utt_adi} · {takim.bolge_adi}</div>
-                  <div className={`${styles.podiumBase} ${takim.sira === 1 ? styles.podiumFirst : takim.sira === 2 ? styles.podiumSecond : ""}`}>
-                    <span className={styles.podiumRank}>{takim.sira}. sıra</span>
-                    <span className={styles.podiumScore}>{takim.toplam_puan.toLocaleString("tr-TR")} p</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* Büyük Takımlar Ligi Tablosu */}
         <section className={styles.panel}>
@@ -235,15 +282,15 @@ export default function EclubLigiPage() {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>Sıra</th>
+                    <th style={{ textAlign: "center" }}>Sıra</th>
                     <th>Takım Adı</th>
                     <th>Temsilci (UTT)</th>
                     <th>Bölge</th>
-                    <th>Üye Kadrosu</th>
-                    <th>Tamamlanan İzleme</th>
-                    <th>Doğru Oranı</th>
-                    <th style={{ textAlign: "right" }}>Çeksiz Puan</th>
-                    <th style={{ textAlign: "right" }}>Toplam Takım Puanı</th>
+                    <th style={{ textAlign: "center" }}>Üye Sayısı</th>
+                    <th style={{ textAlign: "center" }}>Aktif Üye</th>
+                    <th style={{ textAlign: "center" }}>Tamamlanan Yayın</th>
+                    <th style={{ textAlign: "center" }}>Doğru Cevap</th>
+                    <th style={{ textAlign: "center" }}>Toplam Takım Puanı</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -254,7 +301,7 @@ export default function EclubLigiPage() {
                         key={takim.utt_id}
                         className={benimTakimim ? "bg-[#eaf4fd] font-black ring-1 ring-inset ring-[#93c5fd]" : undefined}
                       >
-                        <td>
+                        <td style={{ textAlign: "center" }}>
                           <span className={`${styles.rankBadge} ${benimTakimim ? "bg-[#2563eb] text-white" : ""}`}>
                             {takim.sira || "—"}
                           </span>
@@ -273,13 +320,11 @@ export default function EclubLigiPage() {
                         </td>
                         <td className="text-xs text-[#334155]">{takim.utt_adi}</td>
                         <td className="text-xs text-[#64748b]">{takim.bolge_adi}</td>
-                        <td className="text-xs text-[#475569]">{takim.uye_sayisi} üye ({takim.aktif_uye} aktif)</td>
-                        <td className="text-xs tabular-nums text-[#334155]">{takim.tamamlanan_izleme} izleme</td>
-                        <td className="text-xs font-bold text-[#16a34a]">%{takim.dogru_cevap_orani}</td>
-                        <td className="text-xs tabular-nums text-[#64748b]" style={{ textAlign: "right" }}>
-                          {takim.ceksiz_puan > 0 ? `${takim.ceksiz_puan.toLocaleString("tr-TR")} p` : "0 p"}
-                        </td>
-                        <td className={styles.score} style={{ textAlign: "right" }}>
+                        <td className="text-xs tabular-nums text-[#475569]" style={{ textAlign: "center" }}>{takim.uye_sayisi}</td>
+                        <td className="text-xs tabular-nums text-[#475569]" style={{ textAlign: "center" }}>{takim.aktif_uye}</td>
+                        <td className="text-xs tabular-nums text-[#334155]" style={{ textAlign: "center" }}>{takim.tamamlanan_izleme}</td>
+                        <td className="text-xs font-bold tabular-nums text-[#16a34a]" style={{ textAlign: "center" }}>{takim.dogru_cevap}</td>
+                        <td className={styles.score} style={{ textAlign: "center" }}>
                           {takim.toplam_puan.toLocaleString("tr-TR")} p
                         </td>
                       </tr>
@@ -292,6 +337,9 @@ export default function EclubLigiPage() {
             <div className={styles.empty}>Bu periyotta henüz puan alan E-Club takımı bulunmuyor.</div>
           )}
         </section>
+
+        </>
+        )}
 
         {/* Takım İçi Ayrıntılara Yönlendirme Kartı */}
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#cfe2f3] bg-[#f0f7fe] p-4 text-xs">
