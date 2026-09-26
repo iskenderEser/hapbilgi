@@ -281,29 +281,30 @@
 @container dashboard (max-width: 520px) {
   .leadersBanner {
     min-height: 0;
-    border-color: #dfe8f2;
-    background: #fff;
   }
 
   .leadersBannerHeader {
-    position: relative;
-    padding: 9px 12px;
-    background: #fff;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 16%;
+    padding: 7px 0 0 9px;
+    background: transparent;
   }
 
   .leadersBannerIcon {
-    padding: 6px;
-    border-color: #f4d58d;
-    color: #b77900;
-    background: #fff8e7;
-    box-shadow: none;
+    display: none;
   }
 
   .leadersBannerTitle {
-    color: #253750;
-    font-size: 13px;
-    line-height: 1.2;
-    text-shadow: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    color: #f8fafc;
+    font-size: clamp(7px, 2vw, 13px);
+    line-height: 1.08;
+    text-align: left;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.72);
   }
 
   .profileItems {
