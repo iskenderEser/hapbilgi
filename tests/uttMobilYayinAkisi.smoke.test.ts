@@ -25,6 +25,7 @@ win.IS_REACT_ACT_ENVIRONMENT = true;
 const uttVideoKartiKodu = readFileSync("components/video/UttVideoKarti.tsx", "utf8");
 const uttAnaSayfaKodu = readFileSync("components/ana-sayfa/UttAnaSayfa.tsx", "utf8");
 const uyeOnerilerKodu = readFileSync("app/(panel)/oneriler/_components/UyeOnerilerGorunumu.tsx", "utf8");
+const ortakUttListeKodu = readFileSync("components/yayin/UttYayinListeOrtaklari.tsx", "utf8");
 
 function ornekVideoUret(id: string, urunAdi: string): UttVideo {
   return {
@@ -63,14 +64,14 @@ test("Faz 2 mimari: UttKayanVideoRafi MobilYayinAkisi kullanır ve bağımsız 2
   assert.doesNotMatch(uttVideoKartiKodu, /varsayilanAcik/);
 });
 
-test("Faz 2 mimari: UttAnaSayfa Kategori ve Aktif Durum listelerini MobilYayinAkisi'ne bağlar, Tanbur korunur", () => {
-  assert.match(uttAnaSayfaKodu, /import MobilYayinAkisi from "@\/components\/yayin\/MobilYayinAkisi"/);
+test("Faz 2 mimari: UttAnaSayfa Kategori ve Aktif Durum listelerini ortak akışa bağlar; Tanbur korunur", () => {
+  assert.match(ortakUttListeKodu, /import MobilYayinAkisi from "\.\/MobilYayinAkisi"/);
 
-  // KategoriYayinlariGoster içinde MobilYayinAkisi kullanımı ve alanAnahtari içeren sifirlamaAnahtari
-  assert.match(uttAnaSayfaKodu, /<MobilYayinAkisi<Video>[\s\S]*sifirlamaAnahtari=.*kategoriBaslik.*alanAnahtari/);
+  // KategoriYayinlariGoster ortak akışı ve alanAnahtari içeren sıfırlama anahtarını kullanır.
+  assert.match(uttAnaSayfaKodu, /<UttYayinListeAkisi<Video>[\s\S]*sifirlamaAnahtari=.*kategoriBilgisi\.slug.*alanAnahtari/);
 
-  // aktifDurumVideolari içinde MobilYayinAkisi kullanımı
-  assert.match(uttAnaSayfaKodu, /<MobilYayinAkisi<Video>[\s\S]*sifirlamaAnahtari=\{aktifDurumFiltresi\}/);
+  // aktifDurumVideolari da aynı ortak akışı kullanır.
+  assert.match(uttAnaSayfaKodu, /<UttYayinListeAkisi<Video>[\s\S]*sifirlamaAnahtari=\{aktifDurumFiltresi\}/);
 
   // KayanRaf çağrılarından varsayilanAcik kalkmalı
   assert.doesNotMatch(uttAnaSayfaKodu, /<KayanRaf[\s\S]*varsayilanAcik=/);
@@ -79,9 +80,9 @@ test("Faz 2 mimari: UttAnaSayfa Kategori ve Aktif Durum listelerini MobilYayinAk
   assert.match(uttAnaSayfaKodu, /<HayaletTanburSecici[\s\S]*bolumler=\{tanburBolumleri\}/);
 });
 
-test("Faz 2 mimari: UyeOnerilerGorunumu MobilYayinAkisi kullanır, oneri_id anahtarını korur ve filtrelerle sıfırlar", () => {
-  assert.match(uyeOnerilerKodu, /import MobilYayinAkisi from "@\/components\/yayin\/MobilYayinAkisi"/);
-  assert.match(uyeOnerilerKodu, /<MobilYayinAkisi<OneriKaydi>/);
+test("Faz 2 mimari: UyeOnerilerGorunumu ortak UTT yayın akışını kullanır, oneri_id anahtarını korur ve filtrelerle sıfırlar", () => {
+  assert.match(uyeOnerilerKodu, /import[\s\S]*UttYayinListeAkisi[\s\S]*from "@\/components\/yayin\/UttYayinListeOrtaklari"/);
+  assert.match(uyeOnerilerKodu, /<UttYayinListeAkisi<OneriKaydi>/);
   assert.match(uyeOnerilerKodu, /kayitAnahtari=\{\(o\)\s*=>\s*o\.oneri_id\}/);
   assert.match(uyeOnerilerKodu, /sifirlamaAnahtari=\{`\$\{aktifFiltre\}-\$\{aktifTur\}`\}/);
   assert.doesNotMatch(uyeOnerilerKodu, /IcerikFiltreBari|useListe\(/);

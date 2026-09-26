@@ -12,16 +12,7 @@ export default function UttVideoKategoriPage() {
   const kategori = uttVideoKategorisiBul(slug);
 
   if (!kategori) notFound();
-  if (yukleniyor || !kullanici) {
-    return kategori.icerikTuru === "urun" ||
-      kategori.icerikTuru === "medikal" ||
-      kategori.icerikTuru === "urun_medikal" ||
-      kategori.icerikTuru === "egitim" ||
-      kategori.icerikTuru === "yonetim" ||
-      kategori.icerikTuru === "ik"
-      ? <UttKategoriIskeleti />
-      : null;
-  }
+  if (yukleniyor || !kullanici) return <UttKategoriIskeleti />;
   if (!TUKETICI_ROLLER.includes(kullanici.rol.trim().toLowerCase())) notFound();
 
   return (
@@ -29,8 +20,7 @@ export default function UttVideoKategoriPage() {
       user={kullanici}
       rol={kullanici.rol}
       adSoyad={kullanici.adSoyad}
-      kategori={kategori.icerikTuru}
-      kategoriBaslik={kategori.etiket}
+      kategoriBilgisi={kategori}
       temelYol={`/videolarim/${kategori.slug}`}
     />
   );

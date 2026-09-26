@@ -4,6 +4,8 @@
 // Operasyonel tabloların, formların ve kritik modüllerin sütun ve rozet anlamlarını
 // tek bir kanonik kaynaktan (Single Source of Truth) yönetir.
 
+import { UTT_VIDEO_KATEGORILERI } from "@/lib/video/uttVideoKategorileri";
+
 export interface AltModalKart {
   kod: string;
   baslik: string;
@@ -36,6 +38,44 @@ export interface SayfaRehberBilgisi {
   ipucu?: string;
   hedefRoller?: string[];
 }
+
+const UTT_EGITIM_REHBER_MADDELERI: RehberMadde[] = [
+  {
+    baslik: "Yayın Türleri",
+    aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
+  },
+  {
+    baslik: "Arama",
+    aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
+  },
+  {
+    baslik: "İçerik Kullanımı",
+    aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
+  },
+  {
+    baslik: "Etkileşim",
+    aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
+  },
+  {
+    baslik: "İlerleme",
+    aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
+  },
+];
+
+const UTT_EGITIM_REHBERLERI = Object.fromEntries(
+  UTT_VIDEO_KATEGORILERI.map((kategori) => {
+    const anahtar = `videolarim-${kategori.slug}`;
+    return [
+      anahtar,
+      {
+        anahtar,
+        baslik: kategori.etiket,
+        ozet: kategori.rehberOzeti,
+        maddeler: UTT_EGITIM_REHBER_MADDELERI,
+      },
+    ];
+  }),
+) as Record<string, SayfaRehberBilgisi>;
 
 export const VARYANT_ALT_MODAL: AltModalBilgisi = {
   baslik: "Üretim Varyantları (V1 - V4)",
@@ -224,181 +264,8 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     ],
   },
 
-  // ─── 13. EĞİTİM YAYINLARI (KATEGORİ VİDEOLARI) ────────────────────────────
-  "videolarim-kategori": {
-    anahtar: "videolarim-kategori",
-    baslik: "Eğitim Yayınları",
-    ozet: "İlgili kategoriye ait tüm eğitim içeriklerini listeler; videoları izleyip soruları yanıtlayarak lig puanı kazanmanızı sağlar.",
-    maddeler: [],
-  },
-
-  "videolarim-urun": {
-    anahtar: "videolarim-urun",
-    baslik: "Ürün Eğitimleri",
-    ozet: "Ürünlere dair bilgilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
-    maddeler: [
-      {
-        baslik: "Yayın Türleri",
-        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
-      },
-      {
-        baslik: "Arama",
-        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
-      },
-      {
-        baslik: "İçerik Kullanımı",
-        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
-      },
-      {
-        baslik: "Etkileşim",
-        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
-      },
-      {
-        baslik: "İlerleme",
-        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
-      },
-    ],
-  },
-
-  "videolarim-medikal": {
-    anahtar: "videolarim-medikal",
-    baslik: "Medikal Eğitimler",
-    ozet: "Medikal konulara dair bilgilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
-    maddeler: [
-      {
-        baslik: "Yayın Türleri",
-        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
-      },
-      {
-        baslik: "Arama",
-        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
-      },
-      {
-        baslik: "İçerik Kullanımı",
-        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
-      },
-      {
-        baslik: "Etkileşim",
-        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
-      },
-      {
-        baslik: "İlerleme",
-        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
-      },
-    ],
-  },
-
-  "videolarim-urun-medikal": {
-    anahtar: "videolarim-urun-medikal",
-    baslik: "Ürün-Medikal Eğitimleri",
-    ozet: "Ürünlerin medikal yönlerine dair bilgilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
-    maddeler: [
-      {
-        baslik: "Yayın Türleri",
-        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
-      },
-      {
-        baslik: "Arama",
-        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
-      },
-      {
-        baslik: "İçerik Kullanımı",
-        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
-      },
-      {
-        baslik: "Etkileşim",
-        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
-      },
-      {
-        baslik: "İlerleme",
-        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
-      },
-    ],
-  },
-
-  "videolarim-satis": {
-    anahtar: "videolarim-satis",
-    baslik: "Satış Eğitimleri",
-    ozet: "Satış becerilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
-    maddeler: [
-      {
-        baslik: "Yayın Türleri",
-        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
-      },
-      {
-        baslik: "Arama",
-        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
-      },
-      {
-        baslik: "İçerik Kullanımı",
-        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
-      },
-      {
-        baslik: "Etkileşim",
-        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
-      },
-      {
-        baslik: "İlerleme",
-        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
-      },
-    ],
-  },
-
-  "videolarim-yonetim": {
-    anahtar: "videolarim-yonetim",
-    baslik: "Yönetim Eğitimleri",
-    ozet: "Yönetim becerilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
-    maddeler: [
-      {
-        baslik: "Yayın Türleri",
-        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
-      },
-      {
-        baslik: "Arama",
-        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
-      },
-      {
-        baslik: "İçerik Kullanımı",
-        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
-      },
-      {
-        baslik: "Etkileşim",
-        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
-      },
-      {
-        baslik: "İlerleme",
-        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
-      },
-    ],
-  },
-
-  "videolarim-ik": {
-    anahtar: "videolarim-ik",
-    baslik: "İK Eğitimleri",
-    ozet: "İK konularındaki bilgilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
-    maddeler: [
-      {
-        baslik: "Yayın Türleri",
-        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
-      },
-      {
-        baslik: "Arama",
-        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
-      },
-      {
-        baslik: "İçerik Kullanımı",
-        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
-      },
-      {
-        baslik: "Etkileşim",
-        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
-      },
-      {
-        baslik: "İlerleme",
-        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
-      },
-    ],
-  },
+  // ─── 13. EĞİTİM YAYINLARI (ORTAK KATEGORİ REHBERLERİ) ─────────────────────
+  ...UTT_EGITIM_REHBERLERI,
 
   // ─── 14. MAĞAZAM (HBSTORE) ────────────────────────────────────────────────
   "store-magaza": {

@@ -21,8 +21,10 @@ test("mutlu: Önerilen Yayınlar tek menü bağlantısı ve birleşik durum seç
 
   // 3. Stat kartları, birleşik durum ve yayın türü seçicileri
   assert.match(gorunumBileseni, /<PeriyotButonlari/);
+  assert.match(gorunumBileseni, /<UttYayinTuruToggle/);
   assert.match(gorunumBileseni, /DURUM_SECENEKLERI/);
   assert.match(gorunumBileseni, /Öneri durumuna göre filtrele/);
+  assert.match(gorunumBileseni, /useState<YayinTuruFiltreDegeri>\("tumu"\)/);
   assert.doesNotMatch(gorunumBileseni, /<IcerikFiltreBari/);
   assert.doesNotMatch(gorunumBileseni, /useListe\(/);
   assert.match(gorunumBileseni, /label:\s*"Bekleyen"/);

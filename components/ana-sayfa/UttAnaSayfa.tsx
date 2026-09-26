@@ -16,23 +16,23 @@ import {
   type UttVideoDurumu as VideoDurumu,
   type UttVideoVeri as UttVeri,
 } from "@/components/video/UttVideoKarti";
-import type { IcerikTuru } from "@/lib/video/icerikTuru";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
-import { YayinTuruFiltresi, type YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
-import { YAYIN_TURLERI, YAYIN_TURU_SUNUMU } from "@/lib/ogrenmeAraci/turSunumu";
+import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
-import { useListe, IcerikFiltreBari, ListeArama, type AramaAlani } from "@/components/liste";
-import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { useListe, ListeArama, type AramaAlani } from "@/components/liste";
 import HayaletTanburSecici, { type TanburBolum } from "@/components/navigasyon/HayaletTanburSecici";
-import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
-import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
+import {
+  UttYayinKartIskeletleri,
+  UttYayinListeAkisi,
+  UttYayinTuruToggle,
+} from "@/components/yayin/UttYayinListeOrtaklari";
+import type { UttVideoKategorisi } from "@/lib/video/uttVideoKategorileri";
 
 interface Props {
   user: AuthKullanici;
   rol: string;
   adSoyad: string;
-  kategori?: IcerikTuru;
-  kategoriBaslik?: string;
+  kategoriBilgisi?: UttVideoKategorisi;
   temelYol?: string;
 }
 
@@ -51,33 +51,41 @@ export function UttKategoriIskeleti() {
         </div>
         <div className="h-8 w-full rounded-lg bg-gray-200 sm:w-72" />
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {[0, 1].map((kart) => (
-          <div key={kart} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="aspect-video bg-gray-200" />
-            <div className="space-y-3 p-3">
-              <div className="h-4 w-3/4 rounded bg-gray-200" />
-              <div className="h-3 w-1/2 rounded bg-gray-100" />
-              <div className="h-8 rounded-lg bg-gray-100" />
-            </div>
-          </div>
+      <UttYayinKartIskeletleri izgaraClassName="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" />
+    </div>
+  );
+}
+
+function UttAnaSayfaIskeleti() {
+  return (
+    <div className="mx-auto max-w-6xl animate-pulse px-3 py-4 pb-20 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
+      <div className="mb-6 flex items-end justify-between gap-3">
+        <div className="space-y-2">
+          <div className="h-7 w-44 rounded-lg bg-gray-200" />
+          <div className="h-4 w-28 rounded bg-gray-200" />
+        </div>
+        <div className="h-7 w-36 rounded-full bg-gray-200" />
+      </div>
+      <div className="mb-5 grid grid-cols-2 gap-2 md:grid-cols-4">
+        {[0, 1, 2, 3].map((kart) => (
+          <div key={kart} className="h-28 rounded-xl border border-gray-200 bg-white" />
         ))}
       </div>
+      <div className="mb-5 h-10 max-w-full rounded-[14px] bg-white shadow-sm sm:w-[32rem]" />
+      <UttYayinKartIskeletleri izgaraClassName="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" />
     </div>
   );
 }
 
 function KategoriYayinlariGoster({
-  kategori,
-  kategoriBaslik,
+  kategoriBilgisi,
   kategoriVideolari,
   onVideoClick,
   onBegeni,
   onFavori,
   mesajlar,
 }: {
-  kategori: IcerikTuru;
-  kategoriBaslik?: string;
+  kategoriBilgisi: UttVideoKategorisi;
   kategoriVideolari: Video[];
   onVideoClick: (video: Video) => void;
   onBegeni: (e: React.MouseEvent, yayinId: string) => void;
@@ -86,29 +94,10 @@ function KategoriYayinlariGoster({
 }) {
   const [aktifTur, setAktifTur] = useState<YayinTuruFiltreDegeri>("tumu");
 
-  const turSayilari = useMemo(() => {
-    const sayac: Record<OgrenmeAraciTuru, number> = { video: 0, podcast: 0, gorsel: 0, flip_pdf: 0 };
-    kategoriVideolari.forEach((v) => {
-      if (v.arac_turu && sayac[v.arac_turu] !== undefined) sayac[v.arac_turu]++;
-    });
-    return sayac;
-  }, [kategoriVideolari]);
-
   const turFiltreli = useMemo(() => {
     if (aktifTur === "tumu") return kategoriVideolari;
     return kategoriVideolari.filter((v) => v.arac_turu === aktifTur);
   }, [kategoriVideolari, aktifTur]);
-
-  const turSecenekleri = useMemo(
-    () => [
-      { key: "tumu" as const, label: `Tümü ${kategoriVideolari.length}` },
-      ...YAYIN_TURLERI.map((tur) => ({
-        key: tur,
-        label: `${YAYIN_TURU_SUNUMU[tur].cogulEtiket} ${turSayilari[tur]}`,
-      })),
-    ],
-    [kategoriVideolari.length, turSayilari],
-  );
 
   const ARAMA_ALANLARI: AramaAlani<Video>[] = useMemo(
     () => [
@@ -129,79 +118,39 @@ function KategoriYayinlariGoster({
     : aktifTur !== "tumu"
       ? "Seçtiğiniz yayın türünde henüz sizin için atanmış bir yayın bulunmuyor."
       : "Bu kategoride henüz sizin için atanmış bir yayın bulunmuyor.";
-  const bosDurumIcerigi = (
-    <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-400">
-      {bosDurumMetni}
-    </div>
-  );
-  const gelistirilmisKategori = kategori === "urun" ||
-    kategori === "medikal" ||
-    kategori === "urun_medikal" ||
-    kategori === "egitim" ||
-    kategori === "yonetim" ||
-    kategori === "ik";
-  const rehberAnahtari = kategori === "urun"
-    ? "videolarim-urun"
-    : kategori === "medikal"
-      ? "videolarim-medikal"
-      : kategori === "urun_medikal"
-        ? "videolarim-urun-medikal"
-        : kategori === "egitim"
-          ? "videolarim-satis"
-          : kategori === "yonetim"
-            ? "videolarim-yonetim"
-            : kategori === "ik"
-              ? "videolarim-ik"
-              : "videolarim-kategori";
 
   return (
     <div className="mx-auto max-w-6xl px-3 py-4 pb-20 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
       <header className="mb-5">
         <div className="inline-flex items-center">
-          <h1 className="m-0 text-xl font-extrabold text-gray-900 md:text-2xl">{kategoriBaslik}</h1>
+          <h1 className="m-0 text-xl font-extrabold text-gray-900 md:text-2xl">{kategoriBilgisi.etiket}</h1>
           <SayfaRehberi
-            anahtar={rehberAnahtari}
+            anahtar={`videolarim-${kategoriBilgisi.slug}`}
             className="ml-1.5 -translate-y-0.5"
           />
         </div>
         <p className="mt-1 text-xs font-semibold text-gray-500">
-          {gelistirilmisKategori
-            ? "Sizin için atanmış tüm yayınları görebilirsiniz."
-            : `${kategoriVideolari.length} içerik`}
+          {kategoriBilgisi.sayfaAciklamasi}
         </p>
       </header>
 
-      {gelistirilmisKategori ? (
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <PeriyotButonlari
-            secenekler={turSecenekleri}
-            deger={aktifTur}
-            onDegistir={setAktifTur}
-            ariaLabel="Yayın türüne göre filtrele"
-            className="min-w-0"
-          />
-          <div className="flex shrink-0 items-center justify-end">
-            <ListeArama
-              arama={liste.arama}
-              ipucu="Bu kategoride ara..."
-              genislik="w-48 sm:w-60"
-            />
-          </div>
-        </div>
-      ) : (
-        <IcerikFiltreBari
-          turFiltresi={{
-            secili: aktifTur,
-            onSec: setAktifTur,
-            sayilar: turSayilari,
-          }}
-          arama={liste.arama}
-          ipucu="Bu kategoride ara..."
-          aramaGenislik="w-48 sm:w-60"
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <UttYayinTuruToggle
+          yayinlar={kategoriVideolari}
+          deger={aktifTur}
+          onDegistir={setAktifTur}
+          className="min-w-0"
         />
-      )}
+        <div className="flex shrink-0 items-center justify-end">
+          <ListeArama
+            arama={liste.arama}
+            ipucu="Bu kategoride ara..."
+            genislik="w-48 sm:w-60"
+          />
+        </div>
+      </div>
 
-      <MobilYayinAkisi<Video>
+      <UttYayinListeAkisi<Video>
         kayitlar={liste.gorunen}
         kayitAnahtari={(v) => v.yayin_id}
         renderKart={(video) => (
@@ -212,31 +161,16 @@ function KategoriYayinlariGoster({
             onFavori={onFavori}
           />
         )}
-        sifirlamaAnahtari={`${kategoriBaslik ?? ""}-${aktifTur}-${liste.arama.alanAnahtari}-${liste.arama.aranan}`}
-        sayacGoster={false}
-        bosDurum={bosDurumIcerigi}
-        masaustuIcerik={
-          liste.gorunen.length === 0 ? bosDurumIcerigi : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {liste.gorunen.map((video) => (
-                <VideoKart
-                  key={video.yayin_id}
-                  video={video}
-                  onVideoClick={onVideoClick}
-                  onBegeni={onBegeni}
-                  onFavori={onFavori}
-                />
-              ))}
-            </div>
-          )
-        }
+        sifirlamaAnahtari={`${kategoriBilgisi.slug}-${aktifTur}-${liste.arama.alanAnahtari}-${liste.arama.aranan}`}
+        bosMesaj={bosDurumMetni}
+        masaustuIzgaraClassName="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
       />
       <HataMesajiContainer mesajlar={mesajlar} />
     </div>
   );
 }
 
-export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBaslik, temelYol = "/ana-sayfa" }: Props) {
+export default function UttAnaSayfa({ user, rol, adSoyad, kategoriBilgisi, temelYol = "/ana-sayfa" }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [uttVeri, setUttVeri] = useState<UttVeri | null>(() => {
@@ -365,25 +299,8 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
     new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
 
   if (loading) {
-    if (
-      kategori === "urun" ||
-      kategori === "medikal" ||
-      kategori === "urun_medikal" ||
-      kategori === "egitim" ||
-      kategori === "yonetim" ||
-      kategori === "ik"
-    ) {
-      return <UttKategoriIskeleti />;
-    }
-
-    return (
-      <div className="flex items-center justify-center p-20">
-        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
-          <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-      </div>
-    );
+    if (kategoriBilgisi) return <UttKategoriIskeleti />;
+    return <UttAnaSayfaIskeleti />;
   }
 
   if (aktifVideo) {
@@ -409,7 +326,6 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
   const ad = adSoyad.split(" ")[0] || "Temsilci";
 
   const tumHamVideolar = [...(uttVeri?.yeni_videolar ?? []), ...(uttVeri?.devam_edenler ?? []), ...(uttVeri?.tamamlananlar ?? [])];
-  const turSayilari = Object.fromEntries(YAYIN_TURLERI.map((tur) => [tur, tumHamVideolar.filter((video) => video.arac_turu === tur).length])) as Record<Video["arac_turu"], number>;
   const tureGoreSuz = <T extends Video>(liste: T[]) => liste.filter((video) => aktifYayinTuru === "tumu" || video.arac_turu === aktifYayinTuru);
   const yeniVideolar = tureGoreSuz(uttVeri?.yeni_videolar ?? []);
   const devamEdenler = tureGoreSuz(uttVeri?.devam_edenler ?? []);
@@ -453,15 +369,14 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
   if (enCokFavorilenen.length > 0) tanburBolumleri.push({ id: "en_cok_favorilenen", etiket: "En Çok Favorilenenler", sayi: enCokFavorilenen.length });
   if (enCokIzlenen.length > 0) tanburBolumleri.push({ id: "en_cok_izlenen", etiket: "En Çok İzlenenler", sayi: enCokIzlenen.length });
 
-  if (kategori) {
+  if (kategoriBilgisi) {
     const kategoriVideolari = tumVideolar
-      .filter((video) => video.icerik_turu === kategori)
+      .filter((video) => video.icerik_turu === kategoriBilgisi.icerikTuru)
       .sort((a, b) => new Date(b.yayin_tarihi).getTime() - new Date(a.yayin_tarihi).getTime());
 
     return (
       <KategoriYayinlariGoster
-        kategori={kategori}
-        kategoriBaslik={kategoriBaslik}
+        kategoriBilgisi={kategoriBilgisi}
         kategoriVideolari={kategoriVideolari}
         onVideoClick={handleVideoClick}
         onBegeni={handleBegeni}
@@ -562,12 +477,19 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
         })}
       </div>
 
-      <div className="mb-5"><YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} /></div>
+      <div className="mb-5">
+        <UttYayinTuruToggle
+          yayinlar={tumHamVideolar}
+          deger={aktifYayinTuru}
+          onDegistir={setAktifYayinTuru}
+          className="min-w-0"
+        />
+      </div>
 
       {/* Dinamik keşif rafları; sabit eğitim kategorileri Videolarım menüsündedir. */}
 
       {aktifDurumFiltresi ? (
-        <MobilYayinAkisi<Video>
+        <UttYayinListeAkisi<Video>
           kayitlar={aktifDurumVideolari}
           kayitAnahtari={(v) => v.yayin_id}
           renderKart={(video) => (
@@ -594,25 +516,8 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
             </button>
           }
           sifirlamaAnahtari={aktifDurumFiltresi}
-          sayacGoster={false}
-          bosDurum={
-            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-400">
-              Bu durumda öğrenme içeriği bulunmuyor.
-            </div>
-          }
-          masaustuIcerik={
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {aktifDurumVideolari.map((video) => (
-                <VideoKart
-                  key={video.yayin_id}
-                  video={video}
-                  onVideoClick={handleVideoClick}
-                  onBegeni={handleBegeni}
-                  onFavori={handleFavori}
-                />
-              ))}
-            </div>
-          }
+          bosMesaj="Bu durumda öğrenme içeriği bulunmuyor."
+          masaustuIzgaraClassName="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
         />
       ) : (
         <>

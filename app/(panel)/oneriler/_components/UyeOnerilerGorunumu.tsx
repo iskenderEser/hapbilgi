@@ -15,21 +15,16 @@ import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
-import { YAYIN_TURLERI, YAYIN_TURU_SUNUMU } from "@/lib/ogrenmeAraci/turSunumu";
-import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
+import {
+  UttYayinListeAkisi,
+  UttYayinTuruToggle,
+} from "@/components/yayin/UttYayinListeOrtaklari";
 
 type UttOneriFiltresi = "izlenecek" | "tamamlanan" | "suresi_dolan";
 
 const DURUM_SECENEKLERI: Array<{ key: Exclude<UttOneriFiltresi, "suresi_dolan">; label: string }> = [
   { key: "izlenecek", label: "Bekleyen" },
   { key: "tamamlanan", label: "Tamamlanan" },
-];
-
-const YAYIN_TURU_SECENEKLERI: Array<{ key: YayinTuruFiltreDegeri; label: string }> = [
-  ...YAYIN_TURLERI.map((tur) => ({
-    key: tur,
-    label: YAYIN_TURU_SUNUMU[tur].cogulEtiket,
-  })),
 ];
 
 interface Props {
@@ -53,7 +48,7 @@ export default function UyeOnerilerGorunumu({
   const [aktifFiltre, setAktifFiltre] = useState<UttOneriFiltresi>(
     varsayilanSekme === "tamamlanan" ? "tamamlanan" : "izlenecek"
   );
-  const [aktifTur, setAktifTur] = useState<YayinTuruFiltreDegeri>("video");
+  const [aktifTur, setAktifTur] = useState<YayinTuruFiltreDegeri>("tumu");
 
   const formatTarihKisa = (tarih: string) => {
     const date = new Date(tarih);
@@ -330,11 +325,11 @@ export default function UyeOnerilerGorunumu({
           className="w-fit flex-none"
         />
         <div className="flex min-w-0 items-center justify-end gap-2">
-          <PeriyotButonlari
-            secenekler={YAYIN_TURU_SECENEKLERI}
+          <UttYayinTuruToggle
+            yayinlar={durumFiltreliOneriler}
             deger={aktifTur}
             onDegistir={setAktifTur}
-            ariaLabel="Yayın türüne göre filtrele"
+            sayilariGoster={false}
             className="min-w-0 flex-1 sm:flex-none"
           />
           <YenileButonu
@@ -345,37 +340,14 @@ export default function UyeOnerilerGorunumu({
         </div>
       </div>
       {/* ─── 3. Katman: Yayın Kartları Izgarası ─── */}
-      {sonFiltrelenmisOneriler.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
-          <p className="text-sm font-bold text-gray-600">
-            {aktifTur !== "tumu"
-              ? "Seçilen yayın türünde öneri bulunamadı."
-              : bosMesaj}
-          </p>
-        </div>
-      ) : (
-        <MobilYayinAkisi<OneriKaydi>
-          kayitlar={sonFiltrelenmisOneriler}
-          kayitAnahtari={(o) => o.oneri_id}
-          renderKart={renderOneriKarti}
-          sifirlamaAnahtari={`${aktifFiltre}-${aktifTur}`}
-          sayacGoster={false}
-          bosDurum={
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
-              <p className="text-sm font-bold text-gray-600">
-                {aktifTur !== "tumu"
-                  ? "Seçilen yayın türünde öneri bulunamadı."
-                  : bosMesaj}
-              </p>
-            </div>
-          }
-          masaustuIcerik={
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {sonFiltrelenmisOneriler.map(renderOneriKarti)}
-            </div>
-          }
-        />
-      )}
+      <UttYayinListeAkisi<OneriKaydi>
+        kayitlar={sonFiltrelenmisOneriler}
+        kayitAnahtari={(o) => o.oneri_id}
+        renderKart={renderOneriKarti}
+        sifirlamaAnahtari={`${aktifFiltre}-${aktifTur}`}
+        bosMesaj={aktifTur !== "tumu" ? "Seçilen yayın türünde öneri bulunamadı." : bosMesaj}
+        masaustuIzgaraClassName="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4"
+      />
     </div>
   );
 }

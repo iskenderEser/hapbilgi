@@ -5,6 +5,7 @@ import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { HataMesajiContainer } from "@/components/HataMesaji";
 import { YayinKarti } from "@/components/yayin/YayinKarti";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import { UttYayinKartIskeletleri } from "@/components/yayin/UttYayinListeOrtaklari";
 import BmOneriTakibi from "./_components/BmOneriTakibi";
 import TmOneriTakibi from "./_components/TmOneriTakibi";
 import UyeOnerilerGorunumu from "./_components/UyeOnerilerGorunumu";
@@ -29,18 +30,7 @@ function UyeOnerilerIskeleti() {
           <div className="h-10 w-24 shrink-0 rounded-lg bg-white shadow-sm" />
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {[0, 1].map((kart) => (
-          <div key={kart} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="aspect-video bg-gray-200" />
-            <div className="space-y-3 p-3">
-              <div className="h-4 w-3/4 rounded bg-gray-200" />
-              <div className="h-3 w-1/2 rounded bg-gray-100" />
-              <div className="h-10 rounded-lg bg-gray-100" />
-            </div>
-          </div>
-        ))}
-      </div>
+      <UttYayinKartIskeletleri izgaraClassName="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" />
     </div>
   );
 }
