@@ -14,7 +14,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
 import { ECZANEM_RAPOR_GOREN_ROLLER, ECZANEM_TALEP_ACAN_ROLLER, YONETICI_ROLLER } from "@/lib/utils/roller";
-import { GRI_METIN, KIRMIZI, type Periyot } from "@/lib/utils/raporUtils";
+import { KIRMIZI, type Periyot } from "@/lib/utils/raporUtils";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import IndirimliSatisTablosu from "./_components/IndirimliSatisTablosu";
 import type { IndirimliSatisSatiri } from "@/lib/eczanem/dokum";
@@ -72,6 +72,27 @@ interface RaporApiData {
   toplam_tl?: number;
 }
 
+function EczanemRaporSkeleton() {
+  return (
+    <div className={`${styles.page} animate-pulse`} role="status" aria-label="Eczanem Raporları yükleniyor">
+      <div className={styles.container}>
+        <div className="mb-3 h-4 w-20 rounded bg-slate-200" />
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="h-8 w-52 rounded-lg bg-slate-200" />
+            <div className="mt-2 h-4 w-80 max-w-full rounded bg-slate-200" />
+          </div>
+          <div className="h-11 w-full rounded-[14px] bg-white sm:w-96" />
+        </div>
+        <div className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+          {Array.from({ length: 3 }, (_, index) => <div key={index} className="h-24 rounded-2xl bg-white" />)}
+        </div>
+        <div className="h-72 rounded-[18px] bg-white" />
+      </div>
+    </div>
+  );
+}
+
 export default function EczanemRaporPage() {
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
@@ -84,15 +105,11 @@ export default function EczanemRaporPage() {
     { onbellekSuresi: 300_000, yenileParametresi: true, oturumOnbellegi: true },
   );
 
-  if (authYukleniyor || loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm" style={{ color: GRI_METIN }}>Yükleniyor...</div>
-      </div>
-    );
+  if (authYukleniyor || (loading && !data)) {
+    return <EczanemRaporSkeleton />;
   }
 
-  if (hata) {
+  if (hata && !data) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-sm" style={{ color: KIRMIZI }}>Hata: {hata}</div>
@@ -213,6 +230,16 @@ export default function EczanemRaporPage() {
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>
+        {(loading || yenileniyor || hata) && (
+          <div
+            role="status"
+            className={`mb-4 rounded-xl border px-3 py-2 text-[11px] font-bold ${hata ? "border-amber-200 bg-amber-50 text-amber-800" : "border-blue-100 bg-blue-50 text-blue-700"}`}
+          >
+            {hata
+              ? `${hata} Önceki başarılı rapor gösterilmeye devam ediyor.`
+              : "Seçilen dönem için rapor güncelleniyor…"}
+          </div>
+        )}
         {/* Metrik Özet Kartları */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-5">
           {metrikKartlari.map((kart) => {

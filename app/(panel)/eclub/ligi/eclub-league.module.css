@@ -587,9 +587,9 @@
   }
 
   .headerActions :global(.hb-ligi-periyot-secici) {
-    width: 100%;
-    flex-basis: 100%;
-    justify-content: space-between;
+    width: auto;
+    flex: 0 0 auto;
+    justify-content: flex-start;
     overflow-x: visible;
   }
 }

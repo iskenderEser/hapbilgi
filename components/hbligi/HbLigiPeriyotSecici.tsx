@@ -18,5 +18,5 @@ export default function HbLigiPeriyotSecici({
   periyot: Periyot;
   onPeriyotChange: (periyot: Periyot) => void;
 }) {
-  return <PeriyotButonlari secenekler={SECENEKLER} deger={periyot} onDegistir={onPeriyotChange} ariaLabel="Lig dönemi" />;
+  return <PeriyotButonlari secenekler={SECENEKLER} deger={periyot} onDegistir={onPeriyotChange} ariaLabel="Lig dönemi" className="hb-ligi-periyot-secici" />;
 }
