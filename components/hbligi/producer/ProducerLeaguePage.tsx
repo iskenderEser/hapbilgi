@@ -105,12 +105,37 @@ export default function ProducerLeaguePage({
 
   const kapsamDegistir = (yeniKapsam: LigKapsami) => {
     setKapsam(yeniKapsam);
-    setTabloTakimId("");
-    setTabloBolgeId("");
+    if (yeniKapsam === "firma") {
+      setTabloTakimId("");
+      setTabloBolgeId("");
+      return;
+    }
+    if (yeniKapsam === "takim") {
+      const takimId = tabloTakimId || takimlar[0]?.id || "";
+      setTabloTakimId(takimId);
+      setTabloBolgeId("");
+      return;
+    }
+    const uygunBolgeler = tabloTakimId
+      ? bolgeler.filter((bolge) => bolge.takim_id === tabloTakimId)
+      : bolgeler;
+    const bolge = uygunBolgeler.find((secenek) => secenek.id === tabloBolgeId) ?? uygunBolgeler[0] ?? bolgeler[0];
+    setTabloTakimId(bolge?.takim_id ?? tabloTakimId);
+    setTabloBolgeId(bolge?.id ?? "");
   };
 
   const ligSatirlari = veri.lig;
   const sirali = useMemo(() => ureticiLiginiSirala(ligSatirlari), [ligSatirlari]);
+  const tabloBolgeleri = tabloTakimId
+    ? bolgeler.filter((bolge) => bolge.takim_id === tabloTakimId)
+    : bolgeler;
+  const takimFiltreliSatirlar = ureticiLigKapsaminiUygula(sirali, "takim", tabloTakimId);
+  const tabloSatirlari = ureticiLigKapsaminiUygula(takimFiltreliSatirlar, "bolge", tabloBolgeId);
+  const kapsamSatirlari = kapsam === "firma"
+    ? sirali
+    : kapsam === "takim"
+      ? ureticiLigKapsaminiUygula(sirali, "takim", tabloTakimId)
+      : ureticiLigKapsaminiUygula(sirali, "bolge", tabloBolgeId);
   const toplamUtt = ligSatirlari.length;
   const aktifUtt = ligSatirlari.filter((satir) => aktifMi(satir, bakis)).length;
   const katilimOrani = toplamUtt > 0 ? Math.round((aktifUtt / toplamUtt) * 100) : 0;
@@ -128,21 +153,33 @@ export default function ProducerLeaguePage({
   const kazanim = toplam.izleme + toplam.cevaplama + toplam.oneri + toplam.extra + toplam.eclub;
   const kayip = toplam.ileriSarma + toplam.yanlisCevap + toplam.oneriKaybi;
   const net = kazanim - kayip;
-  const firmaToplam = veri.firma_puan_ozeti ?? {
-    izleme_puani: toplam.izleme,
-    cevaplama_puani: toplam.cevaplama,
-    oneri_puani: toplam.oneri,
-    extra_puani: toplam.extra,
-    eclub_puani: toplam.eclub,
-    ileri_sarma_kaybi: toplam.ileriSarma,
-    yanlis_cevap_kaybi: toplam.yanlisCevap,
-    oneri_kaybi: toplam.oneriKaybi,
-  };
-  const firmaKazanim = firmaToplam.izleme_puani + firmaToplam.cevaplama_puani
-    + firmaToplam.oneri_puani + firmaToplam.extra_puani + firmaToplam.eclub_puani;
-  const firmaKayip = firmaToplam.ileri_sarma_kaybi + firmaToplam.yanlis_cevap_kaybi
-    + firmaToplam.oneri_kaybi;
-  const firmaNet = firmaKazanim - firmaKayip;
+  const kapsamToplami = kapsamSatirlari.reduce((ozet, satir) => ({
+    izleme_puani: ozet.izleme_puani + satir.izleme_puani,
+    cevaplama_puani: ozet.cevaplama_puani + satir.cevaplama_puani,
+    oneri_puani: ozet.oneri_puani + satir.oneri_puani,
+    extra_puani: ozet.extra_puani + satir.extra_puani,
+    eclub_puani: ozet.eclub_puani + (satir.eclub_puani ?? 0),
+    ileri_sarma_kaybi: ozet.ileri_sarma_kaybi + satir.ileri_sarma_kaybi,
+    yanlis_cevap_kaybi: ozet.yanlis_cevap_kaybi + satir.yanlis_cevap_kaybi,
+    oneri_kaybi: ozet.oneri_kaybi + satir.oneri_kaybi,
+  }), {
+    izleme_puani: 0,
+    cevaplama_puani: 0,
+    oneri_puani: 0,
+    extra_puani: 0,
+    eclub_puani: 0,
+    ileri_sarma_kaybi: 0,
+    yanlis_cevap_kaybi: 0,
+    oneri_kaybi: 0,
+  });
+  const kartToplami = kapsam === "firma" && bakis === "genel" && veri.firma_puan_ozeti
+    ? veri.firma_puan_ozeti
+    : kapsamToplami;
+  const kapsamKazanim = kartToplami.izleme_puani + kartToplami.cevaplama_puani
+    + kartToplami.oneri_puani + kartToplami.extra_puani + kartToplami.eclub_puani;
+  const kapsamKayip = kartToplami.ileri_sarma_kaybi + kartToplami.yanlis_cevap_kaybi
+    + kartToplami.oneri_kaybi;
+  const kapsamNet = kapsamKazanim - kapsamKayip;
 
   const kazanimKalemleri = [
     { ad: "Öğrenme Tamamlama", deger: toplam.izleme, renk: PUAN_RENKLERI.izleme },
@@ -186,7 +223,7 @@ export default function ProducerLeaguePage({
   };
 
   const bakisSecici = (
-    <div className="inline-flex rounded-xl border border-[#dfe8f2] bg-white p-1" aria-label="Lig görünümü">
+    <div className="inline-flex min-w-0 max-w-full flex-1 items-center gap-1 overflow-x-auto rounded-[14px] border border-[rgba(148,163,184,.18)] bg-white/85 p-1 shadow-[0_6px_22px_rgba(36,64,98,.05)] sm:flex-none" aria-label="Lig görünümü">
       {([
         { id: "genel", etiket: "T-Club Ligi" },
         { id: "yayinlarim", etiket: "Yayınlarımın Ligi" },
@@ -196,8 +233,10 @@ export default function ProducerLeaguePage({
           type="button"
           onClick={() => onBakisDegistir(secenek.id)}
           aria-pressed={bakis === secenek.id}
-          className={`rounded-lg px-3 py-1.5 text-xs font-extrabold transition-colors ${
-            bakis === secenek.id ? "bg-[#2f80ed] text-white" : "text-[#60728f] hover:bg-[#f2f6fb]"
+          className={`shrink-0 rounded-[10px] px-3 py-[7px] text-[11px] font-bold transition-all duration-150 ${
+            bakis === secenek.id
+              ? "bg-[#237ac8] text-white shadow-[0_5px_14px_rgba(35,122,200,.22)]"
+              : "text-[#718198] hover:bg-[#f2f7fc] hover:text-[#237ac8]"
           }`}
         >
           {secenek.etiket}
@@ -207,15 +246,17 @@ export default function ProducerLeaguePage({
   );
 
   const kapsamSecici = (
-    <div className="inline-flex rounded-xl border border-[#dfe8f2] bg-white p-1" aria-label="Lig kapsamı">
+    <div className="inline-flex min-w-0 max-w-full flex-1 items-center gap-1 overflow-x-auto rounded-[14px] border border-[rgba(148,163,184,.18)] bg-white/85 p-1 shadow-[0_6px_22px_rgba(36,64,98,.05)] sm:flex-none" aria-label="Lig kapsamı">
       {KAPSAMLAR.map((secenek) => (
         <button
           key={secenek.id}
           type="button"
           onClick={() => kapsamDegistir(secenek.id)}
           aria-pressed={kapsam === secenek.id}
-          className={`rounded-lg px-3 py-1.5 text-xs font-extrabold transition-colors ${
-            kapsam === secenek.id ? "bg-[#2f80ed] text-white" : "text-[#60728f] hover:bg-[#f2f6fb]"
+          className={`shrink-0 rounded-[10px] px-3 py-[7px] text-[11px] font-bold transition-all duration-150 ${
+            kapsam === secenek.id
+              ? "bg-[#237ac8] text-white shadow-[0_5px_14px_rgba(35,122,200,.22)]"
+              : "text-[#718198] hover:bg-[#f2f7fc] hover:text-[#237ac8]"
           }`}
         >
           {secenek.etiket}
@@ -224,12 +265,6 @@ export default function ProducerLeaguePage({
     </div>
   );
 
-  const tabloBolgeleri = tabloTakimId
-    ? bolgeler.filter((bolge) => bolge.takim_id === tabloTakimId)
-    : bolgeler;
-  const takimFiltreliSatirlar = ureticiLigKapsaminiUygula(sirali, "takim", tabloTakimId);
-  const tabloSatirlari = ureticiLigKapsaminiUygula(takimFiltreliSatirlar, "bolge", tabloBolgeId);
-
   const kapsamEtiketi = KAPSAMLAR.find((secenek) => secenek.id === kapsam)?.etiket ?? "Bölge";
 
   return (
@@ -237,22 +272,20 @@ export default function ProducerLeaguePage({
       <div className={leagueStyles.shell} style={{ fontFamily: "'Nunito', sans-serif" }}>
         <div className={`${leagueStyles.dashboard} !h-auto !min-h-full`}>
           <div className="shrink-0"><LeagueHeader periyotSecici={null} /></div>
-          <p className="-mt-1 text-[11px] font-bold text-[#7b8ca5]">
-            <strong className="text-[#52647c]">{veri.kapsam_adi}</strong> · {veri.kapsam_aciklamasi}
-          </p>
+          <p className="-mt-1 text-[11px] font-bold text-[#7b8ca5]">Performansları görebilirsiniz</p>
           <MonthlyLeaders top3={bannerTop3} ayAdi={veri.aylik_kursu?.ay_adi} />
           <div className="flex flex-wrap items-center justify-between gap-2">
             {bakisSecici}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               {kapsamSecici}
               {periyotSecici}
             </div>
           </div>
 
           <section className="grid grid-cols-1 gap-3 md:grid-cols-3" aria-label="Lig özeti">
-            <StatCard etiket="Firma Net Puanı" deger={firmaNet.toLocaleString("tr-TR")} aciklama="T-Club Ligi değerlerine göre kazanılan ve kaybedilen puanların farkı" renk="blue" icon={Gauge} />
-            <StatCard etiket="Firma Kazanılan Puanı" deger={`+${firmaKazanim.toLocaleString("tr-TR")}`} aciklama="T-Club Ligi değerlerine göre yayın tamamlama, doğru cevaplama, extra yayın tamamlama, öneri yayın tamamlama ve E-Club puanlarının toplamı" renk="green" icon={ArrowUpRight} />
-            <StatCard etiket="Firma Kaybedilen Puanı" deger={firmaKayip > 0 ? `−${firmaKayip.toLocaleString("tr-TR")}` : "0"} aciklama="T-Club Ligi değerlerine göre yanlış cevaplama, ileri sarma ve öneri kaçırma negatif puanlarının toplamı" renk="red" icon={ArrowDownRight} />
+            <StatCard etiket={`${kapsamEtiketi} Net Puanı`} deger={kapsamNet.toLocaleString("tr-TR")} aciklama="Kazanılan ve kaybedilen puanların farkı" renk="blue" icon={Gauge} />
+            <StatCard etiket={`${kapsamEtiketi} Kazanılan Puanı`} deger={`+${kapsamKazanim.toLocaleString("tr-TR")}`} aciklama="Yayın tamamlama, doğru cevaplama, extra yayın tamamlama, öneri yayın tamamlama ve E-Club puanlarının toplamı" renk="green" icon={ArrowUpRight} />
+            <StatCard etiket={`${kapsamEtiketi} Kaybedilen Puanı`} deger={kapsamKayip > 0 ? `−${kapsamKayip.toLocaleString("tr-TR")}` : "0"} aciklama="Yanlış cevaplama, ileri sarma ve öneri kaçırma puanlarının toplamı" renk="red" icon={ArrowDownRight} />
           </section>
 
           <CompetitorComparison
@@ -265,16 +298,20 @@ export default function ProducerLeaguePage({
               takimId: tabloTakimId,
               bolgeId: tabloBolgeId,
               onTakimDegistir: (id) => {
+                setKapsam(id ? "takim" : "firma");
                 setTabloTakimId(id);
                 if (tabloBolgeId && !bolgeler.some((bolge) => bolge.id === tabloBolgeId && (!id || bolge.takim_id === id))) {
                   setTabloBolgeId("");
                 }
               },
-              onBolgeDegistir: setTabloBolgeId,
+              onBolgeDegistir: (id) => {
+                setKapsam(id ? "bolge" : (tabloTakimId ? "takim" : "firma"));
+                setTabloBolgeId(id);
+              },
             }}
           />
 
-          <div className={`${fieldStyles.bottomGrid} ${fieldStyles.equalBottomGrid}`}>
+          <div className={`${fieldStyles.bottomGrid} ${fieldStyles.equalBottomGrid} ${leagueStyles.producerBottomGrid}`}>
             <section className={fieldStyles.panel}>
               <div className={fieldStyles.panelHeader}>
                 <div><h2>Net Puan Bileşenleri</h2></div>

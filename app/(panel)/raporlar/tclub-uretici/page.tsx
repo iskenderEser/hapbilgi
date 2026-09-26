@@ -20,7 +20,8 @@ import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
 import DagilimGrafik from "@/components/raporlar/DagilimGrafik";
 import YayinDetayModal from "@/components/raporlar/YayinDetayModal";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
-import { formatPuan, GRI_METIN, KIRMIZI, type Periyot } from "@/lib/utils/raporUtils";
+import TClubPageSkeleton from "@/components/tclub/TClubPageSkeleton";
+import { formatPuan, type Periyot } from "@/lib/utils/raporUtils";
 import { TUR_RAPOR_ADI, isIcerikTuru } from "@/lib/video/icerikTuru";
 import styles from "../utt/utt-report.module.css";
 
@@ -128,6 +129,19 @@ const ARAC_ADLARI: Record<string, string> = {
   flip_pdf: "Literatür",
 };
 
+function sahaPuanlari(satir: SahaSatiri | UttSatiri, uttMi: boolean) {
+  if (!uttMi) {
+    const grup = satir as SahaSatiri;
+    return { kazanilan: grup.kazanilan_puan, kaybedilen: grup.kaybedilen_puan, net: grup.net_puan };
+  }
+  const utt = satir as UttSatiri;
+  return {
+    kazanilan: utt.izleme_puani + utt.cevaplama_puani + utt.oneri_puani + utt.extra_puani + (utt.eclub_puani ?? 0),
+    kaybedilen: utt.ileri_sarma_kaybi + utt.yanlis_cevap_kaybi + utt.oneri_kaybi,
+    net: utt.toplam_puan,
+  };
+}
+
 export default function TclubUreticiRaporPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
@@ -140,13 +154,29 @@ export default function TclubUreticiRaporPage() {
     "/raporlar/api/tclub-uretici",
     periyot,
     kullanici?.id,
+    { onbellekSuresi: 60_000, oturumOnbellegi: true },
   );
 
-  if (yukleniyor || loading) {
-    return <div className="flex min-h-screen items-center justify-center"><div className="text-sm" style={{ color: GRI_METIN }}>Yükleniyor...</div></div>;
+  const periyotDegistir = (yeniPeriyot: Periyot) => {
+    setGorunenYayinSayisi(5);
+    setPeriyot(yeniPeriyot);
+  };
+
+  if (yukleniyor || (loading && !data)) {
+    return <TClubPageSkeleton aktifSayfa="rapor" />;
   }
-  if (error) {
-    return <div className="flex min-h-screen items-center justify-center"><div className="text-sm" style={{ color: KIRMIZI }}>Hata: {error}</div></div>;
+  if (error && !data) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <div className="mx-auto mt-8 max-w-md rounded-2xl border border-red-100 bg-white p-6 text-center shadow-sm">
+            <h1 className="text-sm font-extrabold text-[#a43737]">T-Club Raporları yüklenemedi</h1>
+            <p className="mt-1 text-xs font-semibold text-[#7d8ba0]">{error}</p>
+            <button type="button" onClick={yenile} className="mt-4 min-h-11 rounded-xl bg-[#237ac8] px-4 text-xs font-extrabold text-white">Yeniden dene</button>
+          </div>
+        </div>
+      </div>
+    );
   }
   if (!kullanici || !data) return null;
 
@@ -190,10 +220,16 @@ export default function TclubUreticiRaporPage() {
             </p>
           </div>
           <div className="flex w-full items-center gap-2 sm:w-auto">
-            <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
+            <RaporPeriyotSecici deger={periyot} onDegistir={periyotDegistir} />
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>
+
+        {(loading || yenileniyor || error) && (
+          <div className={`mb-4 rounded-xl border px-3 py-2 text-[11px] font-bold ${error ? "border-amber-200 bg-amber-50 text-amber-800" : "border-blue-100 bg-blue-50 text-blue-700"}`} role="status">
+            {error ? `${error} Mevcut rapor gösterilmeye devam ediyor.` : "Seçilen dönem için rapor güncelleniyor…"}
+          </div>
+        )}
 
         <section className={`${styles.panel} ${styles.section}`}>
           <KartBasligi baslik="Firma T-Club Puan Özeti" aciklama="Seçili dönemde firmanın kazandığı, kaybettiği ve net T-Club puanı" icon={Gauge} />
@@ -212,7 +248,7 @@ export default function TclubUreticiRaporPage() {
 
           <section className={`${styles.panel} ${styles.section}`}>
             <KartBasligi baslik="İçerik Puan Dağılımı" aciklama="Yayın puanlarının öğrenme aracı, eğitim konusu ve ürün bazındaki dağılımı" icon={Layers3} />
-            <div className="mb-3 inline-flex rounded-xl border border-[#dfe8f2] bg-[#f7f9fc] p-1">
+            <div className="mb-3 grid w-full grid-cols-3 rounded-xl border border-[#dfe8f2] bg-[#f7f9fc] p-1 sm:inline-flex sm:w-auto">
               {(["araclar", "kategoriler", "urunler"] as const).map((sekme) => <button key={sekme} type="button" onClick={() => setIcerikSekmesi(sekme)} className={`rounded-lg px-3 py-1.5 text-xs font-extrabold ${icerikSekmesi === sekme ? "bg-[#237ac8] text-white" : "text-[#60728f]"}`}>{sekme === "araclar" ? "Öğrenme Araçları" : sekme === "kategoriler" ? "Eğitim Konuları" : "Ürünler"}</button>)}
             </div>
             <DagilimGrafik veri={icerikSatirlari.map((satir) => ({ ad: satir.ad, puan: satir.net_puan }))} modlar={["bar", "pie", "line", "tablo"]} apsisAdi="İçerik" ordinatAdi="Net puan" indirAdi={`tclub-${icerikSekmesi}`} height={270} modern />
@@ -221,23 +257,46 @@ export default function TclubUreticiRaporPage() {
 
         <section className={`${styles.panel} ${styles.section}`}>
           <KartBasligi baslik="Saha Puan Dağılımı" aciklama="Firma puanının takım, bölge ve UTT bazındaki dağılımı" icon={MapPinned} />
-          <div className="mb-3 inline-flex rounded-xl border border-[#dfe8f2] bg-[#f7f9fc] p-1">
+          <div className="mb-3 grid w-full grid-cols-3 rounded-xl border border-[#dfe8f2] bg-[#f7f9fc] p-1 sm:inline-flex sm:w-auto">
             {(["takimlar", "bolgeler", "uttler"] as const).map((sekme) => (
               <button key={sekme} type="button" onClick={() => setSahaSekmesi(sekme)} className={`rounded-lg px-3 py-1.5 text-xs font-extrabold ${sahaSekmesi === sekme ? "bg-[#237ac8] text-white" : "text-[#60728f]"}`}>
                 {sekme === "takimlar" ? "Takımlar" : sekme === "bolgeler" ? "Bölgeler" : "UTT’ler"}
               </button>
             ))}
           </div>
-          <div className="overflow-x-auto rounded-xl border border-[#e8edf3]">
+          <div className="space-y-2 md:hidden">
+            {sahaSatirlari.map((satir) => {
+              const uttMi = sahaSekmesi === "uttler";
+              const utt = uttMi ? satir as UttSatiri : null;
+              const grup = !uttMi ? satir as SahaSatiri : null;
+              const { kazanilan, kaybedilen, net } = sahaPuanlari(satir, uttMi);
+              return (
+                <article key={utt?.kullanici_id ?? grup!.id} className="rounded-2xl border border-[#e3eaf2] bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm font-extrabold text-[#344a65]">{utt?.ad ?? grup!.ad}</strong>
+                      {utt && <span className="mt-0.5 block truncate text-[10px] font-semibold text-[#8795a8]">{utt.takim} · {utt.bolge}</span>}
+                      {grup && <span className="mt-0.5 block text-[10px] font-semibold text-[#8795a8]">{grup.utt_sayisi} UTT</span>}
+                    </div>
+                    <div className="text-right"><span className="block text-[9px] font-extrabold uppercase text-[#8795a8]">Net</span><strong className="text-lg font-black tabular-nums text-[#237ac8]">{formatPuan(net)}</strong></div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[#edf1f5] pt-2.5">
+                    <div><span className="block text-[9px] font-extrabold uppercase text-[#8795a8]">Kazanılan</span><strong className="text-xs text-[#16865f]">+{formatPuan(kazanilan)}</strong></div>
+                    <div className="text-right"><span className="block text-[9px] font-extrabold uppercase text-[#8795a8]">Kaybedilen</span><strong className="text-xs text-[#d44b40]">{kaybedilen ? `−${formatPuan(kaybedilen)}` : "0"}</strong></div>
+                  </div>
+                </article>
+              );
+            })}
+            {sahaSatirlari.length === 0 && <p className="rounded-2xl border border-dashed border-[#d8e2ec] p-6 text-center text-xs font-bold text-[#7b8ca5]">Seçili dönemde saha puanı oluşmadı.</p>}
+          </div>
+          <div className="hidden overflow-x-auto rounded-xl border border-[#e8edf3] md:block">
             <table className="w-full min-w-[620px] text-xs">
               <thead className="bg-[#f6f8fb] text-[#7c8da2]"><tr><th className="px-3 py-2 text-left">{sahaSekmesi === "uttler" ? "UTT" : "Birim"}</th><th className="px-3 py-2 text-right">Kazanılan</th><th className="px-3 py-2 text-right">Kaybedilen</th><th className="px-3 py-2 text-right">Net</th></tr></thead>
               <tbody>
                 {sahaSatirlari.map((satir) => {
                   const utt = sahaSekmesi === "uttler" ? satir as UttSatiri : null;
                   const grup = sahaSekmesi !== "uttler" ? satir as SahaSatiri : null;
-                  const kazanilan = utt ? utt.izleme_puani + utt.cevaplama_puani + utt.oneri_puani + utt.extra_puani + (utt.eclub_puani ?? 0) : grup!.kazanilan_puan;
-                  const kaybedilen = utt ? utt.ileri_sarma_kaybi + utt.yanlis_cevap_kaybi + utt.oneri_kaybi : grup!.kaybedilen_puan;
-                  const net = utt ? utt.toplam_puan : grup!.net_puan;
+                  const { kazanilan, kaybedilen, net } = sahaPuanlari(satir, sahaSekmesi === "uttler");
                   return <tr key={utt?.kullanici_id ?? grup!.id} className="border-t border-[#edf1f5]"><td className="px-3 py-2.5 font-bold text-[#344a65]">{utt?.ad ?? grup!.ad}</td><td className="px-3 py-2.5 text-right font-bold text-[#16865f]">+{formatPuan(kazanilan)}</td><td className="px-3 py-2.5 text-right font-bold text-[#d44b40]">{kaybedilen ? `−${formatPuan(kaybedilen)}` : "0"}</td><td className="px-3 py-2.5 text-right font-black text-[#237ac8]">{formatPuan(net)}</td></tr>;
                 })}
               </tbody>
@@ -257,8 +316,24 @@ export default function TclubUreticiRaporPage() {
         </section>
 
         <section className={`${styles.panel} ${styles.section}`}>
-          <KartBasligi baslik="Sahada Tamamlanan Yayınlar" aciklama="Tamamlanan yayınlarınızın saha ekibinizin öğrenme performansına etkisini görebilirsiniz." icon={Newspaper} />
-          <div className="overflow-x-auto rounded-xl border border-[#e8edf3]">
+          <KartBasligi baslik="Yayın Performansı" aciklama="Tamamlanan yayınlarınızın saha ekibinizin öğrenme performansına etkisini görebilirsiniz." icon={Newspaper} />
+          <div className="space-y-2 md:hidden">
+            {data.yayinlar.slice(0, gorunenYayinSayisi).map((yayin) => (
+              <article key={yayin.yayin_id} className="overflow-hidden rounded-2xl border border-[#e3eaf2] bg-white">
+                <button type="button" onClick={() => setSeciliYayinId(yayin.yayin_id)} className="flex min-h-11 w-full items-start justify-between gap-3 p-3 text-left">
+                  <span className="min-w-0"><strong className="flex items-center gap-1 text-sm font-extrabold text-[#237ac8]"><span className="truncate">{yayin.yayin_adi}</span><ExternalLink className="h-3 w-3 shrink-0" /></strong><span className="mt-0.5 block truncate text-[10px] text-[#8795a8]">{ARAC_ADLARI[yayin.arac_turu] ?? yayin.arac_turu}{yayin.urun_adi ? ` · ${yayin.urun_adi}` : ""}</span></span>
+                  <span className="shrink-0 text-right"><small className="block text-[9px] font-extrabold uppercase text-[#8795a8]">Net</small><strong className="text-base font-black text-[#237ac8]">{formatPuan(yayin.net_puan)}</strong></span>
+                </button>
+                <div className="grid grid-cols-3 gap-1 border-t border-[#edf1f5] bg-[#f8fafc] px-3 py-2.5 text-center">
+                  <div><span className="block text-[9px] font-extrabold uppercase text-[#8795a8]">Tamamlayan</span>{yayin.aktif_utt > 0 ? <button type="button" onClick={() => setTamamlayanlariAcikYayinId(yayin.yayin_id)} className="min-h-6 text-xs font-extrabold text-[#237ac8] underline underline-offset-2">{formatPuan(yayin.aktif_utt)} UTT</button> : <strong className="text-xs text-[#52647c]">0</strong>}</div>
+                  <div><span className="block text-[9px] font-extrabold uppercase text-[#8795a8]">Kazanılan</span><strong className="text-xs text-[#16865f]">+{formatPuan(yayin.kazanilan_puan)}</strong></div>
+                  <div><span className="block text-[9px] font-extrabold uppercase text-[#8795a8]">Kaybedilen</span><strong className="text-xs text-[#d44b40]">{yayin.kaybedilen_puan ? `−${formatPuan(yayin.kaybedilen_puan)}` : "0"}</strong></div>
+                </div>
+              </article>
+            ))}
+            {data.yayinlar.length === 0 && <p className="rounded-2xl border border-dashed border-[#d8e2ec] p-6 text-center text-xs font-bold text-[#7b8ca5]">Seçili dönemde yayınlarınıza ait puan hareketi oluşmadı.</p>}
+          </div>
+          <div className="hidden overflow-x-auto rounded-xl border border-[#e8edf3] md:block">
             <table className="w-full min-w-[760px] table-fixed text-xs">
               <thead className="bg-[#f6f8fb] text-[#7c8da2]"><tr><th className="w-1/5 px-3 py-2 text-left">Yayın</th><th className="w-1/5 px-3 py-2 text-right">Tamamlayan UTT</th><th className="w-1/5 px-3 py-2 text-right">Kazanılan</th><th className="w-1/5 px-3 py-2 text-right">Kaybedilen</th><th className="w-1/5 px-3 py-2 text-right">Net</th></tr></thead>
               <tbody>

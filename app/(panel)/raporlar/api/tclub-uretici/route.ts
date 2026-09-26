@@ -100,16 +100,18 @@ export async function GET(request: Request) {
       takim_id: null,
       bolge_id: null,
     }, seciliLigPeriyodu);
-    const yayinlariminLigi = await getUreticiEtkiLigi(adminSupabase, firmaLigi, kullanici.kullanici_id, seciliLigPeriyodu);
+    const [yayinlariminLigi, yayinlar] = await Promise.all([
+      getUreticiEtkiLigi(adminSupabase, firmaLigi, kullanici.kullanici_id, seciliLigPeriyodu),
+      getUreticiYayinDetaylari(adminSupabase, {
+        ureticiId: kullanici.kullanici_id,
+        firmaId: kullanici.firma_id,
+        yetkiliUttler: firmaLigi.lig.map((satir) => ({ kullanici_id: satir.kullanici_id, ad: satir.ad })),
+        baslangic,
+        bitis,
+      }),
+    ]);
     const firmaOzeti = ozetle(firmaLigi.lig);
     const yayinlariminOzeti = ozetle(yayinlariminLigi.lig);
-    const yayinlar = await getUreticiYayinDetaylari(adminSupabase, {
-      ureticiId: kullanici.kullanici_id,
-      firmaId: kullanici.firma_id,
-      yetkiliUttler: firmaLigi.lig.map((satir) => ({ kullanici_id: satir.kullanici_id, ad: satir.ad })),
-      baslangic,
-      bitis,
-    });
     const yayinDetayNeti = yayinlar.reduce((toplam, yayin) => toplam + yayin.net_puan, 0);
 
     return NextResponse.json({

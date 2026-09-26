@@ -27,6 +27,10 @@
   gap: 12px;
 }
 
+.dashboard .producerBottomGrid {
+  grid-template-columns: 1fr;
+}
+
 .leadersBanner {
   position: relative;
   isolation: isolate;
@@ -207,6 +211,12 @@
   }
 }
 
+@container dashboard (min-width: 901px) {
+  .dashboard .producerBottomGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @container dashboard (min-width: 1080px) and (min-height: 700px) {
   .metricsGrid,
   .bottomGrid {
@@ -271,14 +281,29 @@
 @container dashboard (max-width: 520px) {
   .leadersBanner {
     min-height: 0;
+    border-color: #dfe8f2;
+    background: #fff;
   }
 
   .leadersBannerHeader {
-    padding-inline: 12px;
+    position: relative;
+    padding: 9px 12px;
+    background: #fff;
+  }
+
+  .leadersBannerIcon {
+    padding: 6px;
+    border-color: #f4d58d;
+    color: #b77900;
+    background: #fff8e7;
+    box-shadow: none;
   }
 
   .leadersBannerTitle {
-    font-size: 14px;
+    color: #253750;
+    font-size: 13px;
+    line-height: 1.2;
+    text-shadow: none;
   }
 
   .profileItems {

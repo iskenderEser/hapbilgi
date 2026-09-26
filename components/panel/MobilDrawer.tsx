@@ -18,8 +18,9 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PANEL_NAV, type NavContext, type NavGrup, type NavOge } from "./panelNav.config";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 
 type MobilDrawerProps = NavContext & {
   acik: boolean;
@@ -82,6 +83,12 @@ export default function MobilDrawer(props: MobilDrawerProps) {
       if (yeni.has(baslik)) yeni.delete(baslik); else yeni.add(baslik);
       return yeni;
     });
+
+  useEffect(() => {
+    if (!props.acik || !URETICI_ROLLER.includes(props.rolKucu)) return;
+    router.prefetch("/t-club-ligi");
+    router.prefetch("/raporlar/tclub-uretici");
+  }, [props.acik, props.rolKucu, router]);
 
   if (!props.acik) return null;
 

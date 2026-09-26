@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { aktifPeriyot } from "@/lib/zaman/kontrol";
@@ -10,6 +10,7 @@ import FieldLeaguePage from "@/components/hbligi/field/FieldLeaguePage";
 import ProducerLeaguePage, { type UreticiLigBakisi } from "@/components/hbligi/producer/ProducerLeaguePage";
 import type { SahaLigSonuc } from "@/lib/tclub/hbligi/getSahaLig";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import TClubPageSkeleton from "@/components/tclub/TClubPageSkeleton";
 
 interface UttSatiri {
   sira: number;
@@ -70,6 +71,9 @@ type HBLigiVeri = {
   aylik_kursu?: UttAylikKursu;
 } | SahaLigSonuc;
 
+const LIG_ONBELLEK_SURESI = 60_000;
+const ligOnbellegi = new Map<string, { veri: HBLigiVeri; zaman: number }>();
+
 export default function HBLigiPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
@@ -77,6 +81,8 @@ export default function HBLigiPage() {
   const [loading, setLoading] = useState(true);
   const [yenileniyor, setYenileniyor] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
+  const veriVar = useRef(false);
+  const sonIstek = useRef(0);
 
   const buPeriyot = aktifPeriyot();
   const [periyot, setPeriyot] = useState<Periyot>("donem");
@@ -89,73 +95,87 @@ export default function HBLigiPage() {
     }
   }, [kullanici, authYukleniyor, router]);
 
-  const veriCek = useCallback(async (ilkYukleme = false) => {
+  const veriCek = useCallback(async (manuelYenileme = false) => {
     if (!kullanici) return;
+    const params = new URLSearchParams({
+      periyot,
+      yil: String(yil),
+    });
+    if (periyot === "ay") params.set("ay", String(ay));
+    if (periyot === "donem") params.set("ceyrek", String(ceyrek));
+    if (periyot === "hafta") params.set("hafta", String(hafta));
+    params.set("bakis", ureticiBakisi);
+
+    const onbellekAnahtari = `${kullanici.id}:${params.toString()}`;
+    const istekNo = ++sonIstek.current;
+    const onbellekKaydi = ligOnbellegi.get(onbellekAnahtari);
+    if (!manuelYenileme && onbellekKaydi && Date.now() - onbellekKaydi.zaman < LIG_ONBELLEK_SURESI) {
+      setVeri(onbellekKaydi.veri);
+      veriVar.current = true;
+      setLoading(false);
+      setYenileniyor(false);
+      setHata(null);
+      return;
+    }
+
+    const ilkYukleme = !veriVar.current;
     if (ilkYukleme) {
       setLoading(true);
-      setHata(null);
     } else {
       setYenileniyor(true);
     }
+    setHata(null);
     try {
-      const params = new URLSearchParams({
-        periyot,
-        yil: String(yil),
-      });
-      if (periyot === "ay") params.set("ay", String(ay));
-      if (periyot === "donem") params.set("ceyrek", String(ceyrek));
-      if (periyot === "hafta") params.set("hafta", String(hafta));
-      params.set("bakis", ureticiBakisi);
-
-      const response = await fetch(`/t-club-ligi/api?${params.toString()}`);
+      const response = await fetch(`/t-club-ligi/api?${params.toString()}`, { cache: "no-store" });
       const payload = await response.json();
       if (!response.ok) {
         throw new Error(payload?.hata ?? payload?.message ?? payload?.error ?? "T-Club Ligi verisi alınamadı.");
       }
+      if (istekNo !== sonIstek.current) return;
       setVeri(payload as HBLigiVeri);
+      ligOnbellegi.set(onbellekAnahtari, { veri: payload as HBLigiVeri, zaman: Date.now() });
+      veriVar.current = true;
     } catch (error) {
-      if (ilkYukleme) {
+      if (istekNo === sonIstek.current) {
+        const mesaj = error instanceof Error ? error.message : "T-Club Ligi verisi alınamadı.";
+        setHata(mesaj);
+      }
+      if (ilkYukleme && istekNo === sonIstek.current) {
         setVeri(null);
-        setHata(error instanceof Error ? error.message : "T-Club Ligi verisi alınamadı.");
       }
     } finally {
-      if (ilkYukleme) setLoading(false);
-      else setYenileniyor(false);
+      if (istekNo === sonIstek.current) {
+        if (ilkYukleme) setLoading(false);
+        setYenileniyor(false);
+      }
     }
   }, [kullanici, periyot, yil, ay, ceyrek, hafta, ureticiBakisi]);
 
   useEffect(() => {
-    void veriCek(true);
+    void veriCek(false);
   }, [veriCek]);
 
   const periyotSecici = (
-    <div className="flex flex-wrap items-center gap-2 [&_.hb-ligi-periyot-secici]:mb-0">
+    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto [&_.hb-ligi-periyot-secici]:mb-0">
       <HbLigiPeriyotSecici
         periyot={periyot}
         onPeriyotChange={setPeriyot}
       />
-      <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
+      <YenileButonu yenileniyor={yenileniyor} onYenile={() => void veriCek(true)} />
     </div>
   );
 
-  if (authYukleniyor || !kullanici || loading) {
-    return (
-      <div className="flex h-full min-h-0 items-center justify-center bg-[#f6f8fb]">
-        <svg className="h-6 w-6 animate-spin text-[#4a9fe8]" fill="none" viewBox="0 0 24 24" aria-label="Yükleniyor">
-          <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-      </div>
-    );
+  if (authYukleniyor || !kullanici || (loading && !veri)) {
+    return <TClubPageSkeleton aktifSayfa="lig" />;
   }
 
-  if (hata || !veri) {
+  if (!veri) {
     return (
       <div className="flex h-full min-h-0 items-center justify-center bg-[#f6f8fb] p-6">
         <div className="max-w-md rounded-2xl border border-red-100 bg-white p-6 text-center shadow-sm">
           <div className="text-sm font-extrabold text-[#a43737]">T-Club Ligi yüklenemedi</div>
           <p className="mt-1 text-xs font-semibold text-[#7d8ba0]">{hata ?? "Beklenmeyen bir hata oluştu."}</p>
-          <button type="button" onClick={() => void veriCek(true)} className="mt-4 rounded-xl bg-[#2f9ae9] px-4 py-2 text-xs font-extrabold text-white">
+          <button type="button" onClick={() => void veriCek(true)} className="mt-4 min-h-11 rounded-xl bg-[#2f9ae9] px-4 py-2 text-xs font-extrabold text-white">
             Yeniden dene
           </button>
         </div>
@@ -183,6 +203,11 @@ export default function HBLigiPage() {
     return (
       <div className="h-full min-h-0 overflow-y-auto bg-[linear-gradient(135deg,#f8fbff_0%,#f6f8fb_48%,#fbfcfe_100%)]" style={{ fontFamily: "'Nunito', sans-serif" }}>
         <div className="mx-auto min-h-full max-w-[1440px] px-3 py-3 md:px-5 md:py-3">
+          {(yenileniyor || hata) && (
+            <div className={`mb-3 rounded-xl border px-3 py-2 text-[11px] font-bold ${hata ? "border-amber-200 bg-amber-50 text-amber-800" : "border-blue-100 bg-blue-50 text-blue-700"}`} role="status">
+              {hata ? `${hata} Mevcut veriler gösterilmeye devam ediyor.` : "Seçiminize göre lig verileri güncelleniyor…"}
+            </div>
+          )}
           <ProducerLeaguePage
             veri={veri}
             bakis={ureticiBakisi}

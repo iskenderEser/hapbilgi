@@ -40,6 +40,14 @@ function PuanKalemi({ etiket, deger, kayip = false }: { etiket: string; deger: n
   );
 }
 
+function puanToplamlari(satir: SiraliSatir) {
+  const toplamKazanc = satir.toplam_kazanc ?? (satir.izleme_puani + satir.cevaplama_puani
+    + satir.oneri_puani + satir.extra_puani + (satir.eclub_puani ?? 0));
+  const toplamKayip = satir.toplam_kayip
+    ?? (satir.ileri_sarma_kaybi + satir.yanlis_cevap_kaybi + satir.oneri_kaybi);
+  return { toplamKazanc, toplamKayip };
+}
+
 export default function CompetitorComparison({
   satirlar,
   benimId,
@@ -61,7 +69,94 @@ export default function CompetitorComparison({
         </div>
       </div>
 
-      <div className={`${styles.scrollArea} [&_[data-slot=table-container]]:overflow-visible`}>
+      {organizasyonFiltresi && (
+        <div className="mb-3 grid grid-cols-2 gap-2 md:hidden">
+          <label className="min-w-0 text-[10px] font-extrabold uppercase tracking-wide text-[#7b8ca5]">
+            Takım
+            <select
+              value={organizasyonFiltresi.takimId}
+              onChange={(event) => organizasyonFiltresi.onTakimDegistir(event.target.value)}
+              className="mt-1 min-h-11 w-full rounded-xl border border-[#dfe8f2] bg-white px-2 text-xs font-bold normal-case tracking-normal text-[#344a65] outline-none focus:border-[#2f80ed]"
+            >
+              <option value="">Tüm takımlar</option>
+              {organizasyonFiltresi.takimlar.map((takim) => <option key={takim.id} value={takim.id}>{takim.ad}</option>)}
+            </select>
+          </label>
+          <label className="min-w-0 text-[10px] font-extrabold uppercase tracking-wide text-[#7b8ca5]">
+            Bölge
+            <select
+              value={organizasyonFiltresi.bolgeId}
+              onChange={(event) => organizasyonFiltresi.onBolgeDegistir(event.target.value)}
+              className="mt-1 min-h-11 w-full rounded-xl border border-[#dfe8f2] bg-white px-2 text-xs font-bold normal-case tracking-normal text-[#344a65] outline-none focus:border-[#2f80ed]"
+            >
+              <option value="">Tüm bölgeler</option>
+              {organizasyonFiltresi.bolgeler.map((bolge) => <option key={bolge.id} value={bolge.id}>{bolge.ad}</option>)}
+            </select>
+          </label>
+        </div>
+      )}
+
+      <div className="space-y-2 md:hidden">
+        {satirlar.map((satir) => {
+          const benim = satir.benim || satir.kullanici_id === benimId;
+          const detayGorulebilir = satir.detay_gorulebilir !== false;
+          const acik = acikKullanici === satir.kullanici_id;
+          const { toplamKazanc, toplamKayip } = puanToplamlari(satir);
+          const ayrintiId = `lig-mobil-ayrinti-${satir.kullanici_id}`;
+
+          return (
+            <article key={satir.kullanici_id} className={`overflow-hidden rounded-2xl border bg-white ${benim ? "border-[#8fc7f4] shadow-[0_5px_16px_rgba(35,122,200,.1)]" : "border-[#e3eaf2]"}`}>
+              <div className="flex items-start gap-3 p-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#edf6ff] text-sm font-black tabular-nums text-[#237ac8]">{satir.rank}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <strong className="truncate text-sm font-extrabold text-[#253750]">{satir.ad}</strong>
+                    {benim && <Badge variant="secondary" className="shrink-0 text-[10px]">Sen</Badge>}
+                  </div>
+                  <p className="mt-0.5 truncate text-[10px] font-semibold text-[#8493a7]">
+                    {[satir.takim, satir.bolge].filter(Boolean).join(" · ") || "Organizasyon bilgisi yok"}
+                  </p>
+                </div>
+                <strong className="shrink-0 text-base font-black tabular-nums text-[#237ac8]">{satir.toplam_puan.toLocaleString("tr-TR")}</strong>
+              </div>
+              <div className="grid grid-cols-2 gap-2 border-t border-[#edf1f5] bg-[#f8fafc] px-3 py-2.5">
+                <div><span className="block text-[9px] font-extrabold uppercase text-[#8493a7]">Kazanılan</span><strong className="text-xs tabular-nums text-emerald-700">+{toplamKazanc.toLocaleString("tr-TR")}</strong></div>
+                <div className="text-right"><span className="block text-[9px] font-extrabold uppercase text-[#8493a7]">Kaybedilen</span><strong className="text-xs tabular-nums text-rose-600">{toplamKayip > 0 ? `−${toplamKayip.toLocaleString("tr-TR")}` : "0"}</strong></div>
+              </div>
+              {detayGorulebilir ? (
+                <button
+                  type="button"
+                  onClick={() => setAcikKullanici(acik ? null : satir.kullanici_id)}
+                  className="flex min-h-11 w-full items-center justify-center gap-1.5 border-t border-[#edf1f5] bg-white px-3 text-[11px] font-extrabold text-[#52647c]"
+                  aria-expanded={acik}
+                  aria-controls={ayrintiId}
+                >
+                  Puan ayrıntısı {acik ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </button>
+              ) : (
+                <div className="flex min-h-11 items-center justify-center gap-1.5 border-t border-[#edf1f5] text-[10px] font-bold text-[#94a0b1]"><LockKeyhole className="h-3.5 w-3.5" /> Ayrıntılar gizli</div>
+              )}
+              {acik && detayGorulebilir && (
+                <div id={ayrintiId} className="space-y-3 border-t border-[#dfe8f2] bg-[#f8fbff] p-3">
+                  <div className="grid gap-2">
+                    <PuanKalemi etiket="Öğrenme Tamamlama" deger={satir.izleme_puani} />
+                    <PuanKalemi etiket="Cevaplama" deger={satir.cevaplama_puani} />
+                    <PuanKalemi etiket="Öneri" deger={satir.oneri_puani} />
+                    <PuanKalemi etiket="Extra" deger={satir.extra_puani} />
+                    <PuanKalemi etiket="E-Club" deger={satir.eclub_puani ?? 0} />
+                    <PuanKalemi etiket="İleri sarma" deger={satir.ileri_sarma_kaybi} kayip />
+                    <PuanKalemi etiket="Yanlış cevap" deger={satir.yanlis_cevap_kaybi} kayip />
+                    <PuanKalemi etiket="Öneri kaybı" deger={satir.oneri_kaybi} kayip />
+                  </div>
+                </div>
+              )}
+            </article>
+          );
+        })}
+        {satirlar.length === 0 && <p className="rounded-2xl border border-dashed border-[#d8e2ec] p-6 text-center text-xs font-bold text-[#7b8ca5]">Seçili kapsamda lig kaydı bulunamadı.</p>}
+      </div>
+
+      <div className={`${styles.scrollArea} hidden md:block [&_[data-slot=table-container]]:overflow-visible`}>
         <Table className={`${organizasyonFiltresi ? "min-w-[860px]" : "min-w-[640px]"} text-xs [&_td]:h-[54px] [&_td]:py-1.5 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap`}>
           <TableHeader className="sticky top-0 z-10 bg-white">
             <TableRow>
@@ -106,10 +201,7 @@ export default function CompetitorComparison({
               const benim = satir.benim || satir.kullanici_id === benimId;
               const detayGorulebilir = satir.detay_gorulebilir !== false;
               const acik = acikKullanici === satir.kullanici_id;
-              const toplamKazanc = satir.toplam_kazanc ?? (satir.izleme_puani + satir.cevaplama_puani
-                + satir.oneri_puani + satir.extra_puani + (satir.eclub_puani ?? 0));
-              const toplamKayip = satir.toplam_kayip
-                ?? (satir.ileri_sarma_kaybi + satir.yanlis_cevap_kaybi + satir.oneri_kaybi);
+              const { toplamKazanc, toplamKayip } = puanToplamlari(satir);
               const ayrintiId = `lig-ayrinti-${satir.kullanici_id}`;
 
               return (
