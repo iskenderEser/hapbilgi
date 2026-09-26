@@ -13,6 +13,10 @@ test("T-Club sayfaları iskelet ve kısa süreli istemci önbelleği kullanır",
     oku("app/(panel)/raporlar/tclub-uretici/loading.tsx"),
   ]);
   assert.match(lig, /LIG_ONBELLEK_SURESI = 60_000/);
+  assert.match(lig, /sessionStorage\.setItem/);
+  assert.match(lig, /devamEdenLigIstekleri/);
+  assert.match(lig, /AbortController/);
+  assert.match(lig, /"yayinlarim"/);
   assert.match(lig, /TClubPageSkeleton/);
   assert.match(rapor, /onbellekSuresi: 60_000/);
   assert.match(rapor, /oturumOnbellegi: true/);

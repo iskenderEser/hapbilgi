@@ -72,7 +72,92 @@ type HBLigiVeri = {
 } | SahaLigSonuc;
 
 const LIG_ONBELLEK_SURESI = 60_000;
+const LIG_OTURUM_ONBELLEK_PREFIXI = "hb_tclub_lig_cache_";
 const ligOnbellegi = new Map<string, { veri: HBLigiVeri; zaman: number }>();
+const devamEdenLigIstekleri = new Map<string, { promise: Promise<HBLigiVeri>; controller: AbortController }>();
+
+function oturumOnbelleginiOku(anahtar: string): { veri: HBLigiVeri; zaman: number } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const ham = sessionStorage.getItem(`${LIG_OTURUM_ONBELLEK_PREFIXI}${anahtar}`);
+    if (!ham) return null;
+    const kayit = JSON.parse(ham) as { veri?: HBLigiVeri; zaman?: number };
+    if (kayit.veri && typeof kayit.zaman === "number") return { veri: kayit.veri, zaman: kayit.zaman };
+  } catch {
+    // Bozuk veya erişilemeyen oturum kaydı ağ isteğini engellemez.
+  }
+  return null;
+}
+
+function ligOnbelleginiOku(anahtar: string): { veri: HBLigiVeri; zaman: number } | null {
+  const kayit = ligOnbellegi.get(anahtar) ?? oturumOnbelleginiOku(anahtar);
+  if (!kayit) return null;
+  if (Date.now() - kayit.zaman < LIG_ONBELLEK_SURESI) {
+    ligOnbellegi.set(anahtar, kayit);
+    return kayit;
+  }
+  ligOnbellegi.delete(anahtar);
+  try {
+    sessionStorage.removeItem(`${LIG_OTURUM_ONBELLEK_PREFIXI}${anahtar}`);
+  } catch {
+    // Tarayıcı depolamasına erişilemiyorsa bellek önbelleği kullanılmaya devam eder.
+  }
+  return null;
+}
+
+function ligOnbellegineYaz(anahtar: string, veri: HBLigiVeri): void {
+  const kayit = { veri, zaman: Date.now() };
+  ligOnbellegi.set(anahtar, kayit);
+  try {
+    sessionStorage.setItem(`${LIG_OTURUM_ONBELLEK_PREFIXI}${anahtar}`, JSON.stringify(kayit));
+  } catch {
+    // Depolama kotası doluysa bellek önbelleği kullanılmaya devam eder.
+  }
+}
+
+function ligVerisiniIste(anahtar: string, params: URLSearchParams, zorla = false) {
+  const devamEden = devamEdenLigIstekleri.get(anahtar);
+  if (devamEden && !devamEden.controller.signal.aborted && !zorla) return devamEden;
+  if (devamEden) {
+    devamEden.controller.abort();
+    devamEdenLigIstekleri.delete(anahtar);
+  }
+
+  const controller = new AbortController();
+  const promise = fetch(`/t-club-ligi/api?${params.toString()}`, {
+    cache: "no-store",
+    signal: controller.signal,
+  }).then(async (response) => {
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.hata ?? payload?.message ?? payload?.error ?? "T-Club Ligi verisi alınamadı.");
+    }
+    return payload as HBLigiVeri;
+  }).finally(() => {
+    if (devamEdenLigIstekleri.get(anahtar)?.controller === controller) {
+      devamEdenLigIstekleri.delete(anahtar);
+    }
+  });
+
+  const istek = { promise, controller };
+  devamEdenLigIstekleri.set(anahtar, istek);
+  return istek;
+}
+
+function ligParametreleriniOlustur(
+  periyot: Periyot,
+  yil: number,
+  ay: number,
+  ceyrek: number,
+  hafta: number,
+  bakis: UreticiLigBakisi,
+) {
+  const params = new URLSearchParams({ periyot, yil: String(yil), bakis });
+  if (periyot === "ay") params.set("ay", String(ay));
+  if (periyot === "donem") params.set("ceyrek", String(ceyrek));
+  if (periyot === "hafta") params.set("hafta", String(hafta));
+  return params;
+}
 
 export default function HBLigiPage() {
   const router = useRouter();
@@ -83,6 +168,7 @@ export default function HBLigiPage() {
   const [hata, setHata] = useState<string | null>(null);
   const veriVar = useRef(false);
   const sonIstek = useRef(0);
+  const aktifIstek = useRef<AbortController | null>(null);
 
   const buPeriyot = aktifPeriyot();
   const [periyot, setPeriyot] = useState<Periyot>("donem");
@@ -97,19 +183,14 @@ export default function HBLigiPage() {
 
   const veriCek = useCallback(async (manuelYenileme = false) => {
     if (!kullanici) return;
-    const params = new URLSearchParams({
-      periyot,
-      yil: String(yil),
-    });
-    if (periyot === "ay") params.set("ay", String(ay));
-    if (periyot === "donem") params.set("ceyrek", String(ceyrek));
-    if (periyot === "hafta") params.set("hafta", String(hafta));
-    params.set("bakis", ureticiBakisi);
+    const params = ligParametreleriniOlustur(periyot, yil, ay, ceyrek, hafta, ureticiBakisi);
 
     const onbellekAnahtari = `${kullanici.id}:${params.toString()}`;
     const istekNo = ++sonIstek.current;
-    const onbellekKaydi = ligOnbellegi.get(onbellekAnahtari);
-    if (!manuelYenileme && onbellekKaydi && Date.now() - onbellekKaydi.zaman < LIG_ONBELLEK_SURESI) {
+    aktifIstek.current?.abort();
+    aktifIstek.current = null;
+    const onbellekKaydi = ligOnbelleginiOku(onbellekAnahtari);
+    if (!manuelYenileme && onbellekKaydi) {
       setVeri(onbellekKaydi.veri);
       veriVar.current = true;
       setLoading(false);
@@ -126,16 +207,15 @@ export default function HBLigiPage() {
     }
     setHata(null);
     try {
-      const response = await fetch(`/t-club-ligi/api?${params.toString()}`, { cache: "no-store" });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.hata ?? payload?.message ?? payload?.error ?? "T-Club Ligi verisi alınamadı.");
-      }
+      const istek = ligVerisiniIste(onbellekAnahtari, params, manuelYenileme);
+      aktifIstek.current = istek.controller;
+      const payload = await istek.promise;
       if (istekNo !== sonIstek.current) return;
-      setVeri(payload as HBLigiVeri);
-      ligOnbellegi.set(onbellekAnahtari, { veri: payload as HBLigiVeri, zaman: Date.now() });
+      setVeri(payload);
+      ligOnbellegineYaz(onbellekAnahtari, payload);
       veriVar.current = true;
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
       if (istekNo === sonIstek.current) {
         const mesaj = error instanceof Error ? error.message : "T-Club Ligi verisi alınamadı.";
         setHata(mesaj);
@@ -144,6 +224,7 @@ export default function HBLigiPage() {
         setVeri(null);
       }
     } finally {
+      if (istekNo === sonIstek.current) aktifIstek.current = null;
       if (istekNo === sonIstek.current) {
         if (ilkYukleme) setLoading(false);
         setYenileniyor(false);
@@ -154,6 +235,25 @@ export default function HBLigiPage() {
   useEffect(() => {
     void veriCek(false);
   }, [veriCek]);
+
+  useEffect(() => () => aktifIstek.current?.abort(), []);
+
+  useEffect(() => {
+    if (!kullanici || !veri || veri.tip === "utt" || veri.gorunum !== "uretici" || ureticiBakisi !== "genel") return;
+
+    const params = ligParametreleriniOlustur(periyot, yil, ay, ceyrek, hafta, "yayinlarim");
+    const onbellekAnahtari = `${kullanici.id}:${params.toString()}`;
+    if (ligOnbelleginiOku(onbellekAnahtari)) return;
+
+    const zamanlayici = window.setTimeout(() => {
+      const istek = ligVerisiniIste(onbellekAnahtari, params);
+      void istek.promise
+        .then((sonuc) => ligOnbellegineYaz(onbellekAnahtari, sonuc))
+        .catch(() => undefined);
+    }, 250);
+
+    return () => window.clearTimeout(zamanlayici);
+  }, [kullanici, veri, periyot, yil, ay, ceyrek, hafta, ureticiBakisi]);
 
   const periyotSecici = (
     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto [&_.hb-ligi-periyot-secici]:mb-0">
