@@ -80,25 +80,6 @@ export const PANEL_NAV: NavGrup[] = [
     baslik: "T-Club",
     oglar: [
       {
-        etiket: "Önerilen Yayınlar",
-        badgeKey: "oneri",
-        gate: (c) => TUKETICI_ROLLER.includes(c.rolKucu),
-        altOglar: [
-          {
-            etiket: "Bekleyen Öneriler",
-            path: "/oneriler",
-            tamEslesme: true,
-            badgeKey: "oneri",
-            gate: (c) => TUKETICI_ROLLER.includes(c.rolKucu),
-          },
-          {
-            etiket: "Tamamlanan Öneriler",
-            path: "/oneriler/tamamlanan",
-            gate: (c) => TUKETICI_ROLLER.includes(c.rolKucu),
-          },
-        ],
-      },
-      {
         etiket: "Öneri Takibi",
         path: "/oneriler",
         badgeKey: "oneri",
@@ -112,6 +93,13 @@ export const PANEL_NAV: NavGrup[] = [
           path: `/videolarim/${kategori.slug}`,
           gate: (c: NavContext) => TUKETICI_ROLLER.includes(c.rolKucu),
         })),
+      },
+      {
+        etiket: "Önerilen Yayınlar",
+        path: "/oneriler",
+        tamEslesme: true,
+        badgeKey: "oneri",
+        gate: (c) => TUKETICI_ROLLER.includes(c.rolKucu),
       },
       { etiket: "Yayındaki Videolar", path: "/yayindaki-videolar", gate: (c) => YAYINDAKI_VIDEO_GORENLER.includes(c.rolKucu) && !URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "T-Club Ligi",        path: "/t-club-ligi",       gate: () => true },

@@ -22,9 +22,12 @@ function UyeOnerilerIskeleti() {
         <div className="h-28 rounded-2xl bg-white shadow-sm" />
         <div className="col-span-2 h-28 rounded-2xl bg-white shadow-sm sm:col-span-1" />
       </div>
-      <div className="mb-5 flex justify-end gap-2">
-        <div className="h-10 min-w-0 flex-1 rounded-[14px] bg-white shadow-sm sm:max-w-xl" />
-        <div className="h-10 w-24 shrink-0 rounded-lg bg-white shadow-sm" />
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="h-10 w-44 rounded-[14px] bg-white shadow-sm" />
+        <div className="flex min-w-0 justify-end gap-2">
+          <div className="h-10 min-w-0 flex-1 rounded-[14px] bg-white shadow-sm sm:w-[30rem] sm:flex-none" />
+          <div className="h-10 w-24 shrink-0 rounded-lg bg-white shadow-sm" />
+        </div>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {[0, 1].map((kart) => (

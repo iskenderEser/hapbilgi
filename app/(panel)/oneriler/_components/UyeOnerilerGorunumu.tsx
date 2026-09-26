@@ -18,7 +18,12 @@ import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { YAYIN_TURLERI, YAYIN_TURU_SUNUMU } from "@/lib/ogrenmeAraci/turSunumu";
 import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 
-type UttOneriFiltresi = "tumu" | "izlenecek" | "tamamlanan" | "suresi_dolan";
+type UttOneriFiltresi = "izlenecek" | "tamamlanan" | "suresi_dolan";
+
+const DURUM_SECENEKLERI: Array<{ key: Exclude<UttOneriFiltresi, "suresi_dolan">; label: string }> = [
+  { key: "izlenecek", label: "Bekleyen" },
+  { key: "tamamlanan", label: "Tamamlanan" },
+];
 
 const YAYIN_TURU_SECENEKLERI: Array<{ key: YayinTuruFiltreDegeri; label: string }> = [
   ...YAYIN_TURLERI.map((tur) => ({
@@ -84,7 +89,7 @@ export default function UyeOnerilerGorunumu({
     if (aktifFiltre === "izlenecek") return oneriler.filter(isIzlenecek);
     if (aktifFiltre === "tamamlanan") return oneriler.filter(isTamamlandi);
     if (aktifFiltre === "suresi_dolan") return oneriler.filter(isSuresiGecti);
-    return oneriler;
+    return oneriler.filter(isSuresiGecti);
   }, [aktifFiltre, oneriler]);
   /* eslint-enable react-hooks/purity, react-hooks/exhaustive-deps */
 
@@ -237,11 +242,11 @@ export default function UyeOnerilerGorunumu({
     );
   };
 
-  const sayfaBasligi = varsayilanSekme === "tamamlanan" ? "Tamamlanan Öneriler" : "Bekleyen Öneriler";
-  const sayfaAciklamasi =
-    varsayilanSekme === "tamamlanan"
-      ? "Başarıyla tamamlayarak öneri puanı kazandığınız yayınlar."
-      : "Bölge Müdürünüz tarafından önerilen yayınları görebilirsiniz.";
+  const bosMesaj = aktifFiltre === "tamamlanan"
+    ? "Henüz tamamlanmış öneriniz bulunmuyor."
+    : aktifFiltre === "suresi_dolan"
+      ? "Süresi dolan öneriniz bulunmuyor."
+      : "İzleme bekleyen öneriniz bulunmuyor.";
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -250,12 +255,12 @@ export default function UyeOnerilerGorunumu({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black tracking-tight text-gray-900 md:text-3xl">
-              {sayfaBasligi}
+              Önerilen Yayınlar
             </h1>
             <SayfaRehberi anahtar="oneriler" />
           </div>
           <p className="mt-1 text-sm font-medium text-gray-500">
-            {sayfaAciklamasi}
+            Bölge Müdürünüz tarafından önerilen yayınları görebilirsiniz.
           </p>
         </div>
       </header>
@@ -293,17 +298,7 @@ export default function UyeOnerilerGorunumu({
             <button
               type="button"
               key={kart.id}
-              onClick={() => {
-                if (kart.id === "tamamlanan" && varsayilanSekme === "bekleyen") {
-                  router.push("/oneriler/tamamlanan");
-                  return;
-                }
-                if (kart.id === "izlenecek" && varsayilanSekme === "tamamlanan") {
-                  router.push("/oneriler");
-                  return;
-                }
-                setAktifFiltre(kart.id);
-              }}
+              onClick={() => setAktifFiltre(kart.id)}
               className={`group relative cursor-pointer rounded-2xl border border-[#dfe7f1] bg-white p-3 text-left shadow-[0_4px_14px_rgba(31,55,90,0.035)] transition-all hover:-translate-y-0.5 hover:shadow-md md:p-4 ${kart.id === "suresi_dolan" ? "col-span-2 sm:col-span-1" : ""}`}
               style={
                 {
@@ -325,20 +320,29 @@ export default function UyeOnerilerGorunumu({
         })}
       </div>
 
-      {/* ─── 2. Katman: Birleşik Yayın Türü Seçici ve Yenileme ─── */}
-      <div className="mb-5 flex min-w-0 items-center justify-end gap-2">
+      {/* ─── 2. Katman: Durum, Yayın Türü ve Yenileme ─── */}
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <PeriyotButonlari
-          secenekler={YAYIN_TURU_SECENEKLERI}
-          deger={aktifTur}
-          onDegistir={setAktifTur}
-          ariaLabel="Yayın türüne göre filtrele"
-          className="min-w-0 flex-1 sm:flex-none"
+          secenekler={DURUM_SECENEKLERI}
+          deger={aktifFiltre}
+          onDegistir={setAktifFiltre}
+          ariaLabel="Öneri durumuna göre filtrele"
+          className="w-fit flex-none"
         />
-        <YenileButonu
-          yenileniyor={yenileniyor}
-          onYenile={onYenile}
-          className="shrink-0"
-        />
+        <div className="flex min-w-0 items-center justify-end gap-2">
+          <PeriyotButonlari
+            secenekler={YAYIN_TURU_SECENEKLERI}
+            deger={aktifTur}
+            onDegistir={setAktifTur}
+            ariaLabel="Yayın türüne göre filtrele"
+            className="min-w-0 flex-1 sm:flex-none"
+          />
+          <YenileButonu
+            yenileniyor={yenileniyor}
+            onYenile={onYenile}
+            className="shrink-0"
+          />
+        </div>
       </div>
       {/* ─── 3. Katman: Yayın Kartları Izgarası ─── */}
       {sonFiltrelenmisOneriler.length === 0 ? (
@@ -346,9 +350,7 @@ export default function UyeOnerilerGorunumu({
           <p className="text-sm font-bold text-gray-600">
             {aktifTur !== "tumu"
               ? "Seçilen yayın türünde öneri bulunamadı."
-              : varsayilanSekme === "tamamlanan"
-                ? "Henüz tamamlanmış öneriniz bulunmuyor."
-                : "İzleme bekleyen öneriniz bulunmuyor."}
+              : bosMesaj}
           </p>
         </div>
       ) : (
@@ -363,9 +365,7 @@ export default function UyeOnerilerGorunumu({
               <p className="text-sm font-bold text-gray-600">
                 {aktifTur !== "tumu"
                   ? "Seçilen yayın türünde öneri bulunamadı."
-                  : varsayilanSekme === "tamamlanan"
-                    ? "Henüz tamamlanmış öneriniz bulunmuyor."
-                    : "İzleme bekleyen öneriniz bulunmuyor."}
+                  : bosMesaj}
               </p>
             </div>
           }
