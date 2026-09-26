@@ -70,6 +70,7 @@ export interface SahaLigSonuc {
   };
   bakis?: "genel" | "yayinlarim";
   firma_puan_ozeti?: SahaPuanOzeti;
+  firma_yayin_puan_ozeti?: SahaPuanOzeti;
   aylik_kursu?: SahaAylikKursu;
   // BM dışındaki iç roller: Raporlar ile aynı bm_id tabanlı BM→UTT yapısı.
   bm_performans?: BmPerformansDetay[];

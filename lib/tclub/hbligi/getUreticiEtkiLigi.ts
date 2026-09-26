@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LigPeriyot } from "@/lib/tclub/hbligi/ligRpcCagir";
-import type { SahaLigKullanici, SahaLigSonuc } from "@/lib/tclub/hbligi/getSahaLig";
+import type { SahaLigKullanici, SahaLigSonuc, SahaPuanOzeti } from "@/lib/tclub/hbligi/getSahaLig";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 type KazanimSatiri = {
@@ -106,11 +106,34 @@ function genelSiralar(satirlar: SahaLigKullanici[]): Map<string, number> {
   return new Map(satirlar.map((satir) => [satir.kullanici_id, puanSirasi.get(satir.toplam_puan) ?? 0]));
 }
 
+function puanOzetiOlustur(satirlar: SahaLigKullanici[]): SahaPuanOzeti {
+  return satirlar.reduce<SahaPuanOzeti>((ozet, satir) => ({
+    izleme_puani: ozet.izleme_puani + satir.izleme_puani,
+    cevaplama_puani: ozet.cevaplama_puani + satir.cevaplama_puani,
+    oneri_puani: ozet.oneri_puani + satir.oneri_puani,
+    extra_puani: ozet.extra_puani + satir.extra_puani,
+    eclub_puani: ozet.eclub_puani + (satir.eclub_puani ?? 0),
+    ileri_sarma_kaybi: ozet.ileri_sarma_kaybi + satir.ileri_sarma_kaybi,
+    yanlis_cevap_kaybi: ozet.yanlis_cevap_kaybi + satir.yanlis_cevap_kaybi,
+    oneri_kaybi: ozet.oneri_kaybi + satir.oneri_kaybi,
+  }), {
+    izleme_puani: 0,
+    cevaplama_puani: 0,
+    oneri_puani: 0,
+    extra_puani: 0,
+    eclub_puani: 0,
+    ileri_sarma_kaybi: 0,
+    yanlis_cevap_kaybi: 0,
+    oneri_kaybi: 0,
+  });
+}
+
 export async function getUreticiEtkiLigi(
   db: SupabaseClient,
   genelLig: SahaLigSonuc,
   ureticiId: string,
   periyot: LigPeriyot,
+  firmaLigi?: SahaLigSonuc,
 ): Promise<SahaLigSonuc> {
   const { baslangic, bitis } = periyotAraligi(periyot);
   const yayinSatirlari = await tumSayfalariOku<{ yayin_id: string }>((ilk, son) =>
@@ -121,7 +144,10 @@ export async function getUreticiEtkiLigi(
   );
   const yayinIds = [...new Set(yayinSatirlari.map((satir) => satir.yayin_id))];
   const siralar = genelSiralar(genelLig.lig);
-  const etkiLig = genelLig.lig.map((satir) => ({ ...bosEtkiSatiri(satir), genel_sira: siralar.get(satir.kullanici_id) }));
+  const hesaplamaLigi = firmaLigi?.lig ?? genelLig.lig;
+  const etkiTumLig = hesaplamaLigi.map((satir) => ({ ...bosEtkiSatiri(satir), genel_sira: siralar.get(satir.kullanici_id) }));
+  const gorunenKullaniciIdleri = new Set(genelLig.lig.map((satir) => satir.kullanici_id));
+  const etkiLig = etkiTumLig.filter((satir) => gorunenKullaniciIdleri.has(satir.kullanici_id));
 
   if (yayinIds.length === 0) {
     return {
@@ -129,6 +155,7 @@ export async function getUreticiEtkiLigi(
       bakis: "yayinlarim",
       kapsam_aciklamasi: "Yayınlarınızın sahada oluşturduğu UTT sıralaması",
       lig: etkiLig,
+      firma_yayin_puan_ozeti: puanOzetiOlustur(etkiTumLig),
     };
   }
 
@@ -177,7 +204,7 @@ export async function getUreticiEtkiLigi(
     ))).then((sonuclar) => sonuclar.flat()),
   ]);
 
-  const satirMap = new Map(etkiLig.map((satir) => [satir.kullanici_id, satir]));
+  const satirMap = new Map(etkiTumLig.map((satir) => [satir.kullanici_id, satir]));
   for (const kazanim of kazanimlar) {
     const satir = satirMap.get(kazanim.kullanici_id);
     if (!satir) continue;
@@ -211,7 +238,7 @@ export async function getUreticiEtkiLigi(
     yayinSetleri.set(etkilesim.aktor_id, set);
   }
 
-  for (const satir of etkiLig) {
+  for (const satir of etkiTumLig) {
     satir.etkilesilen_yayin_sayisi = yayinSetleri.get(satir.kullanici_id)?.size ?? 0;
     const kazanc = satir.izleme_puani + satir.cevaplama_puani + satir.oneri_puani
       + satir.extra_puani + (satir.eclub_puani ?? 0);
@@ -224,5 +251,6 @@ export async function getUreticiEtkiLigi(
     bakis: "yayinlarim",
     kapsam_aciklamasi: "Yayınlarınızın sahada oluşturduğu UTT sıralaması",
     lig: etkiLig,
+    firma_yayin_puan_ozeti: puanOzetiOlustur(etkiTumLig),
   };
 }

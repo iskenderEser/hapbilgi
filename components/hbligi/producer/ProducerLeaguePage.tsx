@@ -172,9 +172,8 @@ export default function ProducerLeaguePage({
     yanlis_cevap_kaybi: 0,
     oneri_kaybi: 0,
   });
-  const kartToplami = kapsam === "firma" && bakis === "genel" && veri.firma_puan_ozeti
-    ? veri.firma_puan_ozeti
-    : kapsamToplami;
+  const firmaKartToplami = bakis === "genel" ? veri.firma_puan_ozeti : veri.firma_yayin_puan_ozeti;
+  const kartToplami = kapsam === "firma" && firmaKartToplami ? firmaKartToplami : kapsamToplami;
   const kapsamKazanim = kartToplami.izleme_puani + kartToplami.cevaplama_puani
     + kartToplami.oneri_puani + kartToplami.extra_puani + kartToplami.eclub_puani;
   const kapsamKayip = kartToplami.ileri_sarma_kaybi + kartToplami.yanlis_cevap_kaybi

@@ -97,16 +97,28 @@ export async function GET(request: NextRequest) {
 
       if (!gorunum) return yetkiHatasi();
 
-      const sonuc = await getSahaLig(adminSupabase, {
+      const bakis = searchParams.get("bakis") === "yayinlarim" ? "yayinlarim" : "genel";
+      const kapsam = {
         gorunum,
         firma_id: kullanici.firma_id,
         takim_id: kullanici.takim_id,
         bolge_id: kullanici.bolge_id,
-      }, periyot);
+      };
+      const firmaLigiIstegi = gorunum === "uretici" && bakis === "yayinlarim" && kullanici.takim_id
+        ? getSahaLig(adminSupabase, {
+            gorunum: "yonetici",
+            firma_id: kullanici.firma_id,
+            takim_id: null,
+            bolge_id: null,
+          }, periyot)
+        : Promise.resolve(undefined);
+      const [sonuc, firmaLigi] = await Promise.all([
+        getSahaLig(adminSupabase, kapsam, periyot),
+        firmaLigiIstegi,
+      ]);
 
-      const bakis = searchParams.get("bakis") === "yayinlarim" ? "yayinlarim" : "genel";
       const gosterilecekSonuc = gorunum === "uretici" && bakis === "yayinlarim"
-        ? await getUreticiEtkiLigi(adminSupabase, sonuc, kullanici.kullanici_id, periyot)
+        ? await getUreticiEtkiLigi(adminSupabase, sonuc, kullanici.kullanici_id, periyot, firmaLigi)
         : { ...sonuc, bakis: "genel" as const };
 
       if (gorunum !== "bm" && gorunum !== "uretici") {

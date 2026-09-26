@@ -201,6 +201,7 @@ test("HBLigi eşit net puanlara eşit sıra verir", () => {
 
 test("Üretici etki ligi yalnız üreticinin yayın hareketlerini UTT bazında toplar", async () => {
   const genel = await kapsam("uretici");
+  const firmaGeneli = await kapsam("yonetici");
   const sorgular: Array<{ tablo: string; islem: string; alan?: string; deger?: unknown }> = [];
   const veriler: Record<string, unknown[]> = {
     v_yayin_kunye: [{ yayin_id: "y1" }],
@@ -208,6 +209,7 @@ test("Üretici etki ligi yalnız üreticinin yayın hareketlerini UTT bazında t
       { kullanici_id: "u1", puan_turu: "izleme", puan: 100 },
       { kullanici_id: "u1", puan_turu: "cevaplama", puan: 20 },
       { kullanici_id: "u2", puan_turu: "extra", puan: 10 },
+      { kullanici_id: "u3", puan_turu: "izleme", puan: 50 },
     ],
     ileri_sarma_kayitlari: [{ kullanici_id: "u1", kaybedilen_puan: 5 }],
     yanlis_cevap_kayitlari: [{ kullanici_id: "u1", kaybedilen_puan: 3 }],
@@ -244,7 +246,7 @@ test("Üretici etki ligi yalnız üreticinin yayın hareketlerini UTT bazında t
     },
   } as unknown as SupabaseClient;
 
-  const sonuc = await getUreticiEtkiLigi(db, genel, "uretici-1", PERIYOT);
+  const sonuc = await getUreticiEtkiLigi(db, genel, "uretici-1", PERIYOT, firmaGeneli);
   assert.deepEqual(sonuc.firma_puan_ozeti, genel.firma_puan_ozeti);
   const berk = sonuc.lig.find((satir) => satir.kullanici_id === "u1")!;
   const can = sonuc.lig.find((satir) => satir.kullanici_id === "u2")!;
@@ -256,6 +258,17 @@ test("Üretici etki ligi yalnız üreticinin yayın hareketlerini UTT bazında t
   assert.equal(berk.genel_sira, 1);
   assert.equal(can.toplam_puan, 8);
   assert.equal(can.genel_sira, 2);
+  assert.equal(sonuc.lig.some((satir) => satir.kullanici_id === "u3"), false);
+  assert.deepEqual(sonuc.firma_yayin_puan_ozeti, {
+    izleme_puani: 150,
+    cevaplama_puani: 20,
+    oneri_puani: 0,
+    extra_puani: 10,
+    eclub_puani: 0,
+    ileri_sarma_kaybi: 5,
+    yanlis_cevap_kaybi: 3,
+    oneri_kaybi: 2,
+  });
   assert.ok(sorgular.some((sorgu) => sorgu.tablo === "v_yayin_kunye" && sorgu.alan === "uretici_id" && sorgu.deger === "uretici-1"));
   assert.ok(sorgular.some((sorgu) => sorgu.tablo === "kazanilan_puanlar" && sorgu.islem === "in" && sorgu.alan === "yayin_id"));
   assert.ok(sorgular.some((sorgu) => sorgu.tablo === "kazanilan_puanlar" && sorgu.islem === "gte" && sorgu.alan === "created_at"));
