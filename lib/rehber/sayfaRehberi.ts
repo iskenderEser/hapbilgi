@@ -232,6 +232,174 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
+  "videolarim-urun": {
+    anahtar: "videolarim-urun",
+    baslik: "Ürün Eğitimleri",
+    ozet: "Ürünlere dair bilgilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
+    maddeler: [
+      {
+        baslik: "Yayın Türleri",
+        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
+      },
+      {
+        baslik: "Arama",
+        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
+      },
+      {
+        baslik: "İçerik Kullanımı",
+        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
+      },
+      {
+        baslik: "Etkileşim",
+        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
+      },
+      {
+        baslik: "İlerleme",
+        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
+      },
+    ],
+  },
+
+  "videolarim-medikal": {
+    anahtar: "videolarim-medikal",
+    baslik: "Medikal Eğitimler",
+    ozet: "Medikal konulara dair bilgilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
+    maddeler: [
+      {
+        baslik: "Yayın Türleri",
+        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
+      },
+      {
+        baslik: "Arama",
+        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
+      },
+      {
+        baslik: "İçerik Kullanımı",
+        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
+      },
+      {
+        baslik: "Etkileşim",
+        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
+      },
+      {
+        baslik: "İlerleme",
+        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
+      },
+    ],
+  },
+
+  "videolarim-urun-medikal": {
+    anahtar: "videolarim-urun-medikal",
+    baslik: "Ürün-Medikal Eğitimleri",
+    ozet: "Ürünlerin medikal yönlerine dair bilgilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
+    maddeler: [
+      {
+        baslik: "Yayın Türleri",
+        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
+      },
+      {
+        baslik: "Arama",
+        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
+      },
+      {
+        baslik: "İçerik Kullanımı",
+        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
+      },
+      {
+        baslik: "Etkileşim",
+        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
+      },
+      {
+        baslik: "İlerleme",
+        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
+      },
+    ],
+  },
+
+  "videolarim-satis": {
+    anahtar: "videolarim-satis",
+    baslik: "Satış Eğitimleri",
+    ozet: "Satış becerilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
+    maddeler: [
+      {
+        baslik: "Yayın Türleri",
+        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
+      },
+      {
+        baslik: "Arama",
+        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
+      },
+      {
+        baslik: "İçerik Kullanımı",
+        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
+      },
+      {
+        baslik: "Etkileşim",
+        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
+      },
+      {
+        baslik: "İlerleme",
+        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
+      },
+    ],
+  },
+
+  "videolarim-yonetim": {
+    anahtar: "videolarim-yonetim",
+    baslik: "Yönetim Eğitimleri",
+    ozet: "Yönetim becerilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
+    maddeler: [
+      {
+        baslik: "Yayın Türleri",
+        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
+      },
+      {
+        baslik: "Arama",
+        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
+      },
+      {
+        baslik: "İçerik Kullanımı",
+        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
+      },
+      {
+        baslik: "Etkileşim",
+        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
+      },
+      {
+        baslik: "İlerleme",
+        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
+      },
+    ],
+  },
+
+  "videolarim-ik": {
+    anahtar: "videolarim-ik",
+    baslik: "İK Eğitimleri",
+    ozet: "İK konularındaki bilgilerinizi farklı yayın tipleriyle geliştirebilirsiniz.",
+    maddeler: [
+      {
+        baslik: "Yayın Türleri",
+        aciklama: "Video, podcast, dijital broşür ve literatür içeriklerini türlerine göre filtreleyebilirsiniz.",
+      },
+      {
+        baslik: "Arama",
+        aciklama: "Yayınları ürün/eğitim veya teknik adına göre arayabilirsiniz.",
+      },
+      {
+        baslik: "İçerik Kullanımı",
+        aciklama: "Yayın kartını açarak içeriği izleyebilir, dinleyebilir veya okuyabilirsiniz.",
+      },
+      {
+        baslik: "Etkileşim",
+        aciklama: "Yayınları beğenebilir ve favorilerinize ekleyebilirsiniz.",
+      },
+      {
+        baslik: "İlerleme",
+        aciklama: "Mobilde ilk iki içeriği gördükten sonra Daha Fazla Göster ile diğer içeriklere ulaşabilirsiniz.",
+      },
+    ],
+  },
+
   // ─── 14. MAĞAZAM (HBSTORE) ────────────────────────────────────────────────
   "store-magaza": {
     anahtar: "store-magaza",
