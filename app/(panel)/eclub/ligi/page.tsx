@@ -223,7 +223,7 @@ export default function EclubLigiPage() {
 
   const takimLigi = data?.takim_ligi ?? [];
   const takimAdiDuzenleyebilir = TUKETICI_ROLLER.includes((data?.kullanici.rol ?? "").toLowerCase());
-  const bannerBaslikKelimeleri = ["E\u00a0Club", "Dönem", "Öğrenme", "Liderleri"];
+  const bannerBaslikKelimeleri = ["E\u00a0Club", "Dönem", "Liderleri"];
   const periyotSecici = (
     <HbLigiPeriyotSecici
       periyot={periyot}
