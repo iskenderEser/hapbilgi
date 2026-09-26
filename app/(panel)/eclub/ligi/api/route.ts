@@ -75,36 +75,22 @@ export async function GET(request: NextRequest) {
           p_baslangic: aralik.baslangic,
           p_bitis: haricBitis,
         });
-        const satirlar = (sonuc.data ?? []) as EclubRaporHamSatir[];
-        const kisiIdleri = [...new Set(satirlar.map((satir) => satir.kisi_id).filter((id): id is string => Boolean(id)))];
-        const dogruCevapSonucu = kisiIdleri.length > 0
-          ? await adminSupabase
-            .from("eclub_dogru_cevap_kayitlari")
-            .select("kayit_id", { count: "exact", head: true })
-            .in("kisi_id", kisiIdleri)
-            .gte("created_at", aralik.baslangic)
-            .lt("created_at", haricBitis)
-          : { count: 0, error: null };
-        if (dogruCevapSonucu.error) {
-          throw new Error(`E-Club doğru cevap sayısı alınamadı: ${dogruCevapSonucu.error.message}`);
+        if (sonuc.error) {
+          throw new Error(`E-Club takım raporu alınamadı: ${sonuc.error.message}`);
         }
+        const satirlar = (sonuc.data ?? []) as EclubRaporHamSatir[];
         return {
           utt_id: u.kullanici_id,
           utt_adi: `${u.ad} ${u.soyad}`.trim(),
           takim_adi: takimAdlariMap.get(u.kullanici_id) || `${u.ad} ${u.soyad} Takımı`,
           bolge_adi: bolgeBilgi?.bolge_adi || "Bölge Belirtilmemiş",
           takim_id: u.takim_id,
-          dogru_cevap_sayisi: dogruCevapSonucu.count ?? 0,
           satirlar,
         };
       })
     );
 
-    const dogruCevapSayilari = new Map(tumUttGirdileri.map((takim) => [takim.utt_id, takim.dogru_cevap_sayisi]));
-    const takimLigi = eclubTakimlarLiginiOlustur(tumUttGirdileri, user.id).map((takim) => ({
-      ...takim,
-      dogru_cevap: dogruCevapSayilari.get(takim.utt_id) ?? 0,
-    }));
+    const takimLigi = eclubTakimlarLiginiOlustur(tumUttGirdileri, user.id);
     const takimKapsamliUretici = ureticiYetenegi(rol)?.raporScope === "takim" && Boolean(kullanici.takim_id);
     const statKapsamindakiTakimlar = takimKapsamliUretici
       ? takimLigi.filter((takim) => takim.takim_id === kullanici.takim_id)
@@ -113,6 +99,10 @@ export async function GET(request: NextRequest) {
       kapsam_turu: takimKapsamliUretici ? "takim" : "firma",
       toplam_utt: statKapsamindakiTakimlar.length,
       eclub_takimi: statKapsamindakiTakimlar.filter((takim) => takim.uye_sayisi > 0).length,
+      lider_takim_adi: statKapsamindakiTakimlar[0]?.takim_adi ?? null,
+      lider_takim_puani: statKapsamindakiTakimlar[0]?.toplam_puan ?? 0,
+      toplam_uye: statKapsamindakiTakimlar.reduce((toplam, takim) => toplam + takim.uye_sayisi, 0),
+      tamamlanan_yayin: statKapsamindakiTakimlar.reduce((toplam, takim) => toplam + takim.tamamlanan_izleme, 0),
     };
     const yanit = {
       kullanici: { ad: kullanici.ad, soyad: kullanici.soyad, rol: kullanici.rol },

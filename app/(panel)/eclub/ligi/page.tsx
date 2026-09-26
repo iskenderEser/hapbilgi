@@ -13,6 +13,7 @@ import styles from "./eclub-league.module.css";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
+import EclubLigiSkeleton from "@/components/eclub/EclubLigiSkeleton";
 
 interface LigData {
   kullanici: { ad: string; soyad: string; rol: string };
@@ -23,11 +24,88 @@ interface LigData {
     kapsam_turu: "takim" | "firma";
     toplam_utt: number;
     eclub_takimi: number;
+    lider_takim_adi: string | null;
+    lider_takim_puani: number;
+    toplam_uye: number;
+    tamamlanan_yayin: number;
   };
 }
 
 const ligOnbellegi = new Map<string, { data: LigData; zaman: number }>();
+const devamEdenLigIstekleri = new Map<string, { promise: Promise<LigData>; controller: AbortController }>();
 const ONBELLEK_SURESI = 60_000;
+const OTURUM_ONBELLEK_PREFIXI = "hb_eclub_lig_cache_";
+
+function ligOnbelleginiOku(anahtar: string): { data: LigData; zaman: number } | null {
+  const bellekKaydi = ligOnbellegi.get(anahtar);
+  if (bellekKaydi && Date.now() - bellekKaydi.zaman < ONBELLEK_SURESI) return bellekKaydi;
+  if (bellekKaydi) ligOnbellegi.delete(anahtar);
+  if (typeof window === "undefined") return null;
+  try {
+    const ham = sessionStorage.getItem(`${OTURUM_ONBELLEK_PREFIXI}${anahtar}`);
+    if (!ham) return null;
+    const kayit = JSON.parse(ham) as { data?: LigData; zaman?: number };
+    if (kayit.data && typeof kayit.zaman === "number" && Date.now() - kayit.zaman < ONBELLEK_SURESI) {
+      const gecerliKayit = { data: kayit.data, zaman: kayit.zaman };
+      ligOnbellegi.set(anahtar, gecerliKayit);
+      return gecerliKayit;
+    }
+    sessionStorage.removeItem(`${OTURUM_ONBELLEK_PREFIXI}${anahtar}`);
+  } catch {
+    // Oturum depolaması kullanılamıyorsa bellek önbelleği kullanılmaya devam eder.
+  }
+  return null;
+}
+
+function ligOnbellegineYaz(anahtar: string, data: LigData): void {
+  const kayit = { data, zaman: Date.now() };
+  ligOnbellegi.set(anahtar, kayit);
+  try {
+    sessionStorage.setItem(`${OTURUM_ONBELLEK_PREFIXI}${anahtar}`, JSON.stringify(kayit));
+  } catch {
+    // Depolama kotası doluysa bellek önbelleği yeterlidir.
+  }
+}
+
+function ligOnbelleginiTemizle(): void {
+  ligOnbellegi.clear();
+  if (typeof window === "undefined") return;
+  try {
+    for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+      const anahtar = sessionStorage.key(index);
+      if (anahtar?.startsWith(OTURUM_ONBELLEK_PREFIXI)) sessionStorage.removeItem(anahtar);
+    }
+  } catch {
+    // Oturum depolamasına erişilemiyorsa bellek temizliği yeterlidir.
+  }
+}
+
+function ligVerisiniIste(anahtar: string, query: string, zorla = false) {
+  const devamEden = devamEdenLigIstekleri.get(anahtar);
+  if (devamEden && !devamEden.controller.signal.aborted && !zorla) return devamEden;
+  if (devamEden) {
+    devamEden.controller.abort();
+    devamEdenLigIstekleri.delete(anahtar);
+  }
+
+  const controller = new AbortController();
+  const istekQuery = zorla ? `${query}&yenile=1` : query;
+  const promise = fetch(`/eclub/ligi/api?${istekQuery}`, { signal: controller.signal, cache: "no-store" })
+    .then(async (response) => {
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.hata ?? "E-Club Lig Verileri Yüklenemedi.");
+      return payload as LigData;
+    })
+    .finally(() => {
+      if (devamEdenLigIstekleri.get(anahtar)?.controller === controller) {
+        devamEdenLigIstekleri.delete(anahtar);
+      }
+    });
+
+  const istek = { promise, controller };
+  devamEdenLigIstekleri.set(anahtar, istek);
+  return istek;
+}
 
 export default function EclubLigiPage() {
   const router = useRouter();
@@ -35,8 +113,11 @@ export default function EclubLigiPage() {
   const bugun = aktifPeriyot();
   const [periyot, setPeriyot] = useState<Periyot>("ay");
   const { yil, ay, ceyrek, hafta } = bugun;
-  const [sonuc, setSonuc] = useState<{ anahtar: string; data: LigData | null; hata: string | null }>({ anahtar: "", data: null, hata: null });
-  const istek = useRef<AbortController | null>(null);
+  const [data, setData] = useState<LigData | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  const [ilkYukleniyor, setIlkYukleniyor] = useState(true);
+  const aktifIstek = useRef<AbortController | null>(null);
+  const sonIstek = useRef(0);
   const [yenileniyor, setYenileniyor] = useState(false);
   const [takimDuzenleniyor, setTakimDuzenleniyor] = useState(false);
   const [takimTaslak, setTakimTaslak] = useState("");
@@ -58,49 +139,54 @@ export default function EclubLigiPage() {
   const onbellekAnahtari = kullanici
     ? JSON.stringify([kullanici.id, kullanici.firma_id, kullanici.rol, query])
     : "";
-  const data = sonuc.anahtar === onbellekAnahtari ? sonuc.data : null;
-  const hata = sonuc.anahtar === onbellekAnahtari ? sonuc.hata : null;
-
-  const veriCek = useCallback(async (ilkYukleme = false) => {
-    istek.current?.abort();
+  const veriCek = useCallback(async (manuelYenileme = false) => {
     if (!onbellekAnahtari) return;
-    const controller = new AbortController();
-    istek.current = controller;
-    const kayit = ligOnbellegi.get(onbellekAnahtari);
-    if (ilkYukleme && kayit && Date.now() - kayit.zaman < ONBELLEK_SURESI) {
-      setSonuc({ anahtar: onbellekAnahtari, data: kayit.data, hata: null });
+    const istekNo = ++sonIstek.current;
+    aktifIstek.current?.abort();
+    aktifIstek.current = null;
+    const kayit = ligOnbelleginiOku(onbellekAnahtari);
+    if (!manuelYenileme && kayit) {
+      setData(kayit.data);
+      setHata(null);
       setTakimTaslak(kayit.data.takim_adi ?? "");
+      setIlkYukleniyor(false);
       setYenileniyor(false);
       return;
     }
-    setSonuc((onceki) => ({ anahtar: onbellekAnahtari, data: onceki.anahtar === onbellekAnahtari ? onceki.data : null, hata: null }));
-    setYenileniyor(true);
+    setHata(null);
+    if (data) setYenileniyor(true);
+    else setIlkYukleniyor(true);
     try {
-      const istekQuery = ilkYukleme ? query : `${query}&yenile=1`;
-      const response = await fetch(`/eclub/ligi/api?${istekQuery}`, { signal: controller.signal, cache: "no-store" });
-      const payload = await response.json();
-      if (controller.signal.aborted) return;
-      if (!response.ok) throw new Error(payload.hata ?? "E-Club Lig Verileri Yüklenemedi.");
+      const istek = ligVerisiniIste(onbellekAnahtari, query, manuelYenileme);
+      aktifIstek.current = istek.controller;
+      const payload = await istek.promise;
+      if (istekNo !== sonIstek.current) return;
       for (const [anahtar, deger] of ligOnbellegi) {
         if (Date.now() - deger.zaman >= ONBELLEK_SURESI) ligOnbellegi.delete(anahtar);
       }
       if (ligOnbellegi.size >= 20) ligOnbellegi.delete(ligOnbellegi.keys().next().value!);
-      ligOnbellegi.set(onbellekAnahtari, { data: payload as LigData, zaman: Date.now() });
-      setSonuc({ anahtar: onbellekAnahtari, data: payload as LigData, hata: null });
-      setTakimTaslak((payload as LigData).takim_adi ?? "");
+      ligOnbellegineYaz(onbellekAnahtari, payload);
+      setData(payload);
+      setTakimTaslak(payload.takim_adi ?? "");
     } catch (error) {
-      if (controller.signal.aborted) return;
-      ligOnbellegi.delete(onbellekAnahtari);
-      setSonuc({ anahtar: onbellekAnahtari, data: null, hata: error instanceof Error ? error.message : "E-Club Lig Verileri Yüklenemedi." });
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      if (istekNo === sonIstek.current) {
+        setHata(error instanceof Error ? error.message : "E-Club Lig Verileri Yüklenemedi.");
+      }
     } finally {
-      if (!controller.signal.aborted) setYenileniyor(false);
+      if (istekNo === sonIstek.current) {
+        aktifIstek.current = null;
+        setIlkYukleniyor(false);
+        setYenileniyor(false);
+      }
     }
-  }, [onbellekAnahtari, query]);
+  }, [data, onbellekAnahtari, query]);
 
   useEffect(() => {
-    void veriCek(true);
-    return () => { istek.current?.abort(); };
+    void veriCek(false);
   }, [veriCek]);
+
+  useEffect(() => () => aktifIstek.current?.abort(), []);
 
   const takimAdiKaydet = async () => {
     const takimAdi = takimTaslak.trim();
@@ -114,33 +200,30 @@ export default function EclubLigiPage() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.hata ?? "Takım adı kaydedilemedi.");
-      ligOnbellegi.clear();
-      setSonuc((onceki) => {
-        const mevcut = onceki.data;
-        if (!mevcut || onceki.anahtar !== onbellekAnahtari) return onceki;
-        const guncelTakimLigi = (mevcut.takim_ligi ?? []).map((t) =>
+      if (data) {
+        const guncelTakimLigi = data.takim_ligi.map((t) =>
           t.utt_id === kullanici?.id ? { ...t, takim_adi: takimAdi } : t
         );
-        return { ...onceki, data: { ...mevcut, takim_adi: takimAdi, takim_ligi: guncelTakimLigi } };
-      });
+        const guncel = { ...data, takim_adi: takimAdi, takim_ligi: guncelTakimLigi };
+        ligOnbelleginiTemizle();
+        ligOnbellegineYaz(onbellekAnahtari, guncel);
+        setData(guncel);
+      }
       setTakimDuzenleniyor(false);
     } catch (error) {
-      setSonuc((onceki) => onceki.anahtar === onbellekAnahtari ? { ...onceki, hata: error instanceof Error ? error.message : "Takım adı kaydedilemedi." } : onceki);
+      setHata(error instanceof Error ? error.message : "Takım adı kaydedilemedi.");
     } finally {
       setTakimKaydediliyor(false);
     }
   };
 
-  if (authYukleniyor || !kullanici) {
-    return <div className="flex min-h-screen items-center justify-center bg-[#f6f8fb] text-sm text-[#7d8ba0]">Yükleniyor...</div>;
+  if (authYukleniyor || !kullanici || (ilkYukleniyor && !data)) {
+    return <EclubLigiSkeleton />;
   }
 
   const takimLigi = data?.takim_ligi ?? [];
   const takimAdiDuzenleyebilir = TUKETICI_ROLLER.includes((data?.kullanici.rol ?? "").toLowerCase());
-  const liderTakim = takimLigi[0];
-  const toplamUye = takimLigi.reduce((toplam, t) => toplam + t.uye_sayisi, 0);
-  const toplamIzleme = takimLigi.reduce((toplam, t) => toplam + t.tamamlanan_izleme, 0);
-  const bannerBaslikKelimeleri = ["E\u00a0Club", "Dönem", "Liderleri"];
+  const bannerBaslikKelimeleri = ["E\u00a0Club", "Dönem", "Öğrenme", "Liderleri"];
   const periyotSecici = (
     <HbLigiPeriyotSecici
       periyot={periyot}
@@ -180,14 +263,9 @@ export default function EclubLigiPage() {
 
         <section className={styles.leagueBanner} aria-label="E-Club Ligi podyumu">
           <div className={styles.leagueBannerHeader}>
-            <div className={styles.leagueBannerIcon}>
-              <Trophy className="h-4 w-4" />
-            </div>
             <h2 className={styles.leagueBannerTitle}>
-              {bannerBaslikKelimeleri.map((kelime, index) => (
-                <span key={`${kelime}-${index}`}>
-                  {kelime}{index < bannerBaslikKelimeleri.length - 1 ? "\u00a0" : ""}
-                </span>
+              {bannerBaslikKelimeleri.map((kelime) => (
+                <span key={kelime}>{kelime}</span>
               ))}
             </h2>
           </div>
@@ -231,33 +309,35 @@ export default function EclubLigiPage() {
 
         <div className={`${styles.headerActions} mb-[14px] [&_.hb-ligi-periyot-secici]:mb-0`}>
           {periyotSecici}
-          <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} disabled={yenileniyor || takimDuzenleniyor || takimKaydediliyor} />
+          <YenileButonu yenileniyor={yenileniyor} onYenile={() => void veriCek(true)} disabled={yenileniyor || takimDuzenleniyor || takimKaydediliyor} />
           <button type="button" className={styles.excelButton} onClick={() => window.open(`/eclub/ligi/api/export?${query}`, "_blank")}>
             <Download className="h-3.5 w-3.5" /> Excel
           </button>
         </div>
 
-        {hata ? (
+        {hata && data && (
+          <div role="status" className={styles.updateNotice}>{hata} Mevcut veriler gösterilmeye devam ediyor.</div>
+        )}
+
+        {hata && !data ? (
           <div role="alert" className="rounded-2xl border border-red-100 bg-white p-6 text-center">
             <p className="text-sm text-[#a43737]">{hata}</p>
             <button type="button" onClick={() => void veriCek()} className="mt-3 rounded-xl bg-[#2f9ae9] px-4 py-2 text-xs font-extrabold text-white">Yeniden dene</button>
           </div>
-        ) : !data ? (
-          <div role="status" className="rounded-2xl border border-[#e2e8f0] bg-white p-10 text-center text-sm text-[#7d8ba0]">Lig verileri yükleniyor...</div>
-        ) : (
+        ) : data ? (
         <>
         {/* Özet Kartları */}
         <section className={styles.statsGrid} aria-label="E-Club Takımlar Ligi özeti">
           {[
-            { label: "Lider Takım Puanı", value: liderTakim ? liderTakim.toplam_puan.toLocaleString("tr-TR") : "0", detail: liderTakim ? liderTakim.takim_adi : "Henüz puan yok", icon: Trophy },
+            { label: "Lider Takım Puanı", value: data.lig_ozeti.lider_takim_puani.toLocaleString("tr-TR"), detail: data.lig_ozeti.lider_takim_adi ?? "Henüz puan yok", icon: Trophy },
             {
               label: "Yarışan Takım",
               value: String(data.lig_ozeti.eclub_takimi),
               detail: `${data.lig_ozeti.kapsam_turu === "takim" ? "Takımdaki" : "Firmadaki"} UTT sayısı: ${data.lig_ozeti.toplam_utt} · E-Club takımı olan: ${data.lig_ozeti.eclub_takimi}`,
               icon: Users,
             },
-            { label: "Toplam E-Club Üyesi", value: toplamUye.toLocaleString("tr-TR"), detail: "Eczacı ve teknisyen kadrosu", icon: Layers },
-            { label: "Tamamlanan Yayın", value: toplamIzleme.toLocaleString("tr-TR"), detail: "Dönemlik toplam tüketim", icon: Eye },
+            { label: "Toplam E-Club Üyesi", value: data.lig_ozeti.toplam_uye.toLocaleString("tr-TR"), detail: "Eczacı ve teknisyen kadrosu", icon: Layers },
+            { label: "Tamamlanan Yayın", value: data.lig_ozeti.tamamlanan_yayin.toLocaleString("tr-TR"), detail: "Dönemlik toplam tüketim", icon: Eye },
           ].map(({ label, value, detail, icon: Icon }) => (
             <article key={label} className={styles.statCard}>
               <div className={styles.statIcon}><Icon className="h-4 w-4" /></div>
@@ -339,7 +419,7 @@ export default function EclubLigiPage() {
         </section>
 
         </>
-        )}
+        ) : null}
 
         {/* Takım İçi Ayrıntılara Yönlendirme Kartı */}
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#cfe2f3] bg-[#f0f7fe] p-4 text-xs">
