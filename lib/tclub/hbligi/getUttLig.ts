@@ -32,23 +32,14 @@ export interface UttLigSatiri {
   benim: boolean;
 }
 
-export interface UttHaftalikKonumSatiri extends UttLigSatiri {
+export interface UttKursuSatiri extends UttLigSatiri {
   degisim: number | null;
 }
 
-export interface UttHaftalikKonumOzeti {
-  sira: number | null;
-  toplam: number;
-  degisim: number | null;
-}
-
-export interface UttHaftalikKonum {
-  bolge: UttHaftalikKonumOzeti;
-  takim: UttHaftalikKonumOzeti;
-  sirket: UttHaftalikKonumOzeti;
-  bolge_ligi: UttHaftalikKonumSatiri[];
-  takim_ligi: UttHaftalikKonumSatiri[];
-  sirket_ligi: UttHaftalikKonumSatiri[];
+export interface UttOrganizasyonKapsami {
+  bolge_id: string;
+  takim_id: string | null;
+  firma_id: string | null;
 }
 
 export const AY_ADLARI = [
@@ -60,9 +51,9 @@ export interface UttAylikKursu {
   ay: number;
   yil: number;
   ay_adi: string;
-  bolge_top3: UttHaftalikKonumSatiri[];
-  takim_top3: UttHaftalikKonumSatiri[];
-  sirket_top3: UttHaftalikKonumSatiri[];
+  bolge_top3: UttKursuSatiri[];
+  takim_top3: UttKursuSatiri[];
+  sirket_top3: UttKursuSatiri[];
 }
 
 export interface UttLigSonuc {
@@ -73,7 +64,6 @@ export interface UttLigSonuc {
     takim: UttLigSatiri[];
     firma: UttLigSatiri[];
   };
-  haftalik_konum: UttHaftalikKonum;
   aylik_kursu: UttAylikKursu;
 }
 
@@ -158,50 +148,30 @@ function uttListesiniSinirla<T extends UttLigSatiri>(satirlar: T[], kullaniciId:
   return satirlar.map((satir) => uttAyrintisiniSinirla(satir, kullaniciId));
 }
 
-function konumOzeti(
-  mevcutLig: UttLigSatiri[],
-  oncekiLig: UttLigSatiri[],
-  kullanici_id: string,
-  toplamUtt: number,
-): UttHaftalikKonumOzeti {
-  const mevcut = mevcutLig.find((satir) => satir.kullanici_id === kullanici_id);
-  const onceki = oncekiLig.find((satir) => satir.kullanici_id === kullanici_id);
-  return {
-    sira: mevcut?.sira ?? null,
-    toplam: toplamUtt,
-    degisim: mevcut && onceki ? onceki.sira - mevcut.sira : null,
-  };
-}
-
 /**
  * UTT/KD_UTT için kendi bölgesindeki UTT lig sıralamasını döner.
  *
  * @param supabase Admin client
  * @param kullanici_id Giriş yapan kullanıcının ID'si
- * @param bolge_id Kullanıcının bölgesi
+ * @param organizasyon Kullanıcının güncel bölge, takım ve firma kapsamı
  * @param periyot Periyot + tarih bilgisi (ay/donem/yil/hafta)
  * @throws Hata mesajı string olarak fırlatır; çağıran endpoint hataYaniti ile sarar
  */
 export async function getUttLig(
   supabase: SupabaseClient,
   kullanici_id: string,
-  bolge_id: string,
+  organizasyon: UttOrganizasyonKapsami,
   periyot: LigPeriyot,
   simdi: Date = new Date(),
 ): Promise<UttLigSonuc> {
   const aktif = aktifPeriyot(simdi);
-  const buHafta: LigPeriyot = { periyot: "hafta", ...aktif };
-  const oncekiHafta = oncekiLigPeriyodu(buHafta);
-
   // Kürsü her ayın 1'inde bir önceki ayın ilk 3'ünü gösterir
   const buAy: LigPeriyot = { periyot: "ay", ...aktif };
   const oncekiAy = oncekiLigPeriyodu(buAy);
   const ikiOncekiAy = oncekiLigPeriyodu(oncekiAy);
 
-  const [tumUttler, buHaftaUttleri, oncekiHaftaUttleri, oncekiAyUttleri, ikiOncekiAyUttleri] = await Promise.all([
+  const [tumUttler, oncekiAyUttleri, ikiOncekiAyUttleri] = await Promise.all([
     ligRpcCagir(supabase, periyot),
-    ligRpcCagir(supabase, buHafta),
-    ligRpcCagir(supabase, oncekiHafta),
     ligRpcCagir(supabase, oncekiAy),
     ligRpcCagir(supabase, ikiOncekiAy),
   ]);
@@ -209,9 +179,8 @@ export async function getUttLig(
   const tumKullaniciIdler = Array.from(
     new Set([
       ...tumUttler,
-      ...buHaftaUttleri,
-      ...oncekiHaftaUttleri,
       ...oncekiAyUttleri,
+      ...ikiOncekiAyUttleri,
     ].map((satir) => satir.kullanici_id))
   );
   let fotoMap = new Map<string, string | null>();
@@ -225,62 +194,15 @@ export async function getUttLig(
     }
   }
 
-  const bolgeKapsami = (satir: Awaited<ReturnType<typeof ligRpcCagir>>[number]) => satir.bolge_id === bolge_id;
-  const kullaniciSatiri = buHaftaUttleri.find((satir) => satir.kullanici_id === kullanici_id)
-    ?? tumUttler.find((satir) => satir.kullanici_id === kullanici_id);
-  const takimId = kullaniciSatiri?.takim_id;
-  const firmaId = kullaniciSatiri?.firma_id;
+  const bolgeKapsami = (satir: Awaited<ReturnType<typeof ligRpcCagir>>[number]) => satir.bolge_id === organizasyon.bolge_id;
+  const takimId = organizasyon.takim_id;
+  const firmaId = organizasyon.firma_id;
   const takimKapsami = (satir: Awaited<ReturnType<typeof ligRpcCagir>>[number]) => Boolean(takimId) && satir.takim_id === takimId;
   const sirketKapsami = (satir: Awaited<ReturnType<typeof ligRpcCagir>>[number]) => Boolean(firmaId) && satir.firma_id === firmaId;
-  const bolgeToplamUtt = buHaftaUttleri.filter(bolgeKapsami).length;
-  const takimToplamUtt = buHaftaUttleri.filter(takimKapsami).length;
-  const sirketToplamUtt = buHaftaUttleri.filter(sirketKapsami).length;
 
   const lig = ligOlustur(tumUttler, kullanici_id, bolgeKapsami, false, fotoMap);
   const seciliDonemTakimLigi = ligOlustur(tumUttler, kullanici_id, takimKapsami, false, fotoMap);
   const seciliDonemFirmaLigi = ligOlustur(tumUttler, kullanici_id, sirketKapsami, false, fotoMap);
-  const bolgeLigi = ligOlustur(buHaftaUttleri, kullanici_id, bolgeKapsami, true, fotoMap);
-  const oncekiBolgeLigi = ligOlustur(oncekiHaftaUttleri, kullanici_id, bolgeKapsami, true, fotoMap);
-  const takimLigi = ligOlustur(buHaftaUttleri, kullanici_id, takimKapsami, true, fotoMap);
-  const oncekiTakimLigi = ligOlustur(oncekiHaftaUttleri, kullanici_id, takimKapsami, true, fotoMap);
-  const sirketLigi = ligOlustur(buHaftaUttleri, kullanici_id, sirketKapsami, true, fotoMap);
-  const oncekiSirketLigi = ligOlustur(oncekiHaftaUttleri, kullanici_id, sirketKapsami, true, fotoMap);
-
-  const oncekiBolgeSiralar = new Map(oncekiBolgeLigi.map((satir) => [satir.kullanici_id, satir.sira]));
-  const bolge_ligi = bolgeLigi.map((satir): UttHaftalikKonumSatiri => {
-    const oncekiSira = oncekiBolgeSiralar.get(satir.kullanici_id);
-    return {
-      ...satir,
-      degisim: oncekiSira === undefined ? null : oncekiSira - satir.sira,
-    };
-  });
-
-  const oncekiTakimSiralar = new Map(oncekiTakimLigi.map((satir) => [satir.kullanici_id, satir.sira]));
-  const takim_ligi = takimLigi.map((satir): UttHaftalikKonumSatiri => {
-    const oncekiSira = oncekiTakimSiralar.get(satir.kullanici_id);
-    return {
-      ...satir,
-      degisim: oncekiSira === undefined ? null : oncekiSira - satir.sira,
-    };
-  });
-
-  const oncekiSirketSiralar = new Map(oncekiSirketLigi.map((satir) => [satir.kullanici_id, satir.sira]));
-  const sirket_ligi = sirketLigi.map((satir): UttHaftalikKonumSatiri => {
-    const oncekiSira = oncekiSirketSiralar.get(satir.kullanici_id);
-    return {
-      ...satir,
-      degisim: oncekiSira === undefined ? null : oncekiSira - satir.sira,
-    };
-  });
-
-  const haftalik_konum: UttHaftalikKonum = {
-    bolge: konumOzeti(bolgeLigi, oncekiBolgeLigi, kullanici_id, bolgeToplamUtt),
-    takim: konumOzeti(takimLigi, oncekiTakimLigi, kullanici_id, takimToplamUtt),
-    sirket: konumOzeti(sirketLigi, oncekiSirketLigi, kullanici_id, sirketToplamUtt),
-    bolge_ligi: uttListesiniSinirla(bolge_ligi, kullanici_id),
-    takim_ligi: uttListesiniSinirla(takim_ligi, kullanici_id),
-    sirket_ligi: uttListesiniSinirla(sirket_ligi, kullanici_id),
-  };
 
   // Bir önceki tamamlanan ayın kürsü ligleri ve sıralama değişimleri
   const oncekiAyBolgeLigi = ligOlustur(oncekiAyUttleri, kullanici_id, bolgeKapsami, true, fotoMap);
@@ -291,7 +213,7 @@ export async function getUttLig(
   const ikiOncekiAySirketLigi = ligOlustur(ikiOncekiAyUttleri, kullanici_id, sirketKapsami, true, fotoMap);
 
   const ikiOncekiBolgeSiralar = new Map(ikiOncekiAyBolgeLigi.map((satir) => [satir.kullanici_id, satir.sira]));
-  const aylik_bolge_top3: UttHaftalikKonumSatiri[] = oncekiAyBolgeLigi.slice(0, 3).map((satir) => {
+  const aylik_bolge_top3: UttKursuSatiri[] = oncekiAyBolgeLigi.slice(0, 3).map((satir) => {
     const oncekiSira = ikiOncekiBolgeSiralar.get(satir.kullanici_id);
     return {
       ...satir,
@@ -300,7 +222,7 @@ export async function getUttLig(
   });
 
   const ikiOncekiTakimSiralar = new Map(ikiOncekiAyTakimLigi.map((satir) => [satir.kullanici_id, satir.sira]));
-  const aylik_takim_top3: UttHaftalikKonumSatiri[] = oncekiAyTakimLigi.slice(0, 3).map((satir) => {
+  const aylik_takim_top3: UttKursuSatiri[] = oncekiAyTakimLigi.slice(0, 3).map((satir) => {
     const oncekiSira = ikiOncekiTakimSiralar.get(satir.kullanici_id);
     return {
       ...satir,
@@ -309,7 +231,7 @@ export async function getUttLig(
   });
 
   const ikiOncekiSirketSiralar = new Map(ikiOncekiAySirketLigi.map((satir) => [satir.kullanici_id, satir.sira]));
-  const aylik_sirket_top3: UttHaftalikKonumSatiri[] = oncekiAySirketLigi.slice(0, 3).map((satir) => {
+  const aylik_sirket_top3: UttKursuSatiri[] = oncekiAySirketLigi.slice(0, 3).map((satir) => {
     const oncekiSira = ikiOncekiSirketSiralar.get(satir.kullanici_id);
     return {
       ...satir,
@@ -336,7 +258,6 @@ export async function getUttLig(
       takim: uttListesiniSinirla(seciliDonemTakimLigi, kullanici_id),
       firma: uttListesiniSinirla(seciliDonemFirmaLigi, kullanici_id),
     },
-    haftalik_konum,
     aylik_kursu,
   };
 }

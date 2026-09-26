@@ -83,7 +83,11 @@ export async function GET(request: NextRequest) {
         if (!kullanici.bolge_id) {
           return hataYaniti("Kullanıcıya bölge atanmamış.", "kullanicilar SELECT — bolge_id kontrolü", null);
         }
-        const sonuc = await getUttLig(adminSupabase, kullanici.kullanici_id, kullanici.bolge_id, periyot);
+        const sonuc = await getUttLig(adminSupabase, kullanici.kullanici_id, {
+          bolge_id: kullanici.bolge_id,
+          takim_id: kullanici.takim_id,
+          firma_id: kullanici.firma_id,
+        }, periyot);
         return NextResponse.json(sonuc, { status: 200 });
       }
 

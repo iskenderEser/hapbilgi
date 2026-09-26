@@ -35,39 +35,23 @@ interface UttSatiri {
   benim?: boolean;
 }
 
-interface UttHaftalikKonumSatiri extends UttSatiri {
+interface UttKursuSatiri extends UttSatiri {
   degisim: number | null;
-}
-
-interface UttHaftalikKonumOzeti {
-  sira: number | null;
-  toplam: number;
-  degisim: number | null;
-}
-
-interface UttHaftalikKonum {
-  bolge: UttHaftalikKonumOzeti;
-  takim: UttHaftalikKonumOzeti;
-  sirket: UttHaftalikKonumOzeti;
-  bolge_ligi: UttHaftalikKonumSatiri[];
-  takim_ligi?: UttHaftalikKonumSatiri[];
-  sirket_ligi?: UttHaftalikKonumSatiri[];
 }
 
 interface UttAylikKursu {
   ay: number;
   yil: number;
   ay_adi: string;
-  bolge_top3: UttHaftalikKonumSatiri[];
-  takim_top3: UttHaftalikKonumSatiri[];
-  sirket_top3: UttHaftalikKonumSatiri[];
+  bolge_top3: UttKursuSatiri[];
+  takim_top3: UttKursuSatiri[];
+  sirket_top3: UttKursuSatiri[];
 }
 
 type HBLigiVeri = {
   tip: "utt";
   lig: UttSatiri[];
   ligler?: { bolge: UttSatiri[]; takim: UttSatiri[]; firma: UttSatiri[] };
-  haftalik_konum: UttHaftalikKonum;
   aylik_kursu?: UttAylikKursu;
 } | SahaLigSonuc;
 
@@ -289,7 +273,6 @@ export default function HBLigiPage() {
         <div className="mx-auto min-h-full max-w-[1440px] px-3 py-3 md:h-full md:min-h-0 md:px-5 md:py-3">
           <LeaguePage
             ligler={veri.ligler ?? { bolge: veri.lig, takim: veri.lig, firma: veri.lig }}
-            haftalikKonum={veri.haftalik_konum}
             aylikKursu={veri.aylik_kursu}
             userId={kullanici.id}
             periyotSecici={periyotSecici}

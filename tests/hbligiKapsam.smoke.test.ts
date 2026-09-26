@@ -6,7 +6,6 @@ import { getUttLig } from "@/lib/tclub/hbligi/getUttLig";
 import { getUreticiEtkiLigi } from "@/lib/tclub/hbligi/getUreticiEtkiLigi";
 import { ureticiLiginiSirala, ureticiLigKapsaminiUygula } from "@/lib/tclub/hbligi/ureticiLigKapsami";
 import { esitPuanEsitSira } from "@/lib/tclub/hbligi/siralama";
-import { aktifPeriyot, oncekiLigPeriyodu } from "@/lib/zaman/kontrol";
 
 const PERIYOT = { periyot: "donem" as const, yil: 2026, ay: 1, ceyrek: 3, hafta: 1 };
 
@@ -354,11 +353,8 @@ test("Yayınlarımın Ligi Bölge-Takım-Firma ve dört periyotta aynı kapsam k
   assert.equal(kontrolSayisi, 12);
 });
 
-test("UTT Ligdeki Konumun kartı haftalık gerçek sıra ve değişimi kullanır", async () => {
+test("UTT ligi yalnız seçili dönem ve aylık kürsü sorgularını kullanır", async () => {
   const simdi = new Date("2026-08-26T12:00:00+03:00");
-  const aktif = aktifPeriyot(simdi);
-  const buHafta = { periyot: "hafta" as const, ...aktif };
-  const oncekiHafta = oncekiLigPeriyodu(buHafta);
   const satir = (
     kullanici_id: string,
     ad: string,
@@ -378,46 +374,36 @@ test("UTT Ligdeki Konumun kartı haftalık gerçek sıra ve değişimi kullanır
     satir("u4", "Ece", 120, "b2"), satir("u5", "Fırat", 130, "b3", "t2"),
     satir("u6", "Gül", 200, "b4", "t3", "f2"), satir("u7", "Hale", 0),
   ];
-  const onceki = [
-    satir("u2", "Can", 90), satir("u1", "Berk", 70), satir("u3", "Deniz", 40),
-    satir("u4", "Ece", 110, "b2"), satir("u5", "Fırat", 125, "b3", "t2"),
-    satir("u6", "Gül", 190, "b4", "t3", "f2"), satir("u7", "Hale", 0),
-  ];
+  const cagrilar: Array<{ ad: string; parametreler: Record<string, number> }> = [];
   const supabase = {
     rpc: async (ad: string, parametreler: Record<string, number>) => {
-      if (ad === "get_hb_ligi_haftalik_v2") {
-        const oncekiMi = parametreler.p_yil === oncekiHafta.yil && parametreler.p_hafta === oncekiHafta.hafta;
-        return { data: oncekiMi ? onceki : mevcut, error: null };
-      }
+      cagrilar.push({ ad, parametreler });
       return { data: mevcut, error: null };
     },
   } as unknown as SupabaseClient;
 
-  const sonuc = await getUttLig(supabase, "u1", "b1", PERIYOT, simdi);
+  const sonuc = await getUttLig(supabase, "u1", {
+    bolge_id: "b1",
+    takim_id: "t1",
+    firma_id: "f1",
+  }, PERIYOT, simdi);
 
   assert.deepEqual(
-    sonuc.haftalik_konum.bolge_ligi.map(({ kullanici_id, sira, degisim }) => [kullanici_id, sira, degisim]),
-    [["u1", 1, 1], ["u2", 1, 0], ["u3", 2, 1]],
+    cagrilar,
+    [
+      { ad: "get_hb_ligi_donemlik_v2", parametreler: { p_yil: 2026, p_ceyrek: 3 } },
+      { ad: "get_hb_ligi_aylik_v2", parametreler: { p_yil: 2026, p_ay: 7 } },
+      { ad: "get_hb_ligi_aylik_v2", parametreler: { p_yil: 2026, p_ay: 6 } },
+    ],
   );
-  assert.deepEqual(sonuc.haftalik_konum.bolge, { sira: 1, toplam: 4, degisim: 1 });
-  assert.deepEqual(sonuc.haftalik_konum.takim, { sira: 2, toplam: 5, degisim: 1 });
-  assert.deepEqual(sonuc.haftalik_konum.sirket, { sira: 3, toplam: 6, degisim: 1 });
-  assert.ok(!sonuc.haftalik_konum.bolge_ligi.some((satir) => satir.kullanici_id === "u7"));
+  assert.deepEqual(sonuc.ligler.bolge.map((satir) => satir.kullanici_id), ["u1", "u2", "u3", "u7"]);
+  assert.deepEqual(sonuc.ligler.takim.map((satir) => satir.kullanici_id), ["u4", "u1", "u2", "u3", "u7"]);
+  assert.deepEqual(sonuc.ligler.firma.map((satir) => satir.kullanici_id), ["u5", "u4", "u1", "u2", "u3", "u7"]);
   assert.equal(sonuc.ligler.bolge.find((satir) => satir.kullanici_id === "u1")?.detay_gorulebilir, true);
   const digerUtt = sonuc.ligler.bolge.find((satir) => satir.kullanici_id === "u2");
   assert.equal(digerUtt?.detay_gorulebilir, false);
   assert.equal(digerUtt?.toplam_kazanc, 100);
   assert.equal(digerUtt?.toplam_kayip, 0);
   assert.equal(digerUtt?.izleme_puani, 0);
-
-  const puansiz = mevcut.map((kayit) => ({ ...kayit, izleme_puani: 0, toplam_puan: 0 }));
-  const puansizSupabase = {
-    rpc: async () => ({ data: puansiz, error: null }),
-  } as unknown as SupabaseClient;
-  const puansizSonuc = await getUttLig(puansizSupabase, "u1", "b1", PERIYOT, simdi);
-
-  assert.deepEqual(puansizSonuc.haftalik_konum.bolge_ligi, []);
-  assert.deepEqual(puansizSonuc.haftalik_konum.bolge, { sira: null, toplam: 4, degisim: null });
-  assert.deepEqual(puansizSonuc.haftalik_konum.takim, { sira: null, toplam: 5, degisim: null });
-  assert.deepEqual(puansizSonuc.haftalik_konum.sirket, { sira: null, toplam: 6, degisim: null });
+  assert.equal(sonuc.aylik_kursu.sirket_top3.length, 3);
 });

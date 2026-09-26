@@ -11,7 +11,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import LeagueHeader from "./LeagueHeader";
 import MonthlyLeaders from "./MonthlyLeaders";
 import CompetitorComparison from "./CompetitorComparison";
-import type { AylikKursu, HaftalikKonum, LigSatiri, SiraliSatir } from "./types";
+import type { AylikKursu, LigSatiri, SiraliSatir } from "./types";
 import styles from "./league.module.css";
 
 type LigKapsami = "bolge" | "takim" | "firma";
@@ -24,13 +24,11 @@ const KAPSAMLAR: Array<{ id: LigKapsami; etiket: string }> = [
 
 export default function LeaguePage({
   ligler,
-  haftalikKonum,
   aylikKursu,
   userId,
   periyotSecici,
 }: {
   ligler: Record<LigKapsami, LigSatiri[]>;
-  haftalikKonum: HaftalikKonum;
   aylikKursu?: AylikKursu;
   userId: string;
   periyotSecici: ReactNode;
@@ -43,14 +41,16 @@ export default function LeaguePage({
   );
 
   const kapsamSecici = (
-    <div className="inline-flex rounded-xl border border-[#dfe8f2] bg-white p-1">
+    <div className="inline-flex min-w-0 max-w-full flex-1 items-center gap-1 overflow-x-auto rounded-[14px] border border-[rgba(148,163,184,.18)] bg-white/85 p-1 shadow-[0_6px_22px_rgba(36,64,98,.05)] sm:flex-none">
       {KAPSAMLAR.map((secenek) => (
         <button
           key={secenek.id}
           type="button"
           onClick={() => setKapsam(secenek.id)}
-          className={`rounded-lg px-3 py-1.5 text-xs font-extrabold transition-colors ${
-            kapsam === secenek.id ? "bg-[#2f80ed] text-white" : "text-[#60728f] hover:bg-[#f2f6fb]"
+          className={`shrink-0 rounded-[10px] px-3 py-[7px] text-[11px] font-bold transition-all duration-150 ${
+            kapsam === secenek.id
+              ? "bg-[#237ac8] text-white shadow-[0_5px_14px_rgba(35,122,200,.22)]"
+              : "text-[#718198] hover:bg-[#f2f7fc] hover:text-[#237ac8]"
           }`}
           aria-pressed={kapsam === secenek.id}
         >
@@ -73,8 +73,9 @@ export default function LeaguePage({
         <div className={styles.shell} style={{ fontFamily: "'Nunito', sans-serif" }}>
           <div className={styles.dashboard}>
             <div className="shrink-0">
-              <LeagueHeader periyotSecici={filtreler} />
+              <LeagueHeader periyotSecici={null} />
             </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">{filtreler}</div>
             <div className={`${styles.panel} py-16 text-center`}>
               <div className="text-base font-bold text-foreground/80">Henüz lig verisi yok</div>
               <div className="mt-1 text-sm text-muted-foreground">Başka bir dönem seçebilir veya bu dönemde puan oluştukça tekrar kontrol edebilirsin.</div>
@@ -98,7 +99,7 @@ export default function LeaguePage({
       degisim: null,
     }));
 
-  const sirketTop3: SiraliSatir[] = (aylikKursu?.sirket_top3 ?? (haftalikKonum.sirket_ligi ?? []).slice(0, 3)).map((satir) => ({
+  const sirketTop3: SiraliSatir[] = (aylikKursu?.sirket_top3 ?? []).map((satir) => ({
     ...satir,
     rank: satir.sira,
   }));
@@ -108,9 +109,10 @@ export default function LeaguePage({
       <div className={styles.shell} style={{ fontFamily: "'Nunito', sans-serif" }}>
         <div className={styles.dashboard}>
         <div className="shrink-0">
-          <LeagueHeader periyotSecici={filtreler} />
+          <LeagueHeader periyotSecici={null} />
         </div>
         <MonthlyLeaders top3={sirketTop3} ayAdi={aylikKursu?.ay_adi} />
+        <div className="flex flex-wrap items-center justify-end gap-2">{filtreler}</div>
         <div className="min-h-0 overflow-hidden">
           <CompetitorComparison
             satirlar={sirali}

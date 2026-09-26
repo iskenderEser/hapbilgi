@@ -27,34 +27,18 @@ export interface LigSatiri {
   etkilesilen_yayin_sayisi?: number;
 }
 
-export interface HaftalikKonumSatiri extends LigSatiri {
+export interface KursuSatiri extends LigSatiri {
   sira: number;
-  /** Önceki haftaya göre sıra değişimi; karşılaştırılabilir hafta yoksa null. */
   degisim: number | null;
-}
-
-export interface HaftalikKonumOzeti {
-  sira: number | null;
-  toplam: number;
-  degisim: number | null;
-}
-
-export interface HaftalikKonum {
-  bolge: HaftalikKonumOzeti;
-  takim: HaftalikKonumOzeti;
-  sirket: HaftalikKonumOzeti;
-  bolge_ligi: HaftalikKonumSatiri[];
-  takim_ligi?: HaftalikKonumSatiri[];
-  sirket_ligi?: HaftalikKonumSatiri[];
 }
 
 export interface AylikKursu {
   ay: number;
   yil: number;
   ay_adi: string;
-  bolge_top3: HaftalikKonumSatiri[];
-  takim_top3: HaftalikKonumSatiri[];
-  sirket_top3: HaftalikKonumSatiri[];
+  bolge_top3: KursuSatiri[];
+  takim_top3: KursuSatiri[];
+  sirket_top3: KursuSatiri[];
 }
 
 export interface SiraliSatir extends LigSatiri {
