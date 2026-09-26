@@ -21,8 +21,6 @@ import RaporPeriyotSecici from '@/components/raporlar/RaporPeriyotSecici';
 import { formatPuan, GRI_METIN, KIRMIZI, type Periyot } from '@/lib/utils/raporUtils';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import SayfaRehberi from '@/components/rehber/SayfaRehberi';
-import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerformansi';
-import type { AracTuruRaporSatiri } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 import styles from './uretici-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
@@ -44,7 +42,6 @@ interface EtkilesimSatiri {
 }
 
 interface RaporData {
-  arac_turu_dagilimi: AracTuruRaporSatiri[];
   kullanici: {
     ad: string;
     soyad: string;
@@ -175,8 +172,6 @@ export default function UreticiRaporPage() {
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>
-        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
-
         <section className={`${styles.panel} ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <div>

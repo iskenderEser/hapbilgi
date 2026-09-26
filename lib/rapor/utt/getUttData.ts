@@ -1,5 +1,6 @@
 // lib/rapor/utt/getUttData.ts
 import type { SupabaseClient } from '@/lib/types/rapor';
+import { getAracPuanDagilimi } from './getAracPuanDagilimi';
 
 interface Kullanici {
   kullanici_id: string;
@@ -36,6 +37,7 @@ export async function getUttData(
     favoriRawRes,
     benimBegeniRes,
     benimFavoriRes,
+    aracPuanDagilimi,
   ] = await Promise.all([
     // 1. Kişisel özet — RPC ile tek noktadan
     // get_kullanici_ozet: 4 kazanım + 3 kayıp + net puan tek satırda.
@@ -124,6 +126,9 @@ export async function getUttData(
       .from('video_favoriler')
       .select('yayin_id')
       .eq('kullanici_id', kullanici.kullanici_id),
+
+    // 13. Öğrenme aracı bazında tüm kazanım ve kayıpların net puan kırılımı.
+    getAracPuanDagilimi(adminSupabase, kullanici.kullanici_id, baslangic, bitis),
   ]);
 
   const kritikHata = ozetRes.error ?? bolgeOzetRes.error ?? takimOzetRes.error;
@@ -146,5 +151,6 @@ export async function getUttData(
     favoriRaw: favoriRawRes.data ?? [],
     benimBegenim: benimBegeniRes.data ?? [],
     benimFavorim: benimFavoriRes.data ?? [],
+    aracPuanDagilimi,
   };
 }

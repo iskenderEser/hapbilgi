@@ -13,6 +13,7 @@ interface UseRaporAyarlari {
   onbellekSuresi?: number;
   yenileParametresi?: boolean;
   oturumOnbellegi?: boolean;
+  atomikGecis?: boolean;
 }
 
 const raporOnbellegi = new Map<string, { data: unknown; zaman: number }>();
@@ -48,6 +49,7 @@ export function useRapor<T>(
   ayarlar: UseRaporAyarlari = {},
 ): UseRaporSonuc<T> {
   const [data, setData] = useState<T | null>(null);
+  const [dataAnahtari, setDataAnahtari] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [yenileniyor, setYenileniyor] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +60,7 @@ export function useRapor<T>(
   const onbellekSuresi = ayarlar.onbellekSuresi ?? 0;
   const yenileParametresi = ayarlar.yenileParametresi ?? false;
   const oturumOnbellegi = ayarlar.oturumOnbellegi ?? false;
+  const atomikGecis = ayarlar.atomikGecis ?? false;
 
   const yenile = useCallback(() => setYenileTetik((deger) => deger + 1), []);
 
@@ -74,6 +77,7 @@ export function useRapor<T>(
         ?? (oturumOnbellegi ? oturumKaydiniOku<T>(sorguAnahtari) : null);
       if (!manuelYenileme && onbellekSuresi > 0 && onbellekKaydi && Date.now() - onbellekKaydi.zaman < onbellekSuresi) {
         setData(onbellekKaydi.data as T);
+        setDataAnahtari(sorguAnahtari);
         veriVar.current = true;
         sonSorgu.current = sorguAnahtari;
         setLoading(false);
@@ -96,6 +100,7 @@ export function useRapor<T>(
         const json = await res.json();
         if (json.success) {
           setData(json.data);
+          setDataAnahtari(sorguAnahtari);
           if (onbellekSuresi > 0) {
             raporOnbellegi.set(sorguAnahtari, { data: json.data, zaman: Date.now() });
             if (oturumOnbellegi) oturumKaydiniYaz(sorguAnahtari, json.data);
@@ -103,11 +108,21 @@ export function useRapor<T>(
           veriVar.current = true;
           setError(null);
         } else if (ilkYukleme) {
+          if (atomikGecis) {
+            setData(null);
+            setDataAnahtari(sorguAnahtari);
+          }
           setError(json.error || 'Veri alınamadı');
         }
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        if (ilkYukleme) setError('Bağlantı hatası');
+        if (ilkYukleme) {
+          if (atomikGecis) {
+            setData(null);
+            setDataAnahtari(sorguAnahtari);
+          }
+          setError('Bağlantı hatası');
+        }
       } finally {
         if (!controller.signal.aborted) {
           if (ilkYukleme) setLoading(false);
@@ -119,7 +134,16 @@ export function useRapor<T>(
     fetchRapor();
 
     return () => controller.abort();
-  }, [kullaniciId, endpoint, onbellekSuresi, oturumOnbellegi, periyot, yenileParametresi, yenileTetik]);
+  }, [atomikGecis, kullaniciId, endpoint, onbellekSuresi, oturumOnbellegi, periyot, yenileParametresi, yenileTetik]);
 
-  return { data, loading, yenileniyor, error, yenile };
+  const sorguAnahtari = kullaniciId ? `${endpoint}|${periyot}|${kullaniciId}` : null;
+  const atomikGecisBekliyor = atomikGecis && sorguAnahtari !== null && dataAnahtari !== sorguAnahtari;
+
+  return {
+    data: atomikGecisBekliyor ? null : data,
+    loading: atomikGecisBekliyor || loading,
+    yenileniyor,
+    error,
+    yenile,
+  };
 }

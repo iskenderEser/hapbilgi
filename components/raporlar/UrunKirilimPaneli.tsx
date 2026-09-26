@@ -27,9 +27,9 @@ export interface UrunKirilim {
 const YESIL = "#1D9E75";
 const BORDO = "#bc2d0d";
 
-function kirilim(u: UrunKirilim): DagilimKalem[] {
+function kirilim(u: UrunKirilim, tamamlamaEtiketi: string): DagilimKalem[] {
   return [
-    { ad: "Video", puan: u.video_puani, renk: YESIL },
+    { ad: tamamlamaEtiketi, puan: u.video_puani, renk: YESIL },
     { ad: "Doğru Cevap", puan: u.soru_puani, renk: YESIL },
     { ad: "Öneri", puan: u.oneri_puani, renk: YESIL },
     { ad: "Extra", puan: u.extra_puan, renk: YESIL },
@@ -46,9 +46,10 @@ const dosyaAdi = (s: string) =>
 interface Props {
   urunler: UrunKirilim[];
   modern?: boolean;
+  tamamlamaEtiketi?: string;
 }
 
-export default function UrunKirilimPaneli({ urunler, modern = false }: Props) {
+export default function UrunKirilimPaneli({ urunler, modern = false, tamamlamaEtiketi = "Video" }: Props) {
   const [seciliId, setSeciliId] = useState<string>(urunler[0]?.urun_id ?? "");
   const secili = urunler.find((u) => u.urun_id === seciliId) ?? urunler[0];
   if (!secili) return null;
@@ -85,7 +86,7 @@ export default function UrunKirilimPaneli({ urunler, modern = false }: Props) {
       <div className="flex-1 min-w-0">
         <DagilimGrafik
           key={secili.urun_id}
-          veri={kirilim(secili)}
+          veri={kirilim(secili, tamamlamaEtiketi)}
           modlar={["bar", "line", "tablo"]}
           apsisAdi="Puan türü"
           ordinatAdi="Puan"

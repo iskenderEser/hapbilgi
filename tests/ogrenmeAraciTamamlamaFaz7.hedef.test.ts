@@ -6,9 +6,11 @@ const oku = (yol: string) => readFileSync(new URL(`../${yol}`, import.meta.url),
 const sql = oku("scripts/sql/ogrenme_araclari_tamamlama_faz7_raporlama.sql");
 const ortak = oku("lib/rapor/paylasilan/aracTuruDagilimi.ts");
 const panel = oku("components/raporlar/OgrenmeAraciPerformansi.tsx");
-const apiYollari = ["utt", "bm", "tm", "yonetici", "uretim", "uretici"]
+const uretimApi = oku("app/(panel)/raporlar/api/uretim/route.ts");
+const yayinRaporlari = oku("app/(panel)/raporlar/yayin-raporlari/page.tsx");
+const digerApiYollari = ["utt", "bm", "tm", "yonetici", "uretici"]
   .map((ad) => oku(`app/(panel)/raporlar/api/${ad}/route.ts`));
-const sayfaYollari = ["utt", "bm", "tm", "yonetici", "yayin-raporlari", "uretici", "eczanem"]
+const digerSayfaYollari = ["utt", "bm", "tm", "yonetici", "uretici", "eczanem"]
   .map((ad) => oku(`app/(panel)/raporlar/${ad}/page.tsx`));
 
 test("araç bazında dönemsel yayın sayısı dört araç için üretilir", () => {
@@ -48,7 +50,8 @@ test("cevap bulunmadığında başarı yüzdesi sıfır yerine null olur", () =>
 test("kayıtlı araç puanı gerçek kazanım ve kayıptan ayrı tutulur", () => {
   assert.match(ortak, /kayitli_arac_puani/);
   assert.match(ortak, /net_kazanilan_puan: toplam\.kazanilan_puan - toplam\.kaybedilen_puan/);
-  assert.match(panel, /Kayıtlı araç puanı ile dönemde gerçekten kazanılan puan ayrı gösterilir/);
+  assert.match(panel, /satir\.kayitli_arac_puani/);
+  assert.match(panel, /satir\.net_kazanilan_puan/);
 });
 
 test("öneri ve challenge gönderim ile tamamlanma performansı raporlanır", () => {
@@ -66,18 +69,22 @@ test("E-Club ve Eczanem dağıtımı gönderim ve tamamlanma olarak ayrılır", 
 test("aynı eğitim ailesindeki yayınlar yayin_id ile ayrı, talep_id ile izlenebilir kalır", () => {
   assert.match(sql, /ky\.talep_id,ky\.talep_no/);
   assert.match(ortak, /new Map<string, OlayToplami>/);
-  assert.match(ortak, /yayinMetrigi\.get\(y\.yayin_id\)/);
+  assert.match(ortak, /yayinMetrigi\.get\(yayin_id\)/);
   assert.match(panel, /key=\{y\.yayin_id\}/);
 });
 
-test("ortak veri yapısı tüm mevcut rapor API ve ekranlarında kullanılır", () => {
-  for (const api of apiYollari) {
-    assert.match(api, /aracTuruDagilimi/);
-    assert.match(api, /arac_turu_dagilimi/);
+test("öğrenme aracı performansı yalnız üretici Yayın Raporlarında kullanılır", () => {
+  assert.match(uretimApi, /aracTuruDagilimi/);
+  assert.match(uretimApi, /arac_turu_dagilimi/);
+  assert.match(yayinRaporlari, /OgrenmeAraciPerformansi/);
+
+  for (const api of digerApiYollari) {
+    assert.doesNotMatch(api, /aracTuruDagilimi|arac_turu_dagilimi/);
   }
-  assert.match(oku("app/(panel)/eclub/raporlar/api/route.ts"), /arac_turu_dagilimi/);
-  assert.match(oku("app/(panel)/raporlar/api/eczanem/route.ts"), /arac_turu_dagilimi/);
-  for (const sayfa of [...sayfaYollari, oku("app/(panel)/eclub/raporlar/page.tsx")]) {
-    assert.match(sayfa, /OgrenmeAraciPerformansi/);
+  for (const sayfa of [
+    ...digerSayfaYollari,
+    oku("app/(panel)/eclub/raporlar/page.tsx"),
+  ]) {
+    assert.doesNotMatch(sayfa, /OgrenmeAraciPerformansi/);
   }
 });

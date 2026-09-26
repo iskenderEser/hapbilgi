@@ -6,7 +6,6 @@ import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { TUKETICI_ROLLER } from '@/lib/utils/roller';
 import { getUttData, netPuanToplami } from '@/lib/rapor/utt/getUttData';
 import { katkiYuzdesi } from '@/lib/rapor/paylasilan/oran';
-import { aracTuruDagilimi } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -42,13 +41,6 @@ export async function GET(request: Request) {
   } catch (err) {
     return sunucuHatasi(err, 'GET /raporlar/api/utt — dönemsel katkı verisi');
   }
-  const aracTurleri = await aracTuruDagilimi(adminSupabase, {
-    baslangic,
-    bitis,
-    takimId: kullanici.takim_id,
-    aktorId: kullanici.kullanici_id,
-  });
-
   // ─── İstatistikler — RPC çıktısından doğrudan ────────────────────────────
   const ozet = d.ozet ?? {
     izlenme_sayisi: 0,
@@ -116,7 +108,7 @@ export async function GET(request: Request) {
         takim_toplam_puan: toplamTakimPuan,
       },
       istatistikler,
-      arac_turu_dagilimi: aracTurleri,
+      arac_puan_dagilimi: d.aracPuanDagilimi,
       kategori_dagilimi: d.kategoriDagilimi,
       urun_dagilimi: d.urunDagilimi,
       begeni_listesi: begeniListesi,

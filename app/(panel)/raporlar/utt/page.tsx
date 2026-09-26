@@ -3,28 +3,42 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Activity, ArrowLeft, BarChart3, BookOpenCheck, CircleMinus, CirclePlus, Gauge, Layers3 } from 'lucide-react';
+import { Activity, ArrowLeft, BookOpenCheck, CircleMinus, CirclePlus, Gauge, Layers3, MousePointerClick } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
 import { YenileButonu } from '@/components/ui/yenile-butonu';
 import RaporPeriyotSecici from '@/components/raporlar/RaporPeriyotSecici';
-import { KIRMIZI, GRI_METIN, KOYU_METIN, formatPuan, type Periyot } from '@/lib/utils/raporUtils';
+import { KIRMIZI, KOYU_METIN, formatPuan, type Periyot } from '@/lib/utils/raporUtils';
 import { TUR_RAPOR_ADI, TUR_SIRA, isIcerikTuru } from '@/lib/video/icerikTuru';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
 import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
 import SayfaRehberi from '@/components/rehber/SayfaRehberi';
-import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerformansi';
-import type { AracTuruRaporSatiri } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
+import type { AracPuanDagilimiSatiri } from '@/lib/rapor/utt/getAracPuanDagilimi';
+import type { OgrenmeAraciTuru } from '@/lib/ogrenmeAraci/tipler';
 import styles from './utt-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
 const PERIYOT_PUAN_ADI: Record<Periyot, string> = {
-  bu_gun: 'Gün',
-  bu_hafta: 'Hafta',
-  bu_ay: 'Ay',
-  bu_donem: 'Dönem',
-  bu_yil: 'Yıl',
+  bu_gun: 'Günlük',
+  bu_hafta: 'Haftalık',
+  bu_ay: 'Aylık',
+  bu_donem: 'Dönemlik',
+  bu_yil: 'Yıllık',
+};
+
+const ARAC_ADLARI: Record<OgrenmeAraciTuru, string> = {
+  video: 'Video',
+  podcast: 'Podcast',
+  gorsel: 'Dijital Broşür',
+  flip_pdf: 'Literatür',
+};
+
+const ARAC_RENKLERI: Record<OgrenmeAraciTuru, string> = {
+  video: '#E24B4A',
+  podcast: '#7C5CE7',
+  gorsel: '#237AC8',
+  flip_pdf: '#D18B18',
 };
 
 interface UrunDagilimi {
@@ -73,7 +87,6 @@ const kategoriSirasi = (tur: string) => {
 };
 
 interface RaporData {
-  arac_turu_dagilimi: AracTuruRaporSatiri[];
   kullanici: {
     ad: string;
     soyad: string;
@@ -99,31 +112,85 @@ interface RaporData {
     oneri_kaybi: number;
     toplam_net_puan: number;
   };
+  arac_puan_dagilimi: AracPuanDagilimiSatiri[];
   kategori_dagilimi: KategoriDagilimi[];
   urun_dagilimi: UrunDagilimi[];
   begeni_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; begeni_sayisi: number; benim_begenim: boolean }>;
   favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number; benim_favorim: boolean }>;
 }
 
+function UttRaporSkeleton() {
+  return (
+    <div className={styles.page} aria-busy="true" aria-label="T-Club Raporları yükleniyor">
+      <div className={`${styles.container} animate-pulse`}>
+        <div className="mb-3 h-4 w-20 rounded bg-[#e3eaf2]" />
+        <div className={styles.header}>
+          <div>
+            <div className="h-8 w-52 rounded-lg bg-[#dfe8f2]" />
+            <div className="mt-2 h-3.5 w-64 max-w-[75vw] rounded bg-[#e8eef5]" />
+          </div>
+          <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+            <div className="h-10 min-w-0 flex-1 rounded-[14px] bg-[#e3eaf2] sm:w-64 sm:flex-none" />
+            <div className="h-10 w-[88px] shrink-0 rounded-xl bg-[#e3eaf2]" />
+          </div>
+        </div>
+
+        <div className={styles.heroGrid}>
+          <div className={`${styles.panel} h-44 bg-white`} />
+          <div className={`${styles.panel} h-44 bg-white`} />
+        </div>
+
+        <div className={`${styles.panel} ${styles.section}`}>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <div className="h-5 w-52 rounded bg-[#dfe8f2]" />
+              <div className="mt-2 h-3 w-64 max-w-[70vw] rounded bg-[#e8eef5]" />
+            </div>
+            <div className="h-9 w-9 rounded-full bg-[#e8eef5]" />
+          </div>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {[0, 1, 2, 3].map((item) => <div key={item} className="h-8 w-16 rounded-[10px] bg-[#edf1f5]" />)}
+          </div>
+          <div className="h-[270px] rounded-2xl bg-[#f3f6f9]" />
+        </div>
+
+        <div className={styles.analysisGrid}>
+          {[0, 1].map((item) => (
+            <div key={item} className={`${styles.panel} ${styles.section} mb-0`}>
+              <div className="mb-4 h-5 w-44 rounded bg-[#dfe8f2]" />
+              <div className="h-64 rounded-2xl bg-[#f3f6f9]" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <span className="sr-only">Rapor verileri hazırlanıyor.</span>
+    </div>
+  );
+}
+
 export default function UttRaporPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
+  const [acikArac, setAcikArac] = useState<string | null>(null);
   const [acikKategori, setAcikKategori] = useState<string | null>(null);
 
   const { data, loading, yenileniyor, error, yenile } = useRapor<RaporData>(
     '/raporlar/api/utt',
     periyot,
-    kullanici?.id
+    kullanici?.id,
+    { onbellekSuresi: 60_000, oturumOnbellegi: true, atomikGecis: true },
   );
 
-  if (yukleniyor || loading) return (
-    <div className="flex justify-center items-center min-h-screen">
-      <div className="text-sm" style={{ color: GRI_METIN }}>Yükleniyor...</div>
-    </div>
-  );
-  if (error) return (
-    <div className="flex justify-center items-center min-h-screen">
-      <div className="text-sm" style={{ color: KIRMIZI }}>Hata: {error}</div>
+  if (yukleniyor || (loading && !data)) return <UttRaporSkeleton />;
+  if (error && !data) return (
+    <div className={styles.page}>
+      <div className={styles.container}>
+        <div className="mx-auto mt-8 max-w-md rounded-2xl border border-red-100 bg-white p-6 text-center shadow-sm">
+          <h1 className="text-sm font-extrabold text-[#a43737]">T-Club Raporları yüklenemedi</h1>
+          <p className="mt-1 text-xs font-semibold text-[#7d8ba0]">{error}</p>
+          <button type="button" onClick={yenile} className="mt-4 min-h-11 rounded-xl bg-[#237ac8] px-4 text-xs font-extrabold text-white">Tekrar Dene</button>
+        </div>
+      </div>
     </div>
   );
   if (!kullanici || !data) return null;
@@ -142,8 +209,6 @@ export default function UttRaporPage() {
   ];
   const pozitifToplam = pozitifKalemler.reduce((toplam, kalem) => toplam + kalem.puan, 0);
   const toplamKayip = kayipKalemleri.reduce((toplam, kalem) => toplam + kalem.puan, 0);
-  const enGuclu = [...pozitifKalemler].sort((a, b) => b.puan - a.puan)[0];
-  const enBuyukKayip = [...kayipKalemleri].sort((a, b) => b.puan - a.puan)[0];
   const oneCikanUrun = [...(data.urun_dagilimi ?? [])].sort((a, b) => b.toplam_net_puan - a.toplam_net_puan)[0];
 
   return (
@@ -167,11 +232,15 @@ export default function UttRaporPage() {
           </div>
           <div className="flex w-full items-center gap-2 sm:w-auto">
             <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
-            <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
+            <YenileButonu yenileniyor={yenileniyor || loading} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>
-        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
-
+        {(yenileniyor || error) && (
+          <div className={`mb-4 flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-[11px] font-bold ${error ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-blue-100 bg-blue-50 text-blue-700'}`} role="status">
+            <span>{error ? `${error} Mevcut rapor gösterilmeye devam ediyor.` : 'Seçilen dönem için rapor güncelleniyor…'}</span>
+            {error && <button type="button" onClick={yenile} className="shrink-0 rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 font-extrabold text-amber-900">Tekrar Dene</button>}
+          </div>
+        )}
         <div className={styles.heroGrid}>
           <section className={`${styles.panel} ${styles.scoreHero}`}>
             <div>
@@ -179,11 +248,6 @@ export default function UttRaporPage() {
               <div className={styles.netScore}>{formatPuan(data.istatistikler.toplam_net_puan)}</div>
             </div>
             <div className="relative z-10 min-w-0">
-              <h2 className="text-base font-extrabold text-[#20324c]">Puanını nasıl ürettin?</h2>
-              <p className="mt-1 text-xs font-medium leading-relaxed text-[#718198]">
-                En güçlü kaynağın <strong className="text-[#16865f]">{enGuclu.ad} (+{formatPuan(enGuclu.puan)})</strong>.
-                {enBuyukKayip.puan > 0 && <> En yüksek kaybın <strong className="text-[#d44b40]">{enBuyukKayip.ad} (−{formatPuan(enBuyukKayip.puan)})</strong>.</>}
-              </p>
               <div className={styles.metricGrid}>
                 <div className={styles.metric}>
                   <CirclePlus className="mb-1 h-4 w-4 text-[#1d9e75]" />
@@ -206,7 +270,7 @@ export default function UttRaporPage() {
 
           <section className={`${styles.panel} ${styles.contribution}`}>
             <div className="mb-3 flex items-center justify-between">
-              <div><div className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#71859d]">Etkileşim alanın</div><h2 className="text-sm font-extrabold text-[#20324c]">Katkı Payın</h2></div>
+              <h2 className="text-base font-extrabold text-[#20324c]">Katkı Payın</h2>
               <div className={styles.sectionIcon}><Gauge className="h-4 w-4" /></div>
             </div>
             {[
@@ -227,31 +291,64 @@ export default function UttRaporPage() {
           </section>
         </div>
 
-        <section className={`${styles.panel} ${styles.section}`}>
-          <div className={styles.sectionHeader}>
-            <div><div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Kazançlar ve kayıplar</div><h2 className="text-base font-extrabold text-[#20324c]">Puan Akışı</h2><p className="mt-0.5 text-[11px] font-medium text-[#8190a3]">Net puanını oluşturan bütün davranış kalemleri</p></div>
-            <div className={styles.sectionIcon}><Activity className="h-4 w-4" /></div>
-          </div>
-          <DagilimGrafik
-            veri={[
-              { ad: 'Video', puan: data.istatistikler.izleme_puani, renk: '#1D9E75' },
-              { ad: 'Doğru Cevap', puan: data.istatistikler.cevaplama_puani, renk: '#1D9E75' },
-              { ad: 'Öneri', puan: data.istatistikler.oneri_puani, renk: '#1D9E75' },
-              { ad: 'Extra', puan: data.istatistikler.extra_puan, renk: '#1D9E75' },
-              { ad: 'E-Club', puan: (data.istatistikler.eclub_puani ?? 0), renk: '#1D9E75' },
-              { ad: 'İleri sarma', puan: -data.istatistikler.ileri_sarma_kaybi, renk: '#D44B40' },
-              { ad: 'Yanlış cevap', puan: -data.istatistikler.yanlis_cevap_kaybi, renk: '#D44B40' },
-              { ad: 'Öneri kaybı', puan: -data.istatistikler.oneri_kaybi, renk: '#D44B40' },
-            ]}
-            modlar={['bar', 'line', 'tablo']}
-            apsisAdi="Puan türü"
-            ordinatAdi="Puan"
-            indirAdi="toplam-puan"
-            height={270}
-            modern
-          />
-          <div className={styles.insight}><BarChart3 className="mt-0.5 h-4 w-4 shrink-0 text-[#237ac8]" /><span>Bu dönemde <strong>{formatPuan(pozitifToplam)}</strong> pozitif puan ürettin; davranış kayıpları net sonucunu <strong>{formatPuan(toplamKayip)} puan</strong> azalttı.</span></div>
-        </section>
+        {(() => {
+          const aracDagilimi = data.arac_puan_dagilimi ?? [];
+          const seciliArac = aracDagilimi.find((arac) => ARAC_ADLARI[arac.arac_turu] === acikArac) ?? null;
+          return (
+            <section className={`${styles.panel} ${styles.section}`}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h2 className="text-base font-extrabold text-[#20324c]">Öğrenme Aracı Puan İlişkisi</h2>
+                  <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-[#237ac8]">
+                    <MousePointerClick className="h-3.5 w-3.5 shrink-0" />
+                    <span>{acikArac ? `${acikArac} seçildi · Kapatmak için tekrar seçin` : 'Puan detayları için grafikte bir öğrenme aracı seçin'}</span>
+                  </div>
+                </div>
+                <div className={styles.sectionIcon}><Activity className="h-4 w-4" /></div>
+              </div>
+              <div className="[&_canvas]:cursor-pointer">
+                <DagilimGrafik
+                  veri={aracDagilimi.map((arac) => ({
+                    ad: ARAC_ADLARI[arac.arac_turu],
+                    puan: arac.net_puan,
+                    renk: ARAC_RENKLERI[arac.arac_turu],
+                  }))}
+                  secili={acikArac}
+                  onSecim={setAcikArac}
+                  modlar={['pie', 'bar', 'line', 'tablo']}
+                  apsisAdi="Öğrenme aracı"
+                  ordinatAdi="Net puan"
+                  indirAdi="ogrenme-araci-puan-iliskisi"
+                  height={270}
+                  modern
+                />
+              </div>
+              {seciliArac && (
+                <div className={styles.detailBox} aria-live="polite">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-[#20324c]">{ARAC_ADLARI[seciliArac.arac_turu]}</span>
+                    <span className="text-sm font-extrabold text-[#237ac8]">{formatPuan(seciliArac.net_puan)} net puan</span>
+                  </div>
+                  {[
+                    { label: 'Tamamlama puanı', value: seciliArac.tamamlama_puani, renk: '#16865f', prefix: '+ ' },
+                    { label: 'Doğru cevap puanı', value: seciliArac.dogru_cevap_puani, renk: '#16865f', prefix: '+ ' },
+                    { label: 'Öneri puanı', value: seciliArac.oneri_puani, renk: '#16865f', prefix: '+ ' },
+                    { label: 'Extra puan', value: seciliArac.extra_puani, renk: '#16865f', prefix: '+ ' },
+                    { label: 'E-Club puanı', value: seciliArac.eclub_puani, renk: '#16865f', prefix: '+ ' },
+                    { label: 'İleri sarma kaybı', value: seciliArac.ileri_sarma_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
+                    { label: 'Yanlış cevap kaybı', value: seciliArac.yanlis_cevap_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
+                    { label: 'Öneri kaybı', value: seciliArac.oneri_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
+                  ].map((kalem) => (
+                    <div key={kalem.label} className="flex justify-between border-b border-[#e9eef4] py-1.5 text-[11px]">
+                      <span className={kalem.kayip ? 'text-[#d44b40]' : 'text-[#718198]'}>{kalem.label}</span>
+                      <span style={{ color: kalem.renk, fontWeight: 700 }}>{kalem.prefix}{formatPuan(Math.abs(kalem.value))}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })()}
 
         <div className={styles.analysisGrid}>
           {(data.kategori_dagilimi ?? []).length > 0 && (() => {
@@ -260,13 +357,24 @@ export default function UttRaporPage() {
             const seciliKat = sirali.find(k => kategoriAdi(k.icerik_turu) === acikKategori) ?? null;
             return (
               <section className={`${styles.panel} ${styles.section} mb-0`}>
-                <div className={styles.sectionHeader}><div><div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Nerede güçlüsün?</div><h2 className="text-base font-extrabold text-[#20324c]">Eğitim Kategorileri</h2></div><div className={styles.sectionIcon}><BookOpenCheck className="h-4 w-4" /></div></div>
-                <DagilimGrafik veri={kategoriler} secili={acikKategori} onSecim={setAcikKategori} indirAdi="egitim-kategori-dagilimi" height={250} modern />
+                <div className={styles.sectionHeader}>
+                  <div>
+                    <h2 className="text-base font-extrabold text-[#20324c]">Eğitim Puan İlişkisi</h2>
+                    <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-[#237ac8]">
+                      <MousePointerClick className="h-3.5 w-3.5 shrink-0" />
+                      <span>{acikKategori ? `${acikKategori} seçildi · Kapatmak için tekrar seçin` : 'Puan detayları için grafikte bir kategori seçin'}</span>
+                    </div>
+                  </div>
+                  <div className={styles.sectionIcon}><BookOpenCheck className="h-4 w-4" /></div>
+                </div>
+                <div className="[&_canvas]:cursor-pointer">
+                  <DagilimGrafik veri={kategoriler} secili={acikKategori} onSecim={setAcikKategori} indirAdi="egitim-kategori-dagilimi" height={250} modern />
+                </div>
                 {seciliKat && (
-                  <div className={styles.detailBox}>
+                  <div className={styles.detailBox} aria-live="polite">
                     <div className="mb-2 flex items-center justify-between"><span className="text-xs font-extrabold text-[#20324c]">{kategoriAdi(seciliKat.icerik_turu)} · {seciliKat.izlenme_sayisi} izlenme</span><span className="text-sm font-extrabold text-[#237ac8]">{formatPuan(seciliKat.toplam_net_puan)}</span></div>
                     {[
-                      { label: 'Video puanı', value: seciliKat.video_puani, renk: KOYU_METIN },
+                      { label: 'Tamamlama Puanı', value: seciliKat.video_puani, renk: KOYU_METIN },
                       { label: 'Doğru cevap puanı', value: seciliKat.soru_puani, renk: '#16865f', prefix: '+ ' },
                       { label: 'Öneri puanı', value: seciliKat.oneri_puani, renk: '#16865f', prefix: '+ ' },
                       { label: 'Extra puan', value: seciliKat.extra_puan, renk: '#16865f', prefix: '+ ' },
@@ -283,8 +391,8 @@ export default function UttRaporPage() {
 
           {(data.urun_dagilimi ?? []).length > 0 && (
             <section className={`${styles.panel} ${styles.section} mb-0`}>
-              <div className={styles.sectionHeader}><div><div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Hangi ürün katkı sağladı?</div><h2 className="text-base font-extrabold text-[#20324c]">Ürün Performansı</h2></div><div className={styles.sectionIcon}><Layers3 className="h-4 w-4" /></div></div>
-              <UrunKirilimPaneli urunler={data.urun_dagilimi} modern />
+              <div className={styles.sectionHeader}><h2 className="text-base font-extrabold text-[#20324c]">Ürün Puan İlişkisi</h2><div className={styles.sectionIcon}><Layers3 className="h-4 w-4" /></div></div>
+              <UrunKirilimPaneli urunler={data.urun_dagilimi} modern tamamlamaEtiketi="Tamamlama Puanı" />
             </section>
           )}
         </div>

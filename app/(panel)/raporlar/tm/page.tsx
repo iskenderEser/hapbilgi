@@ -15,8 +15,6 @@ import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
 import BmPerformansGorunumu from '@/components/raporlar/BmPerformansGorunumu';
 import type { BmPerformansDetay } from '@/lib/rapor/paylasilan/bmPerformansTipleri';
 import SayfaRehberi from '@/components/rehber/SayfaRehberi';
-import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerformansi';
-import type { AracTuruRaporSatiri } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 import styles from '../utt/utt-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
@@ -52,7 +50,6 @@ interface UrunDagilimi extends DagilimPuanlari {
 }
 
 interface RaporData {
-  arac_turu_dagilimi: AracTuruRaporSatiri[];
   kullanici: {
     ad: string;
     soyad: string;
@@ -152,8 +149,6 @@ export default function TmRaporPage() {
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>
-        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
-
         <div className={styles.heroGrid}>
           <section className={`${styles.panel} ${styles.scoreHero}`}>
             <div>
