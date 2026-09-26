@@ -11,13 +11,21 @@ import {
 import { YayinKarti } from "@/components/yayin/YayinKarti";
 import type { OneriKaydi } from "./BmOneriTakibi";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
-import { useListe, IcerikFiltreBari, type AramaAlani } from "@/components/liste";
+import { YAYIN_TURLERI, YAYIN_TURU_SUNUMU } from "@/lib/ogrenmeAraci/turSunumu";
 import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 
 type UttOneriFiltresi = "tumu" | "izlenecek" | "tamamlanan" | "suresi_dolan";
+
+const YAYIN_TURU_SECENEKLERI: Array<{ key: YayinTuruFiltreDegeri; label: string }> = [
+  ...YAYIN_TURLERI.map((tur) => ({
+    key: tur,
+    label: YAYIN_TURU_SUNUMU[tur].cogulEtiket,
+  })),
+];
 
 interface Props {
   oneriler: OneriKaydi[];
@@ -40,7 +48,7 @@ export default function UyeOnerilerGorunumu({
   const [aktifFiltre, setAktifFiltre] = useState<UttOneriFiltresi>(
     varsayilanSekme === "tamamlanan" ? "tamamlanan" : "izlenecek"
   );
-  const [aktifTur, setAktifTur] = useState<YayinTuruFiltreDegeri>("tumu");
+  const [aktifTur, setAktifTur] = useState<YayinTuruFiltreDegeri>("video");
 
   const formatTarihKisa = (tarih: string) => {
     const date = new Date(tarih);
@@ -70,7 +78,6 @@ export default function UyeOnerilerGorunumu({
   const izlenecekSayisi = useMemo(() => oneriler.filter(isIzlenecek).length, [oneriler]);
   const tamamlananSayisi = useMemo(() => oneriler.filter(isTamamlandi).length, [oneriler]);
   const suresiDolanSayisi = useMemo(() => oneriler.filter(isSuresiGecti).length, [oneriler]);
-  const toplamSayisi = oneriler.length;
 
   // Stat / Durum filtresi uygulanmış liste
   const durumFiltreliOneriler = useMemo(() => {
@@ -81,54 +88,26 @@ export default function UyeOnerilerGorunumu({
   }, [aktifFiltre, oneriler]);
   /* eslint-enable react-hooks/purity, react-hooks/exhaustive-deps */
 
-  // Tür sayıları (aktif duruma göre)
-  const turSayilari: Record<OgrenmeAraciTuru, number> = useMemo(() => {
-    const sayac: Record<OgrenmeAraciTuru, number> = {
-      video: 0,
-      podcast: 0,
-      gorsel: 0,
-      flip_pdf: 0,
-    };
-    durumFiltreliOneriler.forEach((o) => {
-      const tur = (o.arac_turu as OgrenmeAraciTuru) ?? "video";
-      if (sayac[tur] !== undefined) {
-        sayac[tur]++;
-      }
-    });
-    return sayac;
-  }, [durumFiltreliOneriler]);
-
   // Tür filtresi uygulanmış liste
   const turFiltreliOneriler = useMemo(() => {
-    if (aktifTur === "tumu") return durumFiltreliOneriler;
-    return durumFiltreliOneriler.filter((o) => {
-      const tur = (o.arac_turu as OgrenmeAraciTuru) ?? "video";
-      return tur === aktifTur;
+    const seciliTurOnerileri = aktifTur === "tumu"
+      ? durumFiltreliOneriler
+      : durumFiltreliOneriler.filter((o) => {
+          const tur = (o.arac_turu as OgrenmeAraciTuru) ?? "video";
+          return tur === aktifTur;
+        });
+
+    return [...seciliTurOnerileri].sort((a, b) => {
+      const aTarihi = new Date(a.created_at).getTime();
+      const bTarihi = new Date(b.created_at).getTime();
+      if (!Number.isFinite(aTarihi) && !Number.isFinite(bTarihi)) return 0;
+      if (!Number.isFinite(aTarihi)) return 1;
+      if (!Number.isFinite(bTarihi)) return -1;
+      return aTarihi - bTarihi;
     });
   }, [durumFiltreliOneriler, aktifTur]);
 
-  // Merve'deki merkezi useListe arama kancası
-  const ARAMA_ALANLARI: AramaAlani<OneriKaydi>[] = useMemo(
-    () => [
-      {
-        anahtar: "tumu",
-        etiket: "Tümü",
-        deger: (o: OneriKaydi) => `${o.urun_adi} ${o.teknik_adi ?? ""} ${o.oneren_adi ?? ""} ${o.kullanici_adi ?? ""}`,
-      },
-      { anahtar: "urun", etiket: "Ürün / Eğitim", deger: (o: OneriKaydi) => o.urun_adi },
-      { anahtar: "teknik", etiket: "Teknik Adı", deger: (o: OneriKaydi) => o.teknik_adi ?? "" },
-      { anahtar: "oneren", etiket: "Öneren", deger: (o: OneriKaydi) => o.oneren_adi ?? o.kullanici_adi ?? "" },
-    ],
-    []
-  );
-
-  const liste = useListe({
-    veri: turFiltreliOneriler,
-    adim: Infinity,
-    aramaAlanlari: ARAMA_ALANLARI,
-  });
-
-  const sonFiltrelenmisOneriler = liste.gorunen;
+  const sonFiltrelenmisOneriler = turFiltreliOneriler;
 
   const kartDurumu = (o: OneriKaydi): {
     etiket: string;
@@ -262,12 +241,12 @@ export default function UyeOnerilerGorunumu({
   const sayfaAciklamasi =
     varsayilanSekme === "tamamlanan"
       ? "Başarıyla tamamlayarak öneri puanı kazandığınız yayınlar."
-      : "Bölge Müdürünüz tarafından adınıza planlanan ve izleme bekleyen yayınlar.";
+      : "Bölge Müdürünüz tarafından önerilen yayınları görebilirsiniz.";
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
       {/* ─── Başlık & Yenileme Alanı ─── */}
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mb-6">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black tracking-tight text-gray-900 md:text-3xl">
@@ -279,18 +258,14 @@ export default function UyeOnerilerGorunumu({
             {sayfaAciklamasi}
           </p>
         </div>
-        <YenileButonu
-          yenileniyor={yenileniyor}
-          onYenile={onYenile}
-        />
       </header>
 
-      {/* ─── 1. Katman: 4'lü Stat Kartları ─── */}
-      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-3">
+      {/* ─── 1. Katman: Stat Kartları ─── */}
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 md:gap-3">
         {[
           {
             id: "izlenecek" as const,
-            label: "İzleme Bekleyen",
+            label: "Bekleyen",
             deger: izlenecekSayisi,
             sub: "Süresi aktif öneriler",
             renk: "#237ac8",
@@ -298,7 +273,7 @@ export default function UyeOnerilerGorunumu({
           },
           {
             id: "tamamlanan" as const,
-            label: "Tamamlananlar",
+            label: "Tamamlanan",
             deger: tamamlananSayisi,
             sub: "Öneri puanı kazanıldı",
             renk: "#16a34a",
@@ -306,19 +281,11 @@ export default function UyeOnerilerGorunumu({
           },
           {
             id: "suresi_dolan" as const,
-            label: "Süresi Dolanlar",
+            label: "Süresi Dolan",
             deger: suresiDolanSayisi,
             sub: "Tamamlanmayanlar",
             renk: "#a33f32",
             zemin: "#fff1f0",
-          },
-          {
-            id: "tumu" as const,
-            label: "Toplam Öneri",
-            deger: toplamSayisi,
-            sub: "Tüm önerilen içerikler",
-            renk: "#64748b",
-            zemin: "#f8fafc",
           },
         ].map((kart) => {
           const secili = aktifFiltre === kart.id;
@@ -335,7 +302,7 @@ export default function UyeOnerilerGorunumu({
                   router.push("/oneriler");
                   return;
                 }
-                setAktifFiltre(secili && kart.id !== "tumu" ? "tumu" : kart.id);
+                setAktifFiltre(secili ? "tumu" : kart.id);
               }}
               className="group relative cursor-pointer rounded-2xl border border-[#dfe7f1] bg-white p-3 text-left shadow-[0_4px_14px_rgba(31,55,90,0.035)] transition-all hover:-translate-y-0.5 hover:shadow-md md:p-4"
               style={
@@ -358,38 +325,38 @@ export default function UyeOnerilerGorunumu({
         })}
       </div>
 
-      {/* ─── 2. Katman: Yatay Pill Bandı & Merve'deki Standart Liste Arama (IcerikFiltreBari) ─── */}
-      <IcerikFiltreBari
-        turFiltresi={{
-          secili: aktifTur,
-          onSec: setAktifTur,
-          sayilar: turSayilari,
-        }}
-        arama={liste.arama}
-        ipucu="Öneri, ürün veya konu ara..."
-        aramaGenislik="w-48 sm:w-60"
-      />
-
+      {/* ─── 2. Katman: Birleşik Yayın Türü Seçici ve Yenileme ─── */}
+      <div className="mb-5 flex min-w-0 items-center justify-end gap-2">
+        <PeriyotButonlari
+          secenekler={YAYIN_TURU_SECENEKLERI}
+          deger={aktifTur}
+          onDegistir={setAktifTur}
+          ariaLabel="Yayın türüne göre filtrele"
+          className="min-w-0 flex-1 sm:flex-none"
+        />
+        <YenileButonu
+          yenileniyor={yenileniyor}
+          onYenile={onYenile}
+          className="shrink-0"
+        />
+      </div>
       {/* ─── 3. Katman: Yayın Kartları Izgarası ─── */}
       {sonFiltrelenmisOneriler.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
           <p className="text-sm font-bold text-gray-600">
-            {liste.arama.aranan || aktifTur !== "tumu"
-              ? "Arama veya filtre kriterlerinize uygun öneri bulunamadı."
+            {aktifTur !== "tumu"
+              ? "Seçilen yayın türünde öneri bulunamadı."
               : varsayilanSekme === "tamamlanan"
                 ? "Henüz tamamlanmış öneriniz bulunmuyor."
                 : "İzleme bekleyen öneriniz bulunmuyor."}
           </p>
-          {(liste.arama.aranan || aktifTur !== "tumu") && (
+          {aktifTur !== "tumu" && (
             <button
               type="button"
-              onClick={() => {
-                liste.arama.aramaDegistir("");
-                setAktifTur("tumu");
-              }}
+              onClick={() => setAktifTur("tumu")}
               className="mt-3 text-xs font-bold text-[#237ac8] hover:underline cursor-pointer"
             >
-              Filtreleri temizle
+              Tümünü göster
             </button>
           )}
         </div>
@@ -398,27 +365,24 @@ export default function UyeOnerilerGorunumu({
           kayitlar={sonFiltrelenmisOneriler}
           kayitAnahtari={(o) => o.oneri_id}
           renderKart={renderOneriKarti}
-          sifirlamaAnahtari={`${aktifFiltre}-${aktifTur}-${liste.arama.alanAnahtari}-${liste.arama.aranan}`}
+          sifirlamaAnahtari={`${aktifFiltre}-${aktifTur}`}
           sayacGoster={false}
           bosDurum={
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
               <p className="text-sm font-bold text-gray-600">
-                {liste.arama.aranan || aktifTur !== "tumu"
-                  ? "Arama veya filtre kriterlerinize uygun öneri bulunamadı."
+                {aktifTur !== "tumu"
+                  ? "Seçilen yayın türünde öneri bulunamadı."
                   : varsayilanSekme === "tamamlanan"
                     ? "Henüz tamamlanmış öneriniz bulunmuyor."
                     : "İzleme bekleyen öneriniz bulunmuyor."}
               </p>
-              {(liste.arama.aranan || aktifTur !== "tumu") && (
+              {aktifTur !== "tumu" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    liste.arama.aramaDegistir("");
-                    setAktifTur("tumu");
-                  }}
+                  onClick={() => setAktifTur("tumu")}
                   className="mt-3 text-xs font-bold text-[#237ac8] hover:underline cursor-pointer"
                 >
-                  Filtreleri temizle
+                  Tümünü göster
                 </button>
               )}
             </div>

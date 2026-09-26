@@ -79,11 +79,12 @@ test("Faz 2 mimari: UttAnaSayfa Kategori ve Aktif Durum listelerini MobilYayinAk
   assert.match(uttAnaSayfaKodu, /<HayaletTanburSecici[\s\S]*bolumler=\{tanburBolumleri\}/);
 });
 
-test("Faz 2 mimari: UyeOnerilerGorunumu MobilYayinAkisi kullanır, oneri_id anahtarını korur ve alanAnahtari ile sıfırlar", () => {
+test("Faz 2 mimari: UyeOnerilerGorunumu MobilYayinAkisi kullanır, oneri_id anahtarını korur ve filtrelerle sıfırlar", () => {
   assert.match(uyeOnerilerKodu, /import MobilYayinAkisi from "@\/components\/yayin\/MobilYayinAkisi"/);
   assert.match(uyeOnerilerKodu, /<MobilYayinAkisi<OneriKaydi>/);
   assert.match(uyeOnerilerKodu, /kayitAnahtari=\{\(o\)\s*=>\s*o\.oneri_id\}/);
-  assert.match(uyeOnerilerKodu, /sifirlamaAnahtari=.*alanAnahtari.*aranan/);
+  assert.match(uyeOnerilerKodu, /sifirlamaAnahtari=\{`\$\{aktifFiltre\}-\$\{aktifTur\}`\}/);
+  assert.doesNotMatch(uyeOnerilerKodu, /IcerikFiltreBari|useListe\(/);
 
   // Öneri künye bilgileri korunmalı
   assert.match(uyeOnerilerKodu, /Öneren/);

@@ -19,11 +19,12 @@ test("mutlu: Önerilen Yayınlar ana menüsü ve alt sekmeleri doğru rozet ve r
   assert.match(bekleyenSayfa, /<UyeOnerilerGorunumu[\s\S]*varsayilanSekme="bekleyen"/);
   assert.match(tamamlananSayfa, /<UyeOnerilerGorunumu[\s\S]*varsayilanSekme="tamamlanan"/);
 
-  // 3. Stat kartları, IcerikFiltreBari ve useListe standardı
-  assert.match(gorunumBileseni, /<IcerikFiltreBari/);
-  assert.match(gorunumBileseni, /useListe\(/);
-  assert.match(gorunumBileseni, /İzleme Bekleyen/);
-  assert.match(gorunumBileseni, /Tamamlananlar/);
+  // 3. Stat kartları ve birleşik yayın türü seçici
+  assert.match(gorunumBileseni, /<PeriyotButonlari/);
+  assert.doesNotMatch(gorunumBileseni, /<IcerikFiltreBari/);
+  assert.doesNotMatch(gorunumBileseni, /useListe\(/);
+  assert.match(gorunumBileseni, /label:\s*"Bekleyen"/);
+  assert.match(gorunumBileseni, /label:\s*"Tamamlanan"/);
 });
 
 test("red: Tamamlanan Öneriler rotası yetkisiz erişimi engeller", () => {
