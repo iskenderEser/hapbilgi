@@ -53,7 +53,9 @@ function hesaplaKazanim(s: LigSatiri) {
 }
 
 function hesaplaKayip(s: LigSatiri) {
-  return Number(s.ileri_sarma_kaybi || 0) + Number(s.yanlis_cevap_kaybi || 0);
+  return Number(s.ileri_sarma_kaybi || 0)
+    + Number(s.yanlis_cevap_kaybi || 0)
+    + Number(s.challenge_kaybi || 0);
 }
 
 export default function CcTakimLigAkordeonu({
@@ -84,7 +86,7 @@ export default function CcTakimLigAkordeonu({
         .map((bm) => {
           const k = hesaplaKazanim(bm);
           const z = hesaplaKayip(bm);
-          const net = Number(bm.toplam_net_puan || (k - z));
+          const net = Number(bm.toplam_net_puan ?? (k - z));
           tKazanim += k;
           tKayip += z;
           if (k + z > 0) tAktif++;

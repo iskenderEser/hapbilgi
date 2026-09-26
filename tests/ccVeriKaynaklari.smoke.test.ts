@@ -8,6 +8,10 @@ const ozetSql = readFileSync("scripts/sql/cc_ligi_ozet.sql", "utf8");
 const backfillSql = readFileSync("scripts/sql/cc_ligi_backfill.sql", "utf8");
 const okumaSql = readFileSync("scripts/sql/cc_ligi_okuma.sql", "utf8");
 const ligApi = readFileSync("app/(panel)/cc-ligi/api/route.ts", "utf8");
+const ligSayfasi = readFileSync("app/(panel)/cc-ligi/page.tsx", "utf8");
+const takimAkordeonu = readFileSync("components/cc-ligi/CcTakimLigAkordeonu.tsx", "utf8");
+const ligIskeleti = readFileSync("components/cc-ligi/CcLigiSkeleton.tsx", "utf8");
+const ligLoading = readFileSync("app/(panel)/cc-ligi/loading.tsx", "utf8");
 
 test("mutlu: CC özet ve backfill yalnız C-Club puan/kayıp tablolarını kullanır", () => {
   assert.match(ozetSql, /CREATE TRIGGER trg_cc_ozet_kazanim[\s\S]*ON public\.cc_kazanilan_puanlar/);
@@ -42,4 +46,33 @@ test("mutlu: bütün lig dönemleri ve liderler aynı net puan sözleşmesini ku
 test("ret: challenge listesi UTC ay sınırıyla ligden ayrılamaz", () => {
   assert.match(ligApi, /ligPeriyoduAraligi\(\{[\s\S]*periyot: "ay"/);
   assert.doesNotMatch(ligApi, /Date\.UTC\(periyot\.yil/);
+});
+
+test("mutlu: yönetici takım toplamı challenge kaybını net puandan düşer", () => {
+  assert.match(takimAkordeonu, /Number\(s\.challenge_kaybi \|\| 0\)/);
+  assert.match(takimAkordeonu, /bm\.toplam_net_puan \?\?/);
+});
+
+test("mutlu: C-Club mobil stat kartları net üstte, kazanım ve kayıp altta iki sütundur", () => {
+  assert.match(ligSayfasi, /URETICI_ROLLER\.includes/);
+  assert.match(ligSayfasi, /ureticiMi \? "grid-cols-2" : "grid-cols-1"/);
+  assert.match(ligSayfasi, /ureticiMi \? "col-span-2 sm:col-span-1"/);
+});
+
+test("mutlu: C-Club dönem istekleri kısa süreli oturum önbelleği ve iptal kullanır", () => {
+  assert.match(ligSayfasi, /CC_LIG_ONBELLEK_SURESI = 60_000/);
+  assert.match(ligSayfasi, /sessionStorage\.setItem/);
+  assert.match(ligSayfasi, /devamEdenCcLigIstekleri/);
+  assert.match(ligSayfasi, /AbortController/);
+  assert.match(ligSayfasi, /onPeriyotChange=\{\(yeniPeriyot\) => void ligiYukle\(yeniPeriyot, false, true\)\}/);
+  assert.match(ligSayfasi, /if \(periyoduUygula\) setPeriyot\(hedefPeriyot\)/);
+  assert.doesNotMatch(ligSayfasi, /onPeriyotChange=\{setPeriyot\}/);
+});
+
+test("mutlu: C-Club yalnız ilk boş yüklemede sayfa düzeniyle uyumlu iskelet gösterir", () => {
+  assert.match(ligSayfasi, /ligYukleniyor && ligSatirlari\.length === 0/);
+  assert.match(ligSayfasi, /<CcLigiSkeleton/);
+  assert.match(ligIskeleti, /animate-pulse/);
+  assert.match(ligIskeleti, /aria-label="C-Club Ligi yükleniyor"/);
+  assert.match(ligLoading, /CcLigiSkeleton/);
 });
