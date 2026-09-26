@@ -302,9 +302,9 @@ export default function UyeOnerilerGorunumu({
                   router.push("/oneriler");
                   return;
                 }
-                setAktifFiltre(secili ? "tumu" : kart.id);
+                setAktifFiltre(kart.id);
               }}
-              className="group relative cursor-pointer rounded-2xl border border-[#dfe7f1] bg-white p-3 text-left shadow-[0_4px_14px_rgba(31,55,90,0.035)] transition-all hover:-translate-y-0.5 hover:shadow-md md:p-4"
+              className={`group relative cursor-pointer rounded-2xl border border-[#dfe7f1] bg-white p-3 text-left shadow-[0_4px_14px_rgba(31,55,90,0.035)] transition-all hover:-translate-y-0.5 hover:shadow-md md:p-4 ${kart.id === "suresi_dolan" ? "col-span-2 sm:col-span-1" : ""}`}
               style={
                 {
                   borderLeftWidth: "4px",
@@ -350,15 +350,6 @@ export default function UyeOnerilerGorunumu({
                 ? "Henüz tamamlanmış öneriniz bulunmuyor."
                 : "İzleme bekleyen öneriniz bulunmuyor."}
           </p>
-          {aktifTur !== "tumu" && (
-            <button
-              type="button"
-              onClick={() => setAktifTur("tumu")}
-              className="mt-3 text-xs font-bold text-[#237ac8] hover:underline cursor-pointer"
-            >
-              Tümünü göster
-            </button>
-          )}
         </div>
       ) : (
         <MobilYayinAkisi<OneriKaydi>
@@ -376,15 +367,6 @@ export default function UyeOnerilerGorunumu({
                     ? "Henüz tamamlanmış öneriniz bulunmuyor."
                     : "İzleme bekleyen öneriniz bulunmuyor."}
               </p>
-              {aktifTur !== "tumu" && (
-                <button
-                  type="button"
-                  onClick={() => setAktifTur("tumu")}
-                  className="mt-3 text-xs font-bold text-[#237ac8] hover:underline cursor-pointer"
-                >
-                  Tümünü göster
-                </button>
-              )}
             </div>
           }
           masaustuIcerik={
