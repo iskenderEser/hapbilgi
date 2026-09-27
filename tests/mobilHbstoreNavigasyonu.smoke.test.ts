@@ -34,7 +34,7 @@ test("mobil HBStore grubu UTT, KD_UTT ve BM için C-Club bayrağından bağıms�
     const hbstore = mobilNav[hbstoreIndexi];
 
     assert.ok(hbstore);
-    assert.equal(hbstoreIndexi, tclubIndexi + 1);
+    assert.equal(hbstoreIndexi + 1, tclubIndexi);
     assert.deepEqual(
       hbstore.oglar.filter((oge) => oge.gate({ ...temelBaglam, rolKucu })).map((oge) => oge.path),
       kisiselStoreYollari,

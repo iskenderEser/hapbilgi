@@ -195,7 +195,9 @@ export function mobilPanelNavOlustur(gruplar: NavGrup[], ctx: NavContext): NavGr
     ],
   };
   const tclubIndex = temizGruplar.findIndex((grup) => grup.baslik === "T-Club");
-  const eklemeIndexi = tclubIndex >= 0 ? tclubIndex + 1 : temizGruplar.length;
+  // Mobilde ilk bakışta görünür ve açık olması için HBStore, uzun T-Club
+  // grubunun arkasına değil hemen önüne yerleşir.
+  const eklemeIndexi = tclubIndex >= 0 ? tclubIndex : temizGruplar.length;
 
   return [
     ...temizGruplar.slice(0, eklemeIndexi),
