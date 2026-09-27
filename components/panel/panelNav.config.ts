@@ -162,6 +162,48 @@ export const PANEL_NAV: NavGrup[] = [
   },
 ];
 
+const MOBIL_KISISEL_HBSTORE_YOLLARI = new Set([
+  "/store",
+  "/store/siparislerim",
+  "/store/adreslerim",
+]);
+
+const mobilKisiselHbstoreGorunur = (ctx: NavContext) =>
+  ctx.storeAcik && STORE_ALABILEN_ROLLER.includes(ctx.rolKucu);
+
+/**
+ * Mobil drawer'da kişisel HBStore yollarını masaüstü gruplarından ayırır.
+ * PANEL_NAV değiştirilmediği için masaüstü sidebar yerleşimi aynen korunur.
+ */
+export function mobilPanelNavOlustur(gruplar: NavGrup[], ctx: NavContext): NavGrup[] {
+  const temizGruplar = gruplar.map((grup) => ({
+    ...grup,
+    oglar: grup.oglar.filter((oge) => {
+      const path = typeof oge.path === "string" ? oge.path : null;
+      return !path || !MOBIL_KISISEL_HBSTORE_YOLLARI.has(path);
+    }),
+  }));
+
+  if (!mobilKisiselHbstoreGorunur(ctx)) return temizGruplar;
+
+  const hbstoreGrubu: NavGrup = {
+    baslik: "HBStore",
+    oglar: [
+      { etiket: "HBStore", path: "/store", tamEslesme: true, gate: mobilKisiselHbstoreGorunur },
+      { etiket: "Siparişlerim", path: "/store/siparislerim", gate: mobilKisiselHbstoreGorunur },
+      { etiket: "Adreslerim", path: "/store/adreslerim", gate: mobilKisiselHbstoreGorunur },
+    ],
+  };
+  const tclubIndex = temizGruplar.findIndex((grup) => grup.baslik === "T-Club");
+  const eklemeIndexi = tclubIndex >= 0 ? tclubIndex + 1 : temizGruplar.length;
+
+  return [
+    ...temizGruplar.slice(0, eklemeIndexi),
+    hbstoreGrubu,
+    ...temizGruplar.slice(eklemeIndexi),
+  ];
+}
+
 // eclub_kisi (eczacı/teknisyen) dar gezinmesi — kişi paneli + kendi mağaza yolları.
 // Çok-firmalı erişim bayrakları aktif eczane→firma zincirinden profil API'sinde çözülür.
 export function eclubKisiNavOlustur(firmalar: Array<{ firma_id: string; firma_adi: string }>): NavGrup[] {

@@ -3,9 +3,9 @@
 // Mobil gezinme çekmecesi — Faz 1 / Adım 1.4
 // (docs/ana_sayfa_kabuk_donusum_is_plani.md).
 //
-// Hamburger → soldan açılan drawer. İçerik masaüstüyle AYNI kaynaklardan:
+// Hamburger → soldan açılan drawer. İçerik masaüstüyle aynı kaynaklardan türetilir:
 //   • üstte 5 bilgi pill'i (PanelNavbar ile aynı liste),
-//   • altında sol liste ağacı (PANEL_NAV, grup→alt görev, aynı gate + rozet mantığı).
+//   • altında sol liste ağacı (PANEL_NAV + mobil HBStore grubu, aynı gate + rozet mantığı).
 // Rozetler prop'tan gelir (B kararı — layout tek sefer çeker). Bir öğeye tıklanınca
 // hedefe gidilir ve drawer kapanır.
 //
@@ -19,7 +19,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { PANEL_NAV, type NavContext, type NavGrup, type NavOge } from "./panelNav.config";
+import { PANEL_NAV, mobilPanelNavOlustur, type NavContext, type NavGrup, type NavOge } from "./panelNav.config";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 
 type MobilDrawerProps = NavContext & {
@@ -42,7 +42,7 @@ const BILGI_PILLERI: { etiket: string; path: string }[] = [
 export default function MobilDrawer(props: MobilDrawerProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const gruplar = props.gruplar ?? PANEL_NAV;
+  const gruplar = mobilPanelNavOlustur(props.gruplar ?? PANEL_NAV, props);
 
   const cozPath = (oge: NavOge) => typeof oge.path === "function" ? oge.path(props) : (oge.path ?? "");
   const rozetSayisi = (oge: NavOge) => oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
@@ -84,6 +84,29 @@ export default function MobilDrawer(props: MobilDrawerProps) {
       return yeni;
     });
 
+  // Sayfa veya görünür gruplar değiştiğinde aktif sayfanın grubu açık kalsın.
+  useEffect(() => {
+    const gorunurGruplar = gruplar.filter((g) => g.oglar.some((o) => o.gate(props)));
+    const aktifGrup = gruplar.find((g) => grupAktifMi(g));
+    setKapaliGruplar((onceki) => {
+      let degisti = false;
+      const yeni = new Set(onceki);
+      if (aktifGrup && yeni.has(aktifGrup.baslik)) {
+        yeni.delete(aktifGrup.baslik);
+        degisti = true;
+      }
+      gorunurGruplar.forEach((g, index) => {
+        if (index === 0 || grupAktifMi(g)) return;
+        if (!yeni.has(g.baslik)) {
+          yeni.add(g.baslik);
+          degisti = true;
+        }
+      });
+      return degisti ? yeni : onceki;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, props.storeAcik, props.ccAcik, props.eclubAcik, props.eclubStoreAcik, props.eczanemAcik]);
+
   useEffect(() => {
     if (!props.acik || !URETICI_ROLLER.includes(props.rolKucu)) return;
     router.prefetch("/t-club-ligi");
@@ -108,6 +131,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
           color: aktif ? "#185fa5" : "#374151",
           background: aktif ? "rgba(86,174,255,0.12)" : "transparent",
           fontFamily: "'Nunito', sans-serif",
+          minHeight: "44px",
         }}
       >
         <span>{etiket}</span>
@@ -145,7 +169,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
           })}
           aria-expanded={altAcik}
           className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent text-left"
-          style={{ padding: girintili ? "10px 12px 4px 20px" : "10px 12px 4px", fontSize: "14px", fontWeight: 700, color: "#374151", fontFamily: "'Nunito', sans-serif" }}
+          style={{ padding: girintili ? "10px 12px 4px 20px" : "10px 12px 4px", minHeight: "44px", fontSize: "14px", fontWeight: 700, color: "#374151", fontFamily: "'Nunito', sans-serif" }}
         >
           <span>{oge.etiket}</span>
           <span className="flex items-center gap-2">
@@ -220,7 +244,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
                   type="button"
                   onClick={() => grupToggle(grup.baslik)}
                   className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent"
-                  style={{ fontSize: "12px", fontWeight: 800, color: "#111827", textTransform: "uppercase", letterSpacing: "0.06em", padding: "2px 12px 4px", fontFamily: "'Nunito', sans-serif" }}
+                  style={{ minHeight: "44px", fontSize: "12px", fontWeight: 800, color: "#111827", textTransform: "uppercase", letterSpacing: "0.06em", padding: "2px 12px 4px", fontFamily: "'Nunito', sans-serif" }}
                 >
                   <span>{grup.baslik}</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth={2.5}
