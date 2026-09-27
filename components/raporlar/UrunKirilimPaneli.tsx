@@ -24,19 +24,27 @@ export interface UrunKirilim {
   toplam_net_puan: number;
 }
 
-const YESIL = "#1D9E75";
-const BORDO = "#bc2d0d";
+const PUAN_RENKLERI = {
+  tamamlama: "#378ADD",
+  dogruCevap: "#1D9E75",
+  oneri: "#EF9F27",
+  extra: "#7F77DD",
+  eclub: "#0F9FA8",
+  ileriSarma: "#D85A30",
+  yanlisCevap: "#E24B4A",
+  oneriKaybi: "#BC2D0D",
+} as const;
 
 function kirilim(u: UrunKirilim, tamamlamaEtiketi: string): DagilimKalem[] {
   return [
-    { ad: tamamlamaEtiketi, puan: u.video_puani, renk: YESIL },
-    { ad: "Doğru Cevap", puan: u.soru_puani, renk: YESIL },
-    { ad: "Öneri", puan: u.oneri_puani, renk: YESIL },
-    { ad: "Extra", puan: u.extra_puan, renk: YESIL },
-    { ad: "E-Club", puan: (u.eclub_puani ?? 0), renk: YESIL },
-    { ad: "İleri sarma", puan: -u.ileri_sarma_kaybi, renk: BORDO },
-    { ad: "Yanlış cevap", puan: -u.yanlis_cevap_kaybi, renk: BORDO },
-    { ad: "Öneri kaybı", puan: -u.oneri_kaybi, renk: BORDO },
+    { ad: tamamlamaEtiketi, puan: u.video_puani, renk: PUAN_RENKLERI.tamamlama },
+    { ad: "Doğru Cevap", puan: u.soru_puani, renk: PUAN_RENKLERI.dogruCevap },
+    { ad: "Öneri", puan: u.oneri_puani, renk: PUAN_RENKLERI.oneri },
+    { ad: "Extra", puan: u.extra_puan, renk: PUAN_RENKLERI.extra },
+    { ad: "E-Club", puan: (u.eclub_puani ?? 0), renk: PUAN_RENKLERI.eclub },
+    { ad: "İleri sarma", puan: -u.ileri_sarma_kaybi, renk: PUAN_RENKLERI.ileriSarma },
+    { ad: "Yanlış cevap", puan: -u.yanlis_cevap_kaybi, renk: PUAN_RENKLERI.yanlisCevap },
+    { ad: "Öneri kaybı", puan: -u.oneri_kaybi, renk: PUAN_RENKLERI.oneriKaybi },
   ];
 }
 
@@ -55,9 +63,8 @@ export default function UrunKirilimPaneli({ urunler, modern = false, tamamlamaEt
   if (!secili) return null;
 
   return (
-    <div className="flex flex-col md:flex-row gap-4">
-      {/* Sol: ürün nav (mobilde yatay kaydırılır, masaüstünde dikey) */}
-      <div className="flex md:flex-col gap-1 md:w-28 overflow-x-auto md:overflow-visible flex-shrink-0">
+    <div className="flex flex-col gap-4 md:flex-row">
+      <div className="flex flex-shrink-0 gap-1 overflow-x-auto md:w-28 md:flex-col md:overflow-visible">
         {urunler.map((u) => {
           const aktif = u.urun_id === secili.urun_id;
           return (
@@ -65,7 +72,7 @@ export default function UrunKirilimPaneli({ urunler, modern = false, tamamlamaEt
               key={u.urun_id}
               type="button"
               onClick={() => setSeciliId(u.urun_id)}
-              className="text-left px-2 py-1 rounded-md text-xs whitespace-nowrap md:whitespace-normal transition-colors leading-tight"
+              className="whitespace-nowrap rounded-md px-2 py-1 text-left text-xs leading-tight transition-colors md:whitespace-normal"
               style={{
                 border: modern ? "1px solid transparent" : "0.5px solid #e5e7eb",
                 background: aktif ? (modern ? "#e7f3ff" : "rgba(86,174,255,0.12)") : (modern ? "#f6f8fb" : "#fff"),

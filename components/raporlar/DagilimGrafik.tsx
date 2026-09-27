@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { EChartsCoreOption } from "echarts/core";
 import EChart, { type EChartTiklama } from "@/components/grafik/EChart";
 
@@ -46,6 +46,7 @@ export default function DagilimGrafik({
   indirAdi,
   modern = false,
 }: Props) {
+  const kapsayiciRef = useRef<HTMLDivElement>(null);
   const [mod, setMod] = useState<Mod>(modlar[0]);
   const paletli = veri.some((k) => k.renk); // per-item semantik renk (kazanım/kayıp)
 
@@ -58,6 +59,19 @@ export default function DagilimGrafik({
     mq.addEventListener("change", uygula);
     return () => mq.removeEventListener("change", uygula);
   }, []);
+
+  const [kapsayiciGenisligi, setKapsayiciGenisligi] = useState(0);
+  useEffect(() => {
+    if (!kapsayiciRef.current) return;
+    const gozlemci = new ResizeObserver(([girdi]) => setKapsayiciGenisligi(girdi.contentRect.width));
+    gozlemci.observe(kapsayiciRef.current);
+    return () => gozlemci.disconnect();
+  }, []);
+
+  const darGrafik = dar || (kapsayiciGenisligi > 0 && kapsayiciGenisligi < 640);
+  const cokDarGrafik = kapsayiciGenisligi > 0 && kapsayiciGenisligi < 480;
+  const eksenFontu = cokDarGrafik ? 8 : darGrafik ? 9 : 12;
+  const veriFontu = cokDarGrafik ? 9 : darGrafik ? 10 : 12;
 
   const option = useMemo<EChartsCoreOption>(() => {
     const kaynak: (string | number)[][] = [["ad", "puan"], ...veri.map((k) => [k.ad, k.puan])];
@@ -103,19 +117,27 @@ export default function DagilimGrafik({
     const eksenli = {
       ...ortak,
       tooltip: { trigger: "item", formatter: "{b}: {@puan}" },
-      grid: { left: 12, right: 12, top: 28, bottom: dar ? 46 : 34, containLabel: true },
+      grid: { left: 8, right: 8, top: 28, bottom: darGrafik ? 54 : 34, containLabel: true },
       xAxis: {
         type: "category" as const,
-        name: apsisAdi, nameLocation: "middle" as const, nameGap: dar ? 54 : 30,
+        name: apsisAdi,
+        nameLocation: "middle" as const,
+        nameGap: darGrafik ? 54 : 30,
         nameTextStyle: { color: "#9ca3af", fontSize: 11 },
-        axisLabel: { color: "#6b7280", fontSize: dar ? 10 : 12, interval: 0, rotate: dar ? 35 : 0 },
+        axisLabel: {
+          color: "#6b7280",
+          fontSize: eksenFontu,
+          interval: 0,
+          rotate: darGrafik ? 32 : 0,
+          hideOverlap: true,
+        },
         axisLine: { lineStyle: { color: "#e5e7eb" } },
       },
       yAxis: {
         type: "value" as const,
         name: ordinatAdi, nameLocation: "end" as const, nameGap: 12,
         nameTextStyle: { color: "#9ca3af", fontSize: 11 },
-        axisLabel: { color: "#9ca3af" },
+        axisLabel: { color: "#9ca3af", fontSize: eksenFontu },
         splitLine: { lineStyle: { color: "#f1f1ee" } },
       },
     };
@@ -125,7 +147,7 @@ export default function DagilimGrafik({
         series: [{
           id: "dagilim", type: "bar", colorBy: "data", barWidth: "52%",
           itemStyle: { borderRadius: [6, 6, 0, 0] },
-          label: { show: true, position: "top", color: paletli ? "inherit" : "#374151", fontSize: 12, formatter: "{@puan}" },
+          label: { show: true, position: "top", color: paletli ? "inherit" : "#374151", fontSize: veriFontu, formatter: "{@puan}" },
           universalTransition: true,
           encode: { x: "ad", y: "puan" },
         }],
@@ -134,15 +156,20 @@ export default function DagilimGrafik({
     return {
       ...eksenli,
       series: [{
-        id: "dagilim", type: "line", smooth: true, symbolSize: 9,
-        lineStyle: { width: 3, color: "#378ADD" }, itemStyle: { color: "#378ADD" },
+        id: "dagilim", type: "line", smooth: true, symbolSize: 9, colorBy: paletli ? "data" : "series",
+        lineStyle: { width: 3, color: paletli ? "#94A3B8" : "#378ADD" },
+        itemStyle: {
+          color: paletli
+            ? (parametre: { dataIndex: number }) => palet[parametre.dataIndex % palet.length]
+            : "#378ADD",
+        },
         areaStyle: { color: "rgba(55,138,221,0.10)" },
-        label: { show: true, position: "top", color: "#374151", fontSize: 12, formatter: "{@puan}" },
+        label: { show: true, position: "top", color: "#374151", fontSize: veriFontu, formatter: "{@puan}" },
         universalTransition: true,
         encode: { x: "ad", y: "puan" },
       }],
     };
-  }, [veri, mod, apsisAdi, ordinatAdi, paletli, dar]);
+  }, [veri, mod, apsisAdi, ordinatAdi, paletli, darGrafik, eksenFontu, veriFontu]);
 
   const btnStil = (aktif: boolean): React.CSSProperties => ({
     padding: modern ? "6px 12px" : "4px 13px", borderRadius: modern ? 10 : 999, fontSize: modern ? 11 : 13, cursor: "pointer",
@@ -159,51 +186,51 @@ export default function DagilimGrafik({
     { key: "tablo", etiket: "Tablo" },
   ];
   const gorunurModlar = modlar.map((anahtar) => modTanimlari.find((modTanimi) => modTanimi.key === anahtar)!);
+  const modButonlari = gorunurModlar.map((m) => (
+    <button key={m.key} type="button" className="shrink-0" style={btnStil(mod === m.key)} onClick={() => setMod(m.key)}>
+      {m.etiket}
+    </button>
+  ));
+
+  const grafikGovdesi = mod === "tablo" ? (
+    <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+      <thead>
+        <tr style={{ borderBottom: "0.5px solid #e5e7eb" }}>
+          <th className="text-left py-2" style={{ color: "#9ca3af", fontWeight: 500 }}>{apsisAdi}</th>
+          <th className="text-right py-2" style={{ color: "#9ca3af", fontWeight: 500 }}>{ordinatAdi}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {veri.map((k) => (
+          <tr
+            key={k.ad}
+            onClick={onSecim ? () => onSecim(k.ad === secili ? null : k.ad) : undefined}
+            data-etkilesimli={onSecim ? "true" : "false"}
+            className={onSecim ? "hover:bg-gray-50" : ""}
+            style={{ borderBottom: "0.5px solid #f1f1ee", background: k.ad === secili ? "rgba(86,174,255,0.08)" : "transparent" }}
+          >
+            <td className="py-2" style={{ color: k.renk ?? "#374151" }}>{k.ad}</td>
+            <td className="text-right py-2 font-medium" style={{ color: k.renk ?? "#374151" }}>{k.puan.toLocaleString("tr-TR")}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  ) : (
+    <EChart
+      option={option}
+      height={height}
+      indirAdi={indirAdi}
+      onClick={onSecim ? (p: EChartTiklama) => {
+        const ad = p.name ?? null;
+        onSecim(ad && ad === secili ? null : ad);
+      } : undefined}
+    />
+  );
 
   return (
-    <div>
-      <div className="flex gap-2 mb-2 flex-wrap">
-        {gorunurModlar.map((m) => (
-          <button key={m.key} type="button" style={btnStil(mod === m.key)} onClick={() => setMod(m.key)}>
-            {m.etiket}
-          </button>
-        ))}
-      </div>
-
-      {mod === "tablo" ? (
-        <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: "0.5px solid #e5e7eb" }}>
-              <th className="text-left py-2" style={{ color: "#9ca3af", fontWeight: 500 }}>{apsisAdi}</th>
-              <th className="text-right py-2" style={{ color: "#9ca3af", fontWeight: 500 }}>{ordinatAdi}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {veri.map((k) => (
-              <tr
-                key={k.ad}
-                onClick={onSecim ? () => onSecim(k.ad === secili ? null : k.ad) : undefined}
-                data-etkilesimli={onSecim ? "true" : "false"}
-                className={onSecim ? "hover:bg-gray-50" : ""}
-                style={{ borderBottom: "0.5px solid #f1f1ee", background: k.ad === secili ? "rgba(86,174,255,0.08)" : "transparent" }}
-              >
-                <td className="py-2" style={{ color: k.renk ?? "#374151" }}>{k.ad}</td>
-                <td className="text-right py-2 font-medium" style={{ color: k.renk ?? "#374151" }}>{k.puan.toLocaleString("tr-TR")}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <EChart
-          option={option}
-          height={height}
-          indirAdi={indirAdi}
-          onClick={onSecim ? (p: EChartTiklama) => {
-            const ad = p.name ?? null;
-            onSecim(ad && ad === secili ? null : ad);
-          } : undefined}
-        />
-      )}
+    <div ref={kapsayiciRef}>
+      <div className="mb-2 flex flex-wrap gap-2">{modButonlari}</div>
+      {grafikGovdesi}
     </div>
   );
 }

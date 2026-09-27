@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   // Kullanıcı
   const { data: kullanici, error: kullaniciError } = await adminSupabase
     .from('kullanicilar')
-    .select('kullanici_id, ad, soyad, rol, bolge_id, takim_id')
+    .select('kullanici_id, ad, soyad, rol, bolge_id, takim_id, firma_id')
     .eq('eposta', user.email)
     .single();
 
@@ -67,17 +67,19 @@ export async function GET(request: Request) {
     toplam_net_puan: ozet.toplam_net_puan ?? 0,
   };
 
-  // ─── Katkı (bölge/takım payı) ────────────────────────────────────────────
+  // ─── Katkı (bölge/takım/firma payı) ──────────────────────────────────────
   const kisiselPuan = ozet.toplam_net_puan ?? 0;
   const toplamBolgePuan = netPuanToplami(d.bolgeOzet);
   const toplamTakimPuan = netPuanToplami(d.takimOzet);
+  const toplamFirmaPuan = netPuanToplami(d.firmaOzet);
 
   const bolgePuanMax = katkiYuzdesi(kisiselPuan, toplamBolgePuan);
   const takimPuanMax = katkiYuzdesi(kisiselPuan, toplamTakimPuan);
+  const firmaPuanMax = katkiYuzdesi(kisiselPuan, toplamFirmaPuan);
 
   // ─── Beğeni / Favori ─────────────────────────────────────────────────────
-  const benimBegeniSet = new Set(d.benimBegenim.map((b) => b.yayin_id));
-  const benimFavoriSet = new Set(d.benimFavorim.map((f) => f.yayin_id));
+  const benimBegeniSet = new Set(d.aylikBenimBegenim.map((b) => b.yayin_id));
+  const benimFavoriSet = new Set(d.aylikBenimFavorim.map((f) => f.yayin_id));
 
   const begeniListesi = d.begeniRaw.map((v) => ({
     ...v,
@@ -88,6 +90,36 @@ export async function GET(request: Request) {
     ...v,
     benim_favorim: benimFavoriSet.has(v.yayin_id),
   }));
+
+  const urunEtkilesimHaritasi = new Map(
+    d.urunEtkilesimleri.map((urun) => [urun.urun_id, urun])
+  );
+  const enYuksekUrunPuani = d.urunDagilimi.reduce(
+    (enYuksek, urun) => Math.max(enYuksek, urun.toplam_net_puan ?? 0),
+    Number.NEGATIVE_INFINITY
+  );
+  const oneCikanUrunler = d.urunDagilimi
+    .filter((urun) => (urun.toplam_net_puan ?? 0) === enYuksekUrunPuani)
+    .sort((a, b) => {
+      const aEtkilesim = urunEtkilesimHaritasi.get(a.urun_id);
+      const bEtkilesim = urunEtkilesimHaritasi.get(b.urun_id);
+      const aOncelik = aEtkilesim?.benim_begenim && aEtkilesim?.benim_favorim
+        ? 3
+        : aEtkilesim?.benim_favorim
+          ? 2
+          : aEtkilesim?.benim_begenim
+            ? 1
+            : 0;
+      const bOncelik = bEtkilesim?.benim_begenim && bEtkilesim?.benim_favorim
+        ? 3
+        : bEtkilesim?.benim_favorim
+          ? 2
+          : bEtkilesim?.benim_begenim
+            ? 1
+            : 0;
+      return bOncelik - aOncelik || a.urun_adi.localeCompare(b.urun_adi, 'tr');
+    })
+    .slice(0, 3);
 
   // ─── Response ────────────────────────────────────────────────────────────
   return NextResponse.json({
@@ -103,14 +135,17 @@ export async function GET(request: Request) {
       katki: {
         bolge_katki_yuzdesi: bolgePuanMax,
         takim_katki_yuzdesi: takimPuanMax,
+        firma_katki_yuzdesi: firmaPuanMax,
         bolge_mevcut_puan: kisiselPuan,
         bolge_toplam_puan: toplamBolgePuan,
         takim_toplam_puan: toplamTakimPuan,
+        firma_toplam_puan: toplamFirmaPuan,
       },
       istatistikler,
       arac_puan_dagilimi: d.aracPuanDagilimi,
       kategori_dagilimi: d.kategoriDagilimi,
       urun_dagilimi: d.urunDagilimi,
+      one_cikan_urunler: oneCikanUrunler,
       begeni_listesi: begeniListesi,
       favori_listesi: favoriListesi,
     },
