@@ -119,7 +119,7 @@ export default function UrunDetayPage() {
     if (!urun) return;
     if (!storeAcik) {
       hata(
-        `HBStore şu an siparişe kapalıdır. Siparişler yalnızca Store Günleri (${takvim?.sonrakiDonemEtiketi ?? "Store Günleri"}) döneminde verilebilir.`,
+        `HBStore şu an siparişe kapalıdır. Siparişler yalnızca HBStore Günleri'nde (${takvim?.sonrakiDonemEtiketi ?? "HBStore Günleri"}) verilebilir.`,
         "takvim"
       );
       return;
@@ -202,7 +202,7 @@ export default function UrunDetayPage() {
           href="/store"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-[#71859d] transition-colors hover:text-[#237ac8]"
         >
-          <ChevronLeft size={16} /> HBStore Mağazaya Dön
+          <ChevronLeft size={16} /> HBStore&apos;a Dön
         </Link>
 
         {yukleniyor ? (
@@ -225,7 +225,7 @@ export default function UrunDetayPage() {
               href="/store"
               className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#237ac8] px-4 py-2 text-xs font-extrabold text-white hover:bg-[#1d69aa]"
             >
-              Mağazaya Dön
+              HBStore&apos;a Dön
             </Link>
           </div>
         ) : !urun.aktif_mi ? (
@@ -399,15 +399,15 @@ export default function UrunDetayPage() {
                     </div>
                   </div>
 
-                  {/* Store Günleri Kapalı Bilgi Uyarısı */}
+                  {/* HBStore Günleri Kapalı Bilgi Uyarısı */}
                   {!storeAcik && (
                     <div className="rounded-xl border border-[#fed7aa] bg-[#fffaf5] p-3.5 text-xs font-semibold text-[#9a3412]">
                       <p className="flex items-center gap-1.5 font-extrabold text-[#c2410c]">
-                        <span>⏳</span> Store Günleri Kapalı
+                        <span>⏳</span> HBStore Günleri Kapalı
                       </p>
                       <p className="mt-1 leading-relaxed text-[#7c2d12]">
-                        HBStore siparişleri yalnızca Store Günleri döneminde alınmaktadır. Sonraki sipariş dönemi:{" "}
-                        <strong className="font-extrabold text-[#9a3412]">{takvim?.sonrakiDonemEtiketi ?? "Store Günleri"}</strong>
+                        HBStore siparişleri yalnızca HBStore Günleri&apos;nde alınmaktadır. Sonraki sipariş dönemi:{" "}
+                        <strong className="font-extrabold text-[#9a3412]">{takvim?.sonrakiDonemEtiketi ?? "HBStore Günleri"}</strong>
                         {takvim ? ` (${takvim.kalanSureMetni} kaldı)` : ""}.
                       </p>
                     </div>
@@ -430,7 +430,7 @@ export default function UrunDetayPage() {
                   >
                     <ShoppingBag size={16} />
                     {!storeAcik
-                      ? `Siparişe Kapalı (Açılış: ${takvim?.sonrakiDonemEtiketi ?? "Store Günleri"})`
+                      ? `Siparişe Kapalı (Açılış: ${takvim?.sonrakiDonemEtiketi ?? "HBStore Günleri"})`
                       : toplamPuan > bakiye
                       ? "Yetersiz Bakiye"
                       : adresler.length === 0

@@ -111,11 +111,11 @@ export async function POST(request: NextRequest) {
       return rolHatasi("Sipariş verme yetkiniz yok.");
     }
 
-    // Sipariş dönemi kontrolü (Store Günleri)
+    // Sipariş dönemi kontrolü (HBStore Günleri)
     if (!hbstoreSiparisAcikMi()) {
       const durum = hbstoreTakvimDurumu();
       return isKuraluHatasi(
-        `HBStore şu an siparişe kapalıdır. Siparişler yalnızca Store Günleri (${durum.sonrakiDonemEtiketi}) döneminde verilebilir.`
+        `HBStore şu an siparişe kapalıdır. Siparişler yalnızca HBStore Günleri'nde (${durum.sonrakiDonemEtiketi}) verilebilir.`
       );
     }
 

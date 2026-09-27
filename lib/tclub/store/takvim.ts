@@ -1,6 +1,6 @@
 // lib/tclub/store/takvim.ts
 //
-// HBStore Dönemlik Sipariş Takvimi ("Store Günleri").
+// HBStore dönemlik sipariş takvimi ("HBStore Günleri").
 //
 // Sipariş Takvimi Kuralları (Europe/Istanbul):
 //   * Her çeyreğin son 7 takvim gününde sipariş alınır:
@@ -163,15 +163,15 @@ export function hbstoreTakvimDurumu(tarih: Date = new Date()): TakvimDurumu {
     kalanMs = Math.max(0, aktifPencere.bitisHaric.getTime() - an);
     const kalanSure = formatKalanSure(kalanMs);
     const kisaKalan = formatKisaKalanSure(kalanMs);
-    durumMetni = `Store Günleri açık · ${kalanSure} kaldı`;
-    navMetni = `Store Açık · ${kisaKalan}`;
+    durumMetni = `HBStore Günleri açık · ${kalanSure} kaldı`;
+    navMetni = `HBStore Açık · ${kisaKalan}`;
     bakiyeDonemEtiketi = `${aktifPencere.donemAdi} (Q${aktifPencere.ceyrek}) kullanılabilir bakiyesi`;
   } else {
     kalanMs = Math.max(0, sonrakiPencere.baslangic.getTime() - an);
     const kalanSure = formatKalanSure(kalanMs);
     const kisaKalan = formatKisaKalanSure(kalanMs);
-    durumMetni = `Store Günleri’ne ${kalanSure} kaldı`;
-    navMetni = `Store Günleri’ne ${kisaKalan}`;
+    durumMetni = `HBStore Günleri’ne ${kalanSure} kaldı`;
+    navMetni = `HBStore Günleri’ne ${kisaKalan}`;
     bakiyeDonemEtiketi = `${sonrakiPencere.etiket} siparişi için biriken ${sonrakiPencere.donemAdi} (Q${sonrakiPencere.ceyrek}) puanı`;
   }
 

@@ -289,7 +289,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
         ikon: "📍",
       },
     ],
-    ipucu: "HBStore kapalıyken ürünleri inceleyebilirsiniz; yeni sipariş vermek için bir sonraki HBStore Günleri'nin açılmasını beklemeniz gerekir.",
+    ipucu: "HBStore açıkken puanlarınızla sipariş verebilirsiniz. HBStore kapalıyken ürünleri inceleyebilirsiniz; yeni sipariş vermek için bir sonraki HBStore Günleri'nin açılmasını beklemeniz gerekir.",
   },
 
   // ─── 15. E-CLUB TAKIMIM (ECZANELERİM) ─────────────────────────────────────

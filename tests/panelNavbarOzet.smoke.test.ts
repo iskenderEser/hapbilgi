@@ -48,6 +48,11 @@ test("HBStore adı Bi, rehber ve BM menüsünde tutarlı kalır", () => {
   const biKatalogu = oku("lib/bi/cevapKatalogu.ts");
   const rehber = oku("lib/rehber/sayfaRehberi.ts");
   const storeSayfasi = oku("app/(panel)/store/page.tsx");
+  const siparislerimSayfasi = oku("app/(panel)/store/siparislerim/page.tsx");
+  const adreslerimSayfasi = oku("app/(panel)/store/adreslerim/page.tsx");
+  const urunDetaySayfasi = oku("app/(panel)/store/[urun_id]/page.tsx");
+  const siparisApi = oku("app/(panel)/store/api/siparis/route.ts");
+  const hbstoreTakvimi = oku("lib/tclub/store/takvim.ts");
   const hbStoreRehberi = rehber.slice(
     rehber.indexOf('"store-magaza"'),
     rehber.indexOf('"eclub-eczanelerim"'),
@@ -78,6 +83,20 @@ test("HBStore adı Bi, rehber ve BM menüsünde tutarlı kalır", () => {
   assert.match(storeSayfasi, /HBStore Günleri Açık/);
   assert.match(storeSayfasi, /HBStore Günleri Kapalı/);
   assert.match(storeSayfasi, /Siparişler yalnızca HBStore Günleri/);
+  assert.doesNotMatch(storeSayfasi, /verebilrisiniz|Mağaza/);
+  assert.match(siparislerimSayfasi, /HBStore&apos;a Dön/);
+  assert.match(siparislerimSayfasi, /HBStore&apos;dan/);
+  assert.doesNotMatch(siparislerimSayfasi, /Mağaza/);
+  assert.match(adreslerimSayfasi, /HBStore&apos;dan/);
+  assert.doesNotMatch(adreslerimSayfasi, /Mağaza/);
+  assert.match(urunDetaySayfasi, /HBStore Günleri Kapalı/);
+  assert.match(urunDetaySayfasi, /HBStore&apos;a Dön/);
+  assert.doesNotMatch(urunDetaySayfasi, /Mağaza|(?<!HB)Store Günleri/);
+  assert.match(siparisApi, /yalnızca HBStore Günleri'nde/);
+  assert.doesNotMatch(siparisApi, /(?<!HB)Store Günleri/);
+  assert.match(hbstoreTakvimi, /HBStore Günleri açık/);
+  assert.match(hbstoreTakvimi, /HBStore Günleri’ne/);
+  assert.doesNotMatch(hbstoreTakvimi, /(?<!HB)Store Günleri|(?<!HB)Store Açık/);
   assert.ok(bmEtiketleri.includes("HBStore"));
   assert.ok(!bmEtiketleri.includes("Mağazam"));
 });

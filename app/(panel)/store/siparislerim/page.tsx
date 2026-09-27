@@ -262,7 +262,7 @@ export default function SiparislerimPage() {
               href="/store"
               className="inline-flex items-center gap-1.5 rounded-xl border border-[#d7e1ec] bg-white px-3.5 py-2 text-xs font-extrabold text-[#45627f] shadow-sm transition-colors hover:bg-[#f6f9fc]"
             >
-              <ShoppingBag size={14} /> Mağazaya Dön
+              <ShoppingBag size={14} /> HBStore&apos;a Dön
             </Link>
             <Link
               href="/store/adreslerim"
@@ -319,13 +319,13 @@ export default function SiparislerimPage() {
             </span>
             <h3 className="mt-3 text-sm font-extrabold text-[#203653]">Henüz siparişiniz yok</h3>
             <p className="mt-1 max-w-sm text-xs font-semibold text-[#7b8da5]">
-              Mağazadan puanlarınızla ürün seçip ilk siparişinizi hemen oluşturabilirsiniz.
+              HBStore&apos;dan puanlarınızla ürün seçip ilk siparişinizi hemen oluşturabilirsiniz.
             </p>
             <Link
               href="/store"
               className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#237ac8] px-4 py-2 text-xs font-extrabold text-white shadow-sm hover:bg-[#1d69aa]"
             >
-              Mağazaya Git
+              HBStore&apos;a Git
             </Link>
           </div>
         ) : (

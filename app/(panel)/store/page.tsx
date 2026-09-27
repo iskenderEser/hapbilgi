@@ -288,7 +288,7 @@ export default function StorePage() {
               <SayfaRehberi anahtar="store-magaza" className="ml-1.5 -translate-y-1.5" />
             </div>
             <p className="mt-1 max-w-3xl text-xs font-semibold leading-5 text-[#7b8da3] md:text-sm">
-              Kazandığınız puanlarla siparişlerinizi ücretsiz olarak verebilrisiniz
+              Kazandığınız puanlarla siparişlerinizi ücretsiz olarak verebilirsiniz
             </p>
           </div>
 
@@ -357,7 +357,7 @@ export default function StorePage() {
         ))}
 
         {/* 3'lü Stat Kartları */}
-        <section aria-label="Mağaza Durum Özeti" className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <section aria-label="HBStore Durum Özeti" className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <StatKarti
             ikon={Coins}
             etiket={storeAcik ? "Kullanılabilir Puanım" : "Biriken Puanım"}
@@ -368,7 +368,7 @@ export default function StorePage() {
           />
           <StatKarti
             ikon={ShoppingBag}
-            etiket="Mağazadaki Ürünler"
+            etiket="HBStore Ürünleri"
             deger={urunler.length}
             detay="Aktif siparişe açık ürün çeşidi"
             renk="#237ac8"
@@ -460,7 +460,7 @@ export default function StorePage() {
             </p>
           </div>
         ) : (
-          <section aria-label="Mağaza Ürün Listesi" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <section aria-label="HBStore Ürün Listesi" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtrelenmisUrunler.map((u) => (
               <UrunKarti
                 key={u.urun_id}
