@@ -244,7 +244,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
                   type="button"
                   onClick={() => grupToggle(grup.baslik)}
                   className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent"
-                  style={{ minHeight: "44px", fontSize: "12px", fontWeight: 800, color: "#111827", textTransform: "uppercase", letterSpacing: "0.06em", padding: "2px 12px 4px", fontFamily: "'Nunito', sans-serif" }}
+                  style={{ minHeight: "44px", fontSize: "12px", fontWeight: 800, color: grup.baslik === "HBStore" ? "#ff6200" : "#111827", textTransform: "uppercase", letterSpacing: "0.06em", padding: "2px 12px 4px", fontFamily: "'Nunito', sans-serif" }}
                 >
                   <span>{grup.baslik}</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth={2.5}

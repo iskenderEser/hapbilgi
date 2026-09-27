@@ -47,6 +47,7 @@ test("mobil HBStore grubu UTT, KD_UTT ve BM için C-Club bayrağından bağıms�
   const drawer = fs.readFileSync(path.join(process.cwd(), "components/panel/MobilDrawer.tsx"), "utf8");
   assert.match(drawer, /mobilPanelNavOlustur\(props\.gruplar \?\? PANEL_NAV, props\)/);
   assert.match(drawer, /minHeight: "44px"/);
+  assert.match(drawer, /grup\.baslik === "HBStore" \? "#ff6200"/);
   assert.match(drawer, /router\.push\(path\); props\.onKapat\(\)/);
 });
 
