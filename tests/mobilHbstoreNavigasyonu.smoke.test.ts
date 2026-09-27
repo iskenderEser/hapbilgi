@@ -30,11 +30,11 @@ test("mobil HBStore grubu UTT, KD_UTT ve BM için C-Club bayrağından bağıms�
   for (const rolKucu of ["utt", "kd_utt", "bm"]) {
     const mobilNav = mobilPanelNavOlustur(PANEL_NAV, { ...temelBaglam, rolKucu });
     const hbstoreIndexi = mobilNav.findIndex((grup) => grup.baslik === "HBStore");
-    const tclubIndexi = mobilNav.findIndex((grup) => grup.baslik === "T-Club");
+    const eczanemIndexi = mobilNav.findIndex((grup) => grup.baslik === "Eczanem");
     const hbstore = mobilNav[hbstoreIndexi];
 
     assert.ok(hbstore);
-    assert.equal(hbstoreIndexi + 1, tclubIndexi);
+    assert.equal(hbstoreIndexi, eczanemIndexi + 1);
     assert.deepEqual(
       hbstore.oglar.filter((oge) => oge.gate({ ...temelBaglam, rolKucu })).map((oge) => oge.path),
       kisiselStoreYollari,

@@ -194,10 +194,8 @@ export function mobilPanelNavOlustur(gruplar: NavGrup[], ctx: NavContext): NavGr
       { etiket: "Adreslerim", path: "/store/adreslerim", gate: mobilKisiselHbstoreGorunur },
     ],
   };
-  const tclubIndex = temizGruplar.findIndex((grup) => grup.baslik === "T-Club");
-  // Mobilde ilk bakışta görünür ve açık olması için HBStore, uzun T-Club
-  // grubunun arkasına değil hemen önüne yerleşir.
-  const eklemeIndexi = tclubIndex >= 0 ? tclubIndex : temizGruplar.length;
+  const eczanemIndex = temizGruplar.findIndex((grup) => grup.baslik === "Eczanem");
+  const eklemeIndexi = eczanemIndex >= 0 ? eczanemIndex + 1 : temizGruplar.length;
 
   return [
     ...temizGruplar.slice(0, eklemeIndexi),
