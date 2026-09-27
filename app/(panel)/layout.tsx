@@ -28,7 +28,7 @@ import HapbiMaskot from "@/components/hapbi/HapbiMaskot";
 import HapbiChatModal from "@/components/hapbi/HapbiChatModal";
 import YarimYuklemeBildirimi from "@/components/ogrenme-araci/YarimYuklemeBildirimi";
 import YayinSonucBildirimi from "@/components/panel/YayinSonucBildirimi";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { STORE_ALABILEN_ROLLER, URETICI_ROLLER } from "@/lib/utils/roller";
 import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbellek";
 import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
 import { prefetchYayinKatalog } from "@/app/(panel)/yayindaki-videolar/_components/katalogOnbellek";
@@ -49,7 +49,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const [flags, setFlags] = useState<PanelFlags>(VARSAYILAN_FLAGS);
   const [badge, setBadge] = useState<Record<string, number>>({});
   const [drawerAcik, setDrawerAcik] = useState(false);
-  const [ozet, setOzet] = useState<{ haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null>(null);
+  const [ozet, setOzet] = useState<{ takimSirasi: number | null; siparisPuani: number } | null>(null);
   const [eclubStorePuani, setEclubStorePuani] = useState<number | null>(null);
   const [eclubFirmalar, setEclubFirmalar] = useState<Array<{ firma_id: string; firma_adi: string }>>([]);
   const [firmaAdi, setFirmaAdi] = useState<string | null>(null);
@@ -109,7 +109,6 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         }
       }
       const guncelOzet = data.navbar_ozet ? {
-        haftalikPuan: data.navbar_ozet.haftalik_puan ?? 0,
         takimSirasi: data.navbar_ozet.takim_sirasi ?? null,
         siparisPuani: data.navbar_ozet.siparis_puani ?? 0,
       } : null;
@@ -231,6 +230,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           email={kullanici.email}
           ozet={isEclubKisi ? null : etkinOzet}
           siparisPuaniGoster={!isEclubKisi && etkinFlags.storeAcik}
+          hbStoreGoster={!isEclubKisi && etkinFlags.storeAcik && STORE_ALABILEN_ROLLER.includes(rolKucu)}
           eclubStoreGeriSayimGoster={Boolean(isEclubKisi && etkinFlags.eclubStoreAcik)}
           anaSayfaYolu={anaSayfaYolu}
           eclubStorePuani={isEclubKisi && etkinFlags.eclubStoreAcik ? etkinEclubStorePuani : null}

@@ -281,17 +281,14 @@ export default function StorePage() {
         {/* Header */}
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
-            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">
-              <Sparkles className="size-3.5" /> HBStore · T-Club Puan Mağazası
-            </p>
             <div className="inline-flex items-center">
               <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
-                Mağazam
+                HBStore
               </h1>
               <SayfaRehberi anahtar="store-magaza" className="ml-1.5 -translate-y-1.5" />
             </div>
             <p className="mt-1 max-w-3xl text-xs font-semibold leading-5 text-[#7b8da3] md:text-sm">
-              Kazandığınız başarı puanlarıyla ürünleri inceleyin, sipariş verin ve teslimat durumunu takip edin.
+              Kazandığınız puanlarla siparişlerinizi ücretsiz olarak verebilrisiniz
             </p>
           </div>
 
@@ -312,16 +309,16 @@ export default function StorePage() {
           </div>
         </header>
 
-        {/* Store Günleri Takvim Durumu Bannerı */}
+        {/* HBStore Günleri Takvim Durumu Bannerı */}
         {takvim && (takvim.acik ? (
-          <section aria-label="Store Günleri Durumu" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#a6f4c5] bg-[#ecfdf3] px-4 py-3 shadow-[0_4px_14px_rgba(18,183,106,0.06)]">
+          <section aria-label="HBStore Günleri Durumu" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#a6f4c5] bg-[#ecfdf3] px-4 py-3 shadow-[0_4px_14px_rgba(18,183,106,0.06)]">
             <div className="flex items-center gap-2.5">
               <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#d1fadf] text-[#027a48]">
                 <Sparkles size={16} />
               </span>
               <div>
                 <div className="flex items-center gap-2">
-                  <strong className="text-xs font-black text-[#027a48]">Store Günleri Açık</strong>
+                  <strong className="text-xs font-black text-[#027a48]">HBStore Günleri Açık</strong>
                   <span className="rounded-full bg-[#12b76a] px-2 py-0.5 text-[10px] font-extrabold text-white shadow-sm">
                     Sipariş Verilebilir
                   </span>
@@ -336,20 +333,20 @@ export default function StorePage() {
             </div>
           </section>
         ) : (
-          <section aria-label="Store Günleri Durumu" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#fed7aa] bg-[#fffaf5] px-4 py-3 shadow-[0_4px_14px_rgba(249,115,22,0.05)]">
+          <section aria-label="HBStore Günleri Durumu" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#fed7aa] bg-[#fffaf5] px-4 py-3 shadow-[0_4px_14px_rgba(249,115,22,0.05)]">
             <div className="flex items-center gap-2.5">
               <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#ffedd5] text-[#c2410c]">
                 <ShoppingBag size={16} />
               </span>
               <div>
                 <div className="flex items-center gap-2">
-                  <strong className="text-xs font-black text-[#9a3412]">Store Günleri Kapalı</strong>
+                  <strong className="text-xs font-black text-[#9a3412]">HBStore Günleri Kapalı</strong>
                   <span className="rounded-full bg-[#f97316] px-2 py-0.5 text-[10px] font-extrabold text-white shadow-sm">
                     Sonraki: {takvim.sonrakiDonemEtiketi}
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs font-semibold text-[#7c2d12]">
-                  Yeni siparişler yalnızca Store Günleri döneminde alınır. Açılışa <strong>{takvim.kalanSureMetni}</strong> kaldı. Ürünleri inceleyebilirsiniz.
+                  Siparişler yalnızca HBStore Günleri&apos;nde alınır. Açılışa <strong>{takvim.kalanSureMetni}</strong> kaldı. Ürünleri inceleyebilirsiniz.
                 </p>
               </div>
             </div>

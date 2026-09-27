@@ -1,7 +1,7 @@
 // components/panel/PanelNavbar.tsx
 //
 // Panel üst barı. Sol: logo. Orta: bilgi pill'leri + (UTT/KD_UTT'de) dikey çizgi
-// ardından kişisel özet pill'leri (Takım Sırası · Haftalık Puan · Sipariş Puanı).
+// ardından kişisel özet pill'leri (Takım Sırası · Sipariş Puanı) ve HBStore kısayolu.
 // Sağ: ad-soyad (bordo) + avatar; Çıkış adın altında. Fonksiyonel gezinme sol listede.
 
 "use client";
@@ -13,12 +13,12 @@ import { useEclubStoreTakvim } from "@/hooks/useEclubStoreTakvim";
 
 const BORDO = "#bc2d0d";
 
-// UTT Kişisel Özet Kapsülü — tek şık rozet: Takım: 1 | Haftalık: 454 | Sipariş: 1.386
+// UTT Kişisel Özet Kapsülü — tek şık rozet: Takım: 1 | Sipariş: 1.386
 function OzetKapsul({
   ozet,
   siparisPuaniGoster,
 }: {
-  ozet: { haftalikPuan: number; takimSirasi: number | null; siparisPuani: number };
+  ozet: { takimSirasi: number | null; siparisPuani: number };
   siparisPuaniGoster?: boolean;
 }) {
   return (
@@ -37,18 +37,6 @@ function OzetKapsul({
         </span>
         <span style={{ fontSize: 12, fontWeight: 700, color: "#111827" }}>
           {ozet.takimSirasi ? `${ozet.takimSirasi}` : "-"}
-        </span>
-      </div>
-
-      <span style={{ color: "#d1d5db", margin: "0 8px", fontSize: 11, userSelect: "none" }}>|</span>
-
-      {/* Haftalık Puan */}
-      <div className="flex items-center gap-1 whitespace-nowrap">
-        <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>
-          Haftalık:
-        </span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: "#111827" }}>
-          {ozet.haftalikPuan.toLocaleString("tr-TR")} p
         </span>
       </div>
 
@@ -92,9 +80,11 @@ interface PanelNavbarProps {
   adSoyad?: string;
   email?: string;
   // Kişisel özet — yalnız UTT/KD_UTT (BM sonraya). Verilmezse özet pill'leri çizilmez.
-  ozet?: { haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null;
+  ozet?: { takimSirasi: number | null; siparisPuani: number } | null;
   // Sipariş Puanı pill'i yalnız kullanıcının firmasında HBStore aktifse görünür.
   siparisPuaniGoster?: boolean;
+  // HBStore giriş pill'i yalnız mağazadan kişisel sipariş verebilen rollerde görünür.
+  hbStoreGoster?: boolean;
   // E-Club Store Günleri geri sayımı — E-Club kişisi ve aktif firma E-Club Store açıkken görünür.
   eclubStoreGeriSayimGoster?: boolean;
   // Dış müşteri ana sayfası /eclub/panel'dir; iç kullanıcıda varsayılan korunur.
@@ -119,6 +109,7 @@ export default function PanelNavbar({
   email,
   ozet,
   siparisPuaniGoster,
+  hbStoreGoster,
   eclubStoreGeriSayimGoster,
   anaSayfaYolu = "/ana-sayfa",
   eclubStorePuani,
@@ -234,6 +225,22 @@ export default function PanelNavbar({
           )}
           {eclubStorePuani !== null && eclubStorePuani !== undefined && (
             <OzetPill etiket="Store Puanı" deger={eclubStorePuani.toLocaleString("tr-TR")} />
+          )}
+
+          {hbStoreGoster && (
+            <button
+              type="button"
+              onClick={() => router.push("/store")}
+              className="inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-extrabold leading-tight text-white whitespace-nowrap cursor-pointer border-none transition-all duration-200 hover:-translate-y-px hover:brightness-105 active:translate-y-0"
+              style={{
+                background: "linear-gradient(135deg, #ff9a1f 0%, #ff6200 55%, #f04400 100%)",
+                boxShadow: "0 4px 12px rgba(255, 98, 0, 0.32), inset 0 1px 0 rgba(255,255,255,0.38)",
+                fontFamily: "'Nunito', sans-serif",
+              }}
+              aria-label="HBStore'u aç"
+            >
+              HBStore
+            </button>
           )}
 
           {/* Kullanıcı Adı + Avatar + Çıkış (0.5 cm / 22px sol boşlukla puanlardan ayrıldı) */}

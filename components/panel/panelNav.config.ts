@@ -114,10 +114,6 @@ export const PANEL_NAV: NavGrup[] = [
         },
         gate: (c) => c.rolKucu !== "iu",
       },
-      // UTT HBStore (kendi puanı)
-      { etiket: "Mağazam",           path: "/store",              tamEslesme: true, gate: (c) => c.storeAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "Siparişlerim",      path: "/store/siparislerim",                   gate: (c) => c.storeAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "Adreslerim",        path: "/store/adreslerim",                     gate: (c) => c.storeAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
       // BM / TM / Yönetici (Ekip Takibi — Üretici hariç)
       { etiket: "Ekip Mağaza Siparişleri", path: "/store/siparisler",               gate: (c) => c.storeAcik && STORE_GENEL_GOREN_ROLLER.includes(c.rolKucu) && !URETICI_ROLLER.includes(c.rolKucu) },
     ],
@@ -129,8 +125,8 @@ export const PANEL_NAV: NavGrup[] = [
     oglar: [
       { etiket: "Challenge Club",    path: "/challenge-club",     gate: (c) => c.ccAcik && c.rolKucu === "bm" },
       { etiket: "C-Club Ligi",       path: "/cc-ligi",            gate: (c) => c.ccAcik && CCLIGI_GORENLERLER.includes(c.rolKucu) },
-      // BM Kişisel Mağazam (C-Club puanlarıyla alışveriş)
-      { etiket: "Mağazam",           path: "/store",              tamEslesme: true, gate: (c) => c.storeAcik && c.ccAcik && c.rolKucu === "bm" },
+      // BM kişisel HBStore erişimi (C-Club puanlarıyla alışveriş)
+      { etiket: "HBStore",           path: "/store",              tamEslesme: true, gate: (c) => c.storeAcik && c.ccAcik && c.rolKucu === "bm" },
       { etiket: "Siparişlerim",      path: "/store/siparislerim",                   gate: (c) => c.storeAcik && c.ccAcik && c.rolKucu === "bm" },
       { etiket: "Adreslerim",        path: "/store/adreslerim",                     gate: (c) => c.storeAcik && c.ccAcik && c.rolKucu === "bm" },
     ],

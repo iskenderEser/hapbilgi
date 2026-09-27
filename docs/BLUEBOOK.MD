@@ -2692,7 +2692,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `BilgiSayfa.tsx` | UI / React | bilgi sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `MobilDrawer.tsx` | UI / React | mobil Drawer, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `panelNav.config.ts` | TypeScript / Lib | Panel gezinme çubuğunun menü öğelerini, rol bazlı görünürlük haritasını ve bildirim sayaç yapılandırmasını tanımlar. |
-| `PanelNavbar.tsx` | UI / React | Kullanıcı profil, rol, lig sırası, haftalık puan ve sipariş puanı göstergelerini sunan; mobil navbar sayaç tekrarı arındırılmış ve net ayraçlı özet kapsüle sahip üst gezinme çubuğudur. |
+| `PanelNavbar.tsx` | UI / React | Kullanıcı profil, rol, lig sırası ve sipariş puanı göstergelerini sunan; mobil navbar sayaç tekrarı arındırılmış ve net ayraçlı özet kapsüle sahip üst gezinme çubuğudur. |
 | `SolListe.tsx` | UI / React | Sol liste, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
 ### 📁 components/panel/bilgi/

@@ -267,12 +267,29 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   // ─── 13. EĞİTİM YAYINLARI (ORTAK KATEGORİ REHBERLERİ) ─────────────────────
   ...UTT_EGITIM_REHBERLERI,
 
-  // ─── 14. MAĞAZAM (HBSTORE) ────────────────────────────────────────────────
+  // ─── 14. HBSTORE ──────────────────────────────────────────────────────────
   "store-magaza": {
     anahtar: "store-magaza",
-    baslik: "Mağazam",
-    ozet: "T-Club aktivitelerinden kazandığınız harcanabilir net puan bakiyenizle ürünleri incelemenizi ve sipariş vermenizi sağlar.",
-    maddeler: [],
+    baslik: "HBStore",
+    ozet: "Her dönem sonu; takip eden ilk ayın sadece ilk 7 günü açılan HBStore'da, kazandığınız puanlarla tercih ettiğiniz ürünlerin siparişlerini hiçbir ödeme yapmadan verebilir ve dilediğiniz adrese kargolanmasını isteyebilirsiniz.",
+    maddeler: [
+      {
+        baslik: "HBStore Günleri",
+        aciklama: "Her dönemin sonunu takip eden ayın ilk günü saat 00:01'de başlar, 7. günü saat 23:59'da kapanır.",
+        ikon: "📅",
+      },
+      {
+        baslik: "Sipariş Verme",
+        aciklama: "HapBilgi içinde dönem boyunca topladığınız puanlarınızı kullanarak sipariş verebilirsiniz. Kullanmadığınız puanlarınız bir sonraki döneme devir olmayacaktır.",
+        ikon: "🪙",
+      },
+      {
+        baslik: "Sipariş ve Teslimat",
+        aciklama: "Siparişlerim bölümünden sipariş ve teslimat durumlarını, Adreslerim bölümünden teslimat adreslerinizi yönetebilirsiniz.",
+        ikon: "📍",
+      },
+    ],
+    ipucu: "HBStore kapalıyken ürünleri inceleyebilirsiniz; yeni sipariş vermek için bir sonraki HBStore Günleri'nin açılmasını beklemeniz gerekir.",
   },
 
   // ─── 15. E-CLUB TAKIMIM (ECZANELERİM) ─────────────────────────────────────

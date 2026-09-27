@@ -22,7 +22,6 @@ export interface PanelFlags {
 }
 
 export interface PanelNavbarOzet {
-  haftalikPuan: number;
   takimSirasi: number | null;
   siparisPuani: number;
 }

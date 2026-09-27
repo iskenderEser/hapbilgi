@@ -177,8 +177,7 @@ export async function GET() {
       .single();
 
     // ── Navbar özeti (yalnız UTT/KD_UTT — bu blok TUKETICI_ROLLER içinde) ──────
-    // Haftalık puan + haftalık takım sırası: bu haftanın lig RPC'sinden Berk'in
-    // satırı. Toplam/tüm-zaman DEĞİL — navbar değerleri haftalıktır.
+    // Haftalık takım sırası: bu haftanın lig RPC'sinden kullanıcının satırı.
     const { yil, hafta } = aktifPeriyot();
     const { data: haftalikLig } = await adminSupabase.rpc("get_hb_ligi_haftalik_v2", {
       p_yil: yil,
@@ -210,7 +209,6 @@ export async function GET() {
         bolge_sirasi: siralama?.bolge_sirasi ?? null,
       },
       navbar_ozet: {
-        haftalik_puan: benimHaftalik?.toplam_puan ?? 0,
         takim_sirasi: benimHaftalik?.takim_sirasi ?? null,
         siparis_puani: siparisPuani,
       },
