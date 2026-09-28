@@ -104,8 +104,6 @@ export interface EclubSiparisSorgusu {
   eczaneId: string | null;
   kisiId: string | null;
   durum: EclubSiparisDurum | null;
-  tarihBaslangic: string | null;
-  tarihBitis: string | null;
   offset: number;
   limit: number;
 }
@@ -115,14 +113,6 @@ export type EclubSiparisSorguSonucu =
   | { ok: false; hata: string; alanlar: string[] };
 
 const UUID_DESENI = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const GUN_DESENI = /^\d{4}-\d{2}-\d{2}$/;
-
-function gecerliGun(deger: string): boolean {
-  if (!GUN_DESENI.test(deger)) return false;
-  const [yil, ay, gun] = deger.split("-").map(Number);
-  const tarih = new Date(Date.UTC(yil, ay - 1, gun));
-  return tarih.getUTCFullYear() === yil && tarih.getUTCMonth() === ay - 1 && tarih.getUTCDate() === gun;
-}
 
 function pozitifTamSayi(deger: string | null, varsayilan: number): number | null {
   if (deger === null) return varsayilan;
@@ -135,8 +125,6 @@ export function eclubSiparisSorgusunuParse(searchParams: URLSearchParams): Eclub
   const eczaneId = searchParams.get("eczane_id") || null;
   const kisiId = searchParams.get("kisi_id") || null;
   const durumHam = searchParams.get("durum") || null;
-  const tarihBaslangic = searchParams.get("tarih_baslangic") || null;
-  const tarihBitis = searchParams.get("tarih_bitis") || null;
   const offset = pozitifTamSayi(searchParams.get("offset"), 0);
   const limitHam = pozitifTamSayi(searchParams.get("limit"), 30);
 
@@ -145,15 +133,6 @@ export function eclubSiparisSorgusunuParse(searchParams: URLSearchParams): Eclub
   if (kisiId && !UUID_DESENI.test(kisiId)) return { ok: false, hata: "Geçersiz kişi.", alanlar: ["kisi_id"] };
   if (durumHam && !ECLUB_SIPARIS_DURUMLARI.includes(durumHam as EclubSiparisDurum)) {
     return { ok: false, hata: "Geçersiz sipariş durumu.", alanlar: ["durum"] };
-  }
-  if (tarihBaslangic && !gecerliGun(tarihBaslangic)) {
-    return { ok: false, hata: "Geçersiz başlangıç tarihi.", alanlar: ["tarih_baslangic"] };
-  }
-  if (tarihBitis && !gecerliGun(tarihBitis)) {
-    return { ok: false, hata: "Geçersiz bitiş tarihi.", alanlar: ["tarih_bitis"] };
-  }
-  if (tarihBaslangic && tarihBitis && tarihBaslangic > tarihBitis) {
-    return { ok: false, hata: "Başlangıç tarihi bitiş tarihinden sonra olamaz.", alanlar: ["tarih_baslangic", "tarih_bitis"] };
   }
   if (offset === null) return { ok: false, hata: "offset sıfır veya pozitif tam sayı olmalı.", alanlar: ["offset"] };
   if (limitHam === null || limitHam < 1) return { ok: false, hata: "limit pozitif tam sayı olmalı.", alanlar: ["limit"] };
@@ -165,8 +144,6 @@ export function eclubSiparisSorgusunuParse(searchParams: URLSearchParams): Eclub
       eczaneId,
       kisiId,
       durum: durumHam as EclubSiparisDurum | null,
-      tarihBaslangic,
-      tarihBitis,
       offset,
       limit: Math.min(limitHam, 100),
     },

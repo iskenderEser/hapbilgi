@@ -3,13 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CalendarRange,
   Check,
   CheckCircle2,
   ChevronDown,
   CircleCheckBig,
   Clock3,
-  Coins,
   Copy,
   Gift,
   MapPin,
@@ -43,8 +41,6 @@ interface Filtreler {
   eczane_id: string;
   kisi_id: string;
   durum: string;
-  tarih_baslangic: string;
-  tarih_bitis: string;
 }
 
 const BOS_FILTRELER: Filtreler = {
@@ -52,8 +48,6 @@ const BOS_FILTRELER: Filtreler = {
   eczane_id: "",
   kisi_id: "",
   durum: "",
-  tarih_baslangic: "",
-  tarih_bitis: "",
 };
 
 interface EclubSiparisSayfaData extends EclubSiparisApiData {
@@ -241,7 +235,7 @@ function SiparisListesi({
     <section className="overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_7px_22px_rgba(31,55,90,0.04)]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e7edf4] px-4 py-3.5">
         <div>
-          <h2 className="text-sm font-extrabold text-[#203653]">E‑Club Sipariş & Çek Talepleri</h2>
+          <h2 className="text-sm font-extrabold text-[#203653]">Çek Talepleri Listesi</h2>
           <p className="mt-0.5 text-[11px] font-semibold text-[#8190a3]">
             {yukleniyor ? "Yükleniyor..." : `${data.siparisler.length} / ${data.toplam} kayıt gösteriliyor`}
           </p>
@@ -622,13 +616,6 @@ export default function EclubSiparislerPage() {
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <YenileButonu yenileniyor={yenileniyor} onYenile={() => yukle(true)} disabled={dahaYukleniyor} />
-            <div className="flex items-center gap-2 rounded-2xl border border-[#cfe3f4] bg-[#eef7fd] px-4 py-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#16865f]"><Coins size={17} /></span>
-              <div>
-                <div className="text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#71859d]">Firmamızdan kullanılan</div>
-                <div className="text-lg font-black tabular-nums text-[#16865f]">{data.ozet.firma_kullanilan_puan.toLocaleString("tr-TR")} <small className="text-[10px]">puan</small></div>
-              </div>
-            </div>
           </div>
         </header>
 
@@ -680,17 +667,15 @@ export default function EclubSiparislerPage() {
 
         <section className="mb-4 rounded-2xl border border-[#dfe7f1] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <div><h2 className="text-sm font-extrabold text-[#203653]">Filtreler</h2><p className="mt-0.5 text-[11px] font-semibold text-[#8190a3]">Listeyi eczane, kişi, durum veya sipariş tarihine göre daraltın.</p></div>
+            <div><h2 className="text-sm font-extrabold text-[#203653]">Filtreler</h2><p className="mt-0.5 text-[11px] font-semibold text-[#8190a3]">Listeyi eczane, kişi veya duruma göre daraltın.</p></div>
             {aktifFiltreVar && (
               <button type="button" onClick={() => setFiltreler(BOS_FILTRELER)} className="inline-flex items-center gap-1.5 rounded-xl border border-[#dfe7f1] px-3 py-1.5 text-[11px] font-extrabold text-[#61748b] hover:bg-[#f6f9fc]"><RotateCcw size={12} /> Temizle</button>
             )}
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <label className="min-w-0"><span className="mb-1 flex items-center gap-1 text-[10px] font-extrabold text-[#71859d]"><Store size={11} /> Eczane</span><select className={selectSinifi} value={filtreler.eczane_id} onChange={(e) => filtreDegistir("eczane_id", e.target.value)}><option value="">Tüm eczaneler</option>{data.kapsam.eczaneler.map((eczane) => <option key={eczane.eczane_id} value={eczane.eczane_id}>{eczane.eczane_adi}</option>)}</select></label>
             <label className="min-w-0"><span className="mb-1 flex items-center gap-1 text-[10px] font-extrabold text-[#71859d]"><UserRound size={11} /> Eczane çalışanı</span><select className={selectSinifi} value={filtreler.kisi_id} onChange={(e) => filtreDegistir("kisi_id", e.target.value)}><option value="">Tüm kişiler</option>{kisiler.map((kisi) => <option key={kisi.kisi_id} value={kisi.kisi_id}>{kisi.ad} {kisi.soyad} · {eclubKisiRolEtiketi(kisi.rol)}</option>)}</select></label>
             <label className="min-w-0"><span className="mb-1 block text-[10px] font-extrabold text-[#71859d]">Durum</span><select className={selectSinifi} value={filtreler.durum} onChange={(e) => filtreDegistir("durum", e.target.value)}><option value="">Tüm durumlar</option>{ECLUB_SIPARIS_DURUMLARI.map((durum) => <option key={durum} value={durum}>{ECLUB_SIPARIS_DURUM_ETIKETLERI[durum]}</option>)}</select></label>
-            <label className="min-w-0"><span className="mb-1 flex items-center gap-1 text-[10px] font-extrabold text-[#71859d]"><CalendarRange size={11} /> Başlangıç</span><input type="date" className={selectSinifi} value={filtreler.tarih_baslangic} max={filtreler.tarih_bitis || undefined} onChange={(e) => filtreDegistir("tarih_baslangic", e.target.value)} /></label>
-            <label className="min-w-0"><span className="mb-1 flex items-center gap-1 text-[10px] font-extrabold text-[#71859d]"><CalendarRange size={11} /> Bitiş</span><input type="date" className={selectSinifi} value={filtreler.tarih_bitis} min={filtreler.tarih_baslangic || undefined} onChange={(e) => filtreDegistir("tarih_bitis", e.target.value)} /></label>
           </div>
         </section>
 

@@ -11,7 +11,6 @@ import {
 import { CEK_TALEP_ISLEMDE_DURUMLARI } from "@/lib/eclub/store/eclubStoreTipler";
 import { eclubYonetimKapsaminiGetir, type EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
 import { ECLUB_YONETIM_ROLLERI } from "@/lib/utils/roller";
-import { trGunEkle } from "@/lib/zaman/kontrol";
 import {
   hataYaniti,
   rolHatasi,
@@ -28,10 +27,6 @@ const BOS_OZET: EclubSiparisOzet = {
   iptal: 0,
   firma_kullanilan_puan: 0,
 };
-
-function trGunBaslangici(gun: string | null): string | null {
-  return gun ? new Date(`${gun}T00:00:00+03:00`).toISOString() : null;
-}
 
 async function cekTalepleriniGetir(
   supabase: SupabaseClient,
@@ -78,9 +73,6 @@ async function cekTalepleriniGetir(
   if (sorgu.kisiId) q = q.eq("talep_eden_kisi_id", sorgu.kisiId);
   if (sorgu.uttId) q = q.eq("utt_id", sorgu.uttId);
   else if (uttIdler.length > 0) q = q.in("utt_id", uttIdler);
-
-  if (sorgu.tarihBaslangic) q = q.gte("created_at", trGunBaslangici(sorgu.tarihBaslangic)!);
-  if (sorgu.tarihBitis) q = q.lte("created_at", trGunBaslangici(trGunEkle(sorgu.tarihBitis, 1))!);
 
   const { data: talepler, error } = await q.order("created_at", { ascending: false });
   if (error) {
