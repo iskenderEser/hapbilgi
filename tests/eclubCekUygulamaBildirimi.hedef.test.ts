@@ -42,5 +42,5 @@ test("çek bildirimi oturum içinde gösterilir ve Çek Taleplerim rozetine yans
 test("Çek Taleplerim açılınca yalnız çek bildirimleri okundu yapılır", () => {
   assert.match(ceklerim, /fetch\("\/bildirimler\/api"[\s\S]*?method: "PUT"[\s\S]*?kayit_turu: "cek"/);
   assert.match(ceklerim, /bildirimRozetleriniYenile\(\)/);
-  assert.match(ceklerim, /\["teslimat_bekliyor", "cek_kodlari_gonderildi"\]\.includes\(talep\.durum\)[\s\S]*?talep\.cek_kodu/);
+  assert.match(ceklerim, /CEK_KODU_GORUNUR_DURUMLARI[\s\S]*?CEK_KODU_GORUNUR_DURUMLARI\.includes\(talep\.durum\)[\s\S]*?talep\.cek_kodu/);
 });
