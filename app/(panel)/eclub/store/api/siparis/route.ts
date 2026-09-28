@@ -8,6 +8,7 @@ import {
   eclubStoreSiparisAcikMi,
   eclubStoreTakvimDurumu,
 } from "@/lib/eclub/store/takvim";
+import { eclubCekTalebiOlusturabilirMi } from "@/lib/eclub/store/cekTalebiYetkisi";
 
 async function kisiCoz(adminSupabase: ReturnType<typeof createAdminClient>, authUserId: string) {
   const { data } = await adminSupabase
@@ -151,6 +152,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     if (body.yayin_id) {
+      if (!eclubCekTalebiOlusturabilirMi(kisi.rol)) {
+        return rolHatasi("Hediye çeki talebini yalnız ana eczacı oluşturabilir.");
+      }
+
       const { yayin_id, siparis_verilsin_mi } = body;
       const { data: rpcRes, error: rpcErr } = await adminSupabase.rpc("eclub_store_cek_talebi_olustur", {
         p_kisi_id: kisi.kisi_id,

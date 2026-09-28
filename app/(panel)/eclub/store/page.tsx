@@ -26,12 +26,14 @@ import { useEclubStore } from "./_hooks/useEclubStore";
 import type { BaremSatiri } from "@/lib/eclub/store/eclubStoreTipler";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { useEclubStoreTakvim } from "@/hooks/useEclubStoreTakvim";
+import { eclubCekTalebiOlusturabilirMi } from "@/lib/eclub/store/cekTalebiYetkisi";
 
 export default function EclubStorePage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
   const eclubKisi = !!kullanici && kullanici.kimlik_turu === "eclub_kisi";
+  const cekTalebiOlusturabilir = eclubCekTalebiOlusturabilirMi(kullanici?.rol);
   const {
     cekYayinlar,
     loading,
@@ -63,6 +65,10 @@ export default function EclubStorePage() {
     siparisVerilsinMi: boolean,
     urunAdi: string,
   ) => {
+    if (!cekTalebiOlusturabilir) {
+      hata("Hediye çeki talebini yalnız ana eczacı oluşturabilir.");
+      return;
+    }
     if (!storeAcik) {
       hata(
         `E-Club Store şu an siparişe kapalıdır. Talepler 2 ayda bir ilk 7 günde (${takvim?.sonrakiDonemEtiketi ?? "Store Günleri"}) verilebilir.`,
@@ -306,7 +312,11 @@ export default function EclubStorePage() {
                     ) : (
                       /* Henüz Talep Verilmemişse Aksiyon Butonları */
                       <div className="flex flex-col gap-2 sm:items-end">
-                        {!yeterliPuanVarMi ? (
+                        {!cekTalebiOlusturabilir ? (
+                          <div className="rounded-lg bg-slate-100 p-2 text-right text-[11px] font-bold text-slate-700">
+                            Hediye çeki talebini yalnız ana eczacı oluşturabilir.
+                          </div>
+                        ) : !yeterliPuanVarMi ? (
                           <div className="rounded-lg bg-amber-50 p-2 text-right text-[11px] font-bold text-amber-800">
                             Minimum barem için 200 puan gerekir. (Kalan puanlar devredilir).
                           </div>
