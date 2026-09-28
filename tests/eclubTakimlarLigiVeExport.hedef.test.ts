@@ -35,15 +35,13 @@ const satir = (degisiklik: Partial<EclubRaporHamSatir>): EclubRaporHamSatir => (
   ...degisiklik,
 });
 
-test("Hedef Test 1: Takım tablosu Çeksiz Puan sütununu ve kurallarını doğru gösterir", () => {
-  // Tablo başlığında Çeksiz Puan sütunu bulunmalı
+test("Hedef Test 1: Takım tablosu çekli, çeksiz ve lig puanını ayrı gösterir", () => {
+  assert.match(pageContent, /<th[^>]*>Çekli Puan<\/th>/);
   assert.match(pageContent, /<th[^>]*>Çeksiz Puan<\/th>/);
-  assert.match(pageContent, /<th[^>]*>Toplam Takım Puanı<\/th>/);
+  assert.match(pageContent, /<th[^>]*>Lig Puanı<\/th>/);
 
-  // Hücrede Çeksiz Puan formatlaması: 0 ise "0 p", pozitifse "X p"
-  assert.match(pageContent, /takim\.ceksiz_puan > 0 \? `\$\{takim\.ceksiz_puan\.toLocaleString\("tr-TR"\)\} p` : "0 p"/);
-
-  // Toplam Takım Puanı formatlaması
+  assert.match(pageContent, /takim\.cekli_puan\.toLocaleString\("tr-TR"\)\} p/);
+  assert.match(pageContent, /takim\.ceksiz_puan\.toLocaleString\("tr-TR"\)\} p/);
   assert.match(pageContent, /takim\.toplam_puan\.toLocaleString\("tr-TR"\)\} p/);
 
   // "Benim Takımım" vurgusunun korunduğu doğrulanır
@@ -109,7 +107,7 @@ test("Hedef Test 3: Çeksiz Puan lig sıralamasına dahildir", () => {
 
 test("Hedef Test 4: Excel çıktısında üç puan alanı doğru görünür, sayısal değerler korunur", () => {
   // Başlıklar Excel dosyasında yer alıyor mu?
-  assert.match(exportRouteContent, /"Çekli Puan", "Çeksiz Puan", "Toplam Puan"/);
+  assert.match(exportRouteContent, /"Çekli Puan", "Çeksiz Puan", "Lig Puanı"/);
 
   // Değerler ham sayı olarak aktarılıyor mu?
   assert.match(exportRouteContent, /kisi\.cekli_puan, kisi\.ceksiz_puan, kisi\.toplam_puan/);

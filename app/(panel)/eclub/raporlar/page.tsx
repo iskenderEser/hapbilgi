@@ -52,6 +52,15 @@ interface RaporData {
 
 const cevapOzeti = (dogru: number, yanlis: number) => `${dogru}/${dogru + yanlis}`;
 
+function PuanAyrimi({ cekli, ceksiz, toplam }: { cekli: number; ceksiz: number; toplam: number }) {
+  return (
+    <span className="inline-flex flex-col gap-0.5 whitespace-nowrap text-right">
+      <strong className="tabular-nums text-[#237ac8]">Lig: {formatPuan(toplam)} p</strong>
+      <small className="tabular-nums text-[#60758e]">Çekli: {formatPuan(cekli)} · Çeksiz: {formatPuan(ceksiz)}</small>
+    </span>
+  );
+}
+
 function UttRaporDetayi({ rapor }: { rapor: RaporData["utt_raporlari"][number]["rapor"] }) {
   if (rapor.eczaneler.length === 0) {
     return <div className={reportStyles.empty}>Bu UTT’ye bağlı aktif E‑Club eczanesi bulunmuyor.</div>;
@@ -62,7 +71,7 @@ function UttRaporDetayi({ rapor }: { rapor: RaporData["utt_raporlari"][number]["
         <article key={eczane.eczane_id} className="rounded-xl border border-[#e3eaf2] bg-[#fbfcfe] p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div><strong className="block text-xs text-[#203653]">{eczane.eczane_adi}</strong><small className="text-[10px] font-semibold text-[#8190a3]">{eczane.gln ? `GLN ${eczane.gln}` : "GLN bulunmuyor"} · {eczane.kisiler.length} kişi</small></div>
-            <div className="flex gap-2 text-[10px] font-bold text-[#60758e]"><span>{eczane.gonderilen_sayisi} gönderi</span><span>{eczane.tamamlanan_izleme} izleme</span><span>{formatPuan(eczane.toplam_puan)} puan</span></div>
+            <div className="flex items-center gap-2 text-[10px] font-bold text-[#60758e]"><span>{eczane.gonderilen_sayisi} gönderi</span><span>{eczane.tamamlanan_izleme} izleme</span><PuanAyrimi cekli={eczane.cekli_puan} ceksiz={eczane.ceksiz_puan} toplam={eczane.toplam_puan} /></div>
           </div>
           {eczane.kisiler.length > 0 && (
             <div className="mt-2 grid gap-1.5 border-t border-[#e5ecf3] pt-2">
@@ -71,7 +80,7 @@ function UttRaporDetayi({ rapor }: { rapor: RaporData["utt_raporlari"][number]["
                   <span className="min-w-0"><strong className="block truncate text-[#30475f]">{kisi.ad} {kisi.soyad}</strong><small className="text-[#8190a3]">{eclubKisiRolEtiketi(kisi.rol)}</small></span>
                   <span className="tabular-nums text-[#60758e]">{kisi.tamamlanan_izleme} izleme</span>
                   <span className="tabular-nums text-[#16865f]">{kisi.dogru_cevap} doğru</span>
-                  <strong className="tabular-nums text-[#237ac8]">{formatPuan(kisi.toplam_puan)} p</strong>
+                  <PuanAyrimi cekli={kisi.cekli_puan} ceksiz={kisi.ceksiz_puan} toplam={kisi.toplam_puan} />
                 </div>
               ))}
             </div>
@@ -131,7 +140,8 @@ export default function EclubRaporlarPage() {
     { etiket: "Eczane", deger: rapor.ozet.aktif_eczane },
     { etiket: "Gönderi", deger: rapor.ozet.gonderilen_sayisi },
     { etiket: "İzleme", deger: rapor.ozet.tamamlanan_izleme },
-    { etiket: "Puan", deger: formatPuan(rapor.ozet.toplam_puan) },
+    { etiket: "Lig Puanı", deger: formatPuan(rapor.ozet.toplam_puan) },
+    { etiket: "Çekli", deger: formatPuan(rapor.ozet.cekli_puan) },
   ]]));
 
   return (
@@ -182,8 +192,8 @@ export default function EclubRaporlarPage() {
                 </div>
                 <div className={styles.metric}>
                   <BookOpenCheck className="mb-1 h-4 w-4 text-[#237ac8]" />
-                  <div className="text-[10px] font-bold text-[#8190a3]">Kazanılan puan</div>
-                  <div className="text-base font-extrabold tabular-nums text-[#237ac8]">{formatPuan(data.ozet.toplam_puan)}</div>
+                  <div className="text-[10px] font-bold text-[#8190a3]">Puan ayrımı</div>
+                  <PuanAyrimi cekli={data.ozet.cekli_puan} ceksiz={data.ozet.ceksiz_puan} toplam={data.ozet.toplam_puan} />
                 </div>
               </div>
             </div>
@@ -245,7 +255,7 @@ export default function EclubRaporlarPage() {
             <div className={bmStyles.tableWrap}>
               <table className={bmStyles.table}>
                 <thead>
-                  <tr><th>Eczane</th><th>Aktif kişi</th><th>Gönderilen</th><th>Tamamlanan</th><th>Doğru / cevap</th><th>Kazanılan puan</th></tr>
+                  <tr><th>Eczane</th><th>Aktif kişi</th><th>Gönderilen</th><th>Tamamlanan</th><th>Doğru / cevap</th><th>Puan ayrımı</th></tr>
                 </thead>
                 <tbody>
                   {data.eczaneler.map((eczane) => {
@@ -269,7 +279,7 @@ export default function EclubRaporlarPage() {
                           <td>{eczane.gonderilen_sayisi}</td>
                           <td>{eczane.tamamlanan_izleme}</td>
                           <td>{cevapOzeti(eczane.dogru_cevap, eczane.yanlis_cevap)}</td>
-                          <td className={bmStyles.net}>{formatPuan(eczane.toplam_puan)}</td>
+                          <td className={bmStyles.net}><PuanAyrimi cekli={eczane.cekli_puan} ceksiz={eczane.ceksiz_puan} toplam={eczane.toplam_puan} /></td>
                         </tr>
                         {acik && (
                           <tr className={bmStyles.detailRow}>
@@ -277,7 +287,7 @@ export default function EclubRaporlarPage() {
                               {eczane.kisiler.length > 0 ? (
                                 <div className={reportStyles.personList}>
                                   <div className={reportStyles.personHeader}>
-                                    <span>Ad soyad / rol</span><span>Gönderilen</span><span>Tamamlanan</span><span>Doğru</span><span>Yanlış</span><span>Puan</span>
+                                    <span>Ad soyad / rol</span><span>Gönderilen</span><span>Tamamlanan</span><span>Doğru</span><span>Yanlış</span><span>Puan ayrımı</span>
                                   </div>
                                   {eczane.kisiler.map((kisi) => (
                                     <div key={kisi.kisi_id} className={reportStyles.personRow}>
@@ -289,7 +299,7 @@ export default function EclubRaporlarPage() {
                                       <span>{kisi.tamamlanan_izleme}</span>
                                       <span className={reportStyles.positive}>{kisi.dogru_cevap}</span>
                                       <span className={reportStyles.negative}>{kisi.yanlis_cevap}</span>
-                                      <span className={reportStyles.score}>{formatPuan(kisi.toplam_puan)}</span>
+                                      <span className={reportStyles.score}><PuanAyrimi cekli={kisi.cekli_puan} ceksiz={kisi.ceksiz_puan} toplam={kisi.toplam_puan} /></span>
                                     </div>
                                   ))}
                                 </div>
@@ -334,7 +344,7 @@ export default function EclubRaporlarPage() {
               <div className={styles.detailBox}>
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <span className="text-xs font-extrabold text-[#20324c]">{seciliIcerikSatiri.icerik_adi}</span>
-                  <span className="text-sm font-extrabold text-[#237ac8]">{formatPuan(seciliIcerikSatiri.toplam_puan)} puan</span>
+                  <PuanAyrimi cekli={seciliIcerikSatiri.cekli_puan} ceksiz={seciliIcerikSatiri.ceksiz_puan} toplam={seciliIcerikSatiri.toplam_puan} />
                 </div>
                 {[
                   ["Gönderilen öneri", seciliIcerikSatiri.gonderilen_sayisi],

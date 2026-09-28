@@ -14,8 +14,8 @@ export interface EclubRaporHamSatir {
   yanlis_cevap: number | string | null;
   izleme_puani: number | string | null;
   cevaplama_puani: number | string | null;
-  cekli_puan?: number | string | null;
-  ceksiz_puan?: number | string | null;
+  cekli_puan: number | string;
+  ceksiz_puan: number | string;
 }
 
 export interface EclubRaporMetrikleri {
@@ -97,12 +97,22 @@ const sayi = (deger: number | string | null | undefined) => {
   return Number.isFinite(sonuc) ? sonuc : 0;
 };
 
+const ayrilmisPuan = (deger: number | string, alan: "cekli_puan" | "ceksiz_puan") => {
+  if (deger === null || deger === undefined || deger === "") {
+    throw new Error(`E-Club rapor sözleşmesi eksik: ${alan}.`);
+  }
+  const sonuc = Number(deger);
+  if (!Number.isFinite(sonuc)) {
+    throw new Error(`E-Club rapor sözleşmesi geçersiz: ${alan}.`);
+  }
+  return sonuc;
+};
+
 const satirMetrigi = (satir: EclubRaporHamSatir): EclubRaporMetrikleri => {
   const izlemePuani = sayi(satir.izleme_puani);
   const cevaplamaPuani = sayi(satir.cevaplama_puani);
-  const hasCekAyrimi = satir.cekli_puan != null || satir.ceksiz_puan != null;
-  const cekliPuani = hasCekAyrimi ? sayi(satir.cekli_puan) : (izlemePuani + cevaplamaPuani);
-  const ceksizPuani = hasCekAyrimi ? sayi(satir.ceksiz_puan) : 0;
+  const cekliPuani = ayrilmisPuan(satir.cekli_puan, "cekli_puan");
+  const ceksizPuani = ayrilmisPuan(satir.ceksiz_puan, "ceksiz_puan");
   const toplamPuan = cekliPuani + ceksizPuani;
   return {
     gonderilen_sayisi: sayi(satir.gonderilen_sayisi),
@@ -377,4 +387,3 @@ export function eclubTakimlarLiginiOlustur(takimlar: EclubTakimGirdi[], aktifUtt
     return { ...takim, sira };
   });
 }
-

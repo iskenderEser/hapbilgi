@@ -329,7 +329,7 @@ export default function EclubLigiPage() {
         {/* Özet Kartları */}
         <section className={styles.statsGrid} aria-label="E-Club Takımlar Ligi özeti">
           {[
-            { label: "Lider Takım Puanı", value: data.lig_ozeti.lider_takim_puani.toLocaleString("tr-TR"), detail: data.lig_ozeti.lider_takim_adi ?? "Henüz puan yok", icon: Trophy },
+            { label: "Lider Lig Puanı", value: data.lig_ozeti.lider_takim_puani.toLocaleString("tr-TR"), detail: data.lig_ozeti.lider_takim_adi ?? "Henüz puan yok", icon: Trophy },
             {
               label: "Yarışan Takım",
               value: String(data.lig_ozeti.eclub_takimi),
@@ -352,7 +352,7 @@ export default function EclubLigiPage() {
             <div>
               <div className={styles.eyebrow}>Firma Geneli Sıralama</div>
               <h2 className={styles.panelTitle}>E-Club Takımlar Ligi</h2>
-              <p className={styles.panelDescription}>Firma bünyesindeki tüm UTT takımlarının dönemlik genel başarı ve puan sıralaması.</p>
+              <p className={styles.panelDescription}>Çekli ve çeksiz performans puanlarının toplamına göre dönemlik takım sıralaması.</p>
             </div>
             <Trophy className="h-5 w-5 text-[#237ac8]" />
           </div>
@@ -370,7 +370,9 @@ export default function EclubLigiPage() {
                     <th style={{ textAlign: "center" }}>Aktif Üye</th>
                     <th style={{ textAlign: "center" }}>Tamamlanan Yayın</th>
                     <th style={{ textAlign: "center" }}>Doğru Cevap</th>
-                    <th style={{ textAlign: "center" }}>Toplam Takım Puanı</th>
+                    <th style={{ textAlign: "center" }}>Çekli Puan</th>
+                    <th style={{ textAlign: "center" }}>Çeksiz Puan</th>
+                    <th style={{ textAlign: "center" }}>Lig Puanı</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -404,6 +406,12 @@ export default function EclubLigiPage() {
                         <td className="text-xs tabular-nums text-[#475569]" style={{ textAlign: "center" }}>{takim.aktif_uye}</td>
                         <td className="text-xs tabular-nums text-[#334155]" style={{ textAlign: "center" }}>{takim.tamamlanan_izleme}</td>
                         <td className="text-xs font-bold tabular-nums text-[#16a34a]" style={{ textAlign: "center" }}>{takim.dogru_cevap}</td>
+                        <td className="text-xs font-bold tabular-nums text-[#0f766e]" style={{ textAlign: "center" }}>
+                          {takim.cekli_puan.toLocaleString("tr-TR")} p
+                        </td>
+                        <td className="text-xs font-bold tabular-nums text-[#7c5ce7]" style={{ textAlign: "center" }}>
+                          {takim.ceksiz_puan.toLocaleString("tr-TR")} p
+                        </td>
                         <td className={styles.score} style={{ textAlign: "center" }}>
                           {takim.toplam_puan.toLocaleString("tr-TR")} p
                         </td>

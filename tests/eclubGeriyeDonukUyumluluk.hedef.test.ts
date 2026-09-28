@@ -169,8 +169,8 @@ test("Geriye Dönük Uyumluluk 4: Eski çek talebi açılabilir ve onay zincirin
   assert.equal(talep.talep_edilen_cek_tl, 600);
 });
 
-test("Geriye Dönük Uyumluluk 5: Mevcut lig toplamı sınıflandırma sonrasında değişmez", () => {
-  // Eski veri kümesi: Çeksiz puan kavramı yokken gelen satırlar (cekli_puan ve ceksiz_puan alanı null/undefined dahi olsa!)
+test("Lig puan sözleşmesi ayrımı eksik satırı reddeder ve ayrılmış satırları kayıpsız toplar", () => {
+  // Rapor RPC'sinin çekli/çeksiz ayrımı zorunludur; eksik alan için varsayım yapılmaz.
   const eskiLigSatirlari: EclubRaporHamSatir[] = [
     {
       eczane_id: "ecz-1",
@@ -188,8 +188,8 @@ test("Geriye Dönük Uyumluluk 5: Mevcut lig toplamı sınıflandırma sonrasın
       yanlis_cevap: 0,
       izleme_puani: 100,
       cevaplama_puani: 50,
-      cekli_puan: null as any, // Eski sistemden gelen null veri
-      ceksiz_puan: null as any,
+      cekli_puan: null as never,
+      ceksiz_puan: null as never,
     },
     {
       eczane_id: "ecz-2",
@@ -212,6 +212,15 @@ test("Geriye Dönük Uyumluluk 5: Mevcut lig toplamı sınıflandırma sonrasın
     },
   ];
 
+  assert.throws(
+    () => eclubRaporunuTopla(eskiLigSatirlari),
+    /E-Club rapor sözleşmesi eksik: cekli_puan/,
+  );
+  eskiLigSatirlari[0] = {
+    ...eskiLigSatirlari[0],
+    cekli_puan: 150,
+    ceksiz_puan: 0,
+  };
   const rapor = eclubRaporunuTopla(eskiLigSatirlari);
 
   // Eski sistemdeki toplam: (100+50) + (80+40) = 270

@@ -95,7 +95,9 @@ test("Senaryo 9 & 10: Podcast, Görsel ve Flip PDF okuma puanları doğru sını
 test("Senaryo 11 & 12: Takım toplam puanı Çekli + Çeksiz toplamıdır ve takım tablosunda Çeksiz Puan ayrıca gösterilir", () => {
   // Arayüz kodu kontrolü
   assert.match(ligSayfasiKod, /<th[^>]*>Çeksiz Puan<\/th>/);
-  assert.match(ligSayfasiKod, /takim\.ceksiz_puan > 0 \? `\$\{takim\.ceksiz_puan\.toLocaleString\("tr-TR"\)\} p` : "0 p"/);
+  assert.match(ligSayfasiKod, /takim\.cekli_puan\.toLocaleString\("tr-TR"\)\} p/);
+  assert.match(ligSayfasiKod, /takim\.ceksiz_puan\.toLocaleString\("tr-TR"\)\} p/);
+  assert.match(ligSayfasiKod, /takim\.toplam_puan\.toLocaleString\("tr-TR"\)\} p/);
 
   // Mantıksal takım hesaplaması
   const takimGirdisi = [
@@ -219,10 +221,10 @@ test("Senaryo 24: Çift hediye çeki talebi oluşmaz", () => {
   assert.match(rolloutSql, /IF EXISTS\(SELECT 1 FROM public\.eclub_store_cek_talepleri WHERE eczane_id=v_eczane AND yayin_id=p_yayin_id AND donem_kodu=v_d\.donem_kodu AND durum<>'iptal'\) THEN/);
 });
 
-test("Senaryo 25: E-Club Ligi Excel çıktısında Çekli Puan, Çeksiz Puan ve Toplam Puan doğru görünür", () => {
+test("Senaryo 25: E-Club Ligi Excel çıktısında Çekli Puan, Çeksiz Puan ve Lig Puanı doğru görünür", () => {
   assert.match(exportRouteKod, /"Çekli Puan"/);
   assert.match(exportRouteKod, /"Çeksiz Puan"/);
-  assert.match(exportRouteKod, /"Toplam Puan"/);
+  assert.match(exportRouteKod, /"Lig Puanı"/);
   assert.match(exportRouteKod, /kisi\.cekli_puan,\s*kisi\.ceksiz_puan,\s*kisi\.toplam_puan/);
   assert.match(exportRouteKod, /icerik\.cekli_puan,\s*icerik\.ceksiz_puan,\s*icerik\.toplam_puan/);
 });

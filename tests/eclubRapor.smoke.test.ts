@@ -19,6 +19,8 @@ const satir = (degisiklik: Partial<EclubRaporHamSatir>): EclubRaporHamSatir => (
   yanlis_cevap: 1,
   izleme_puani: 10,
   cevaplama_puani: 4,
+  cekli_puan: 14,
+  ceksiz_puan: 0,
   ...degisiklik,
 });
 
@@ -49,6 +51,8 @@ test("sınır: kişisiz eczaneyi gösterir ve oranlarda sıfıra bölmez", () =>
     yanlis_cevap: 0,
     izleme_puani: 0,
     cevaplama_puani: 0,
+    cekli_puan: 0,
+    ceksiz_puan: 0,
   })]);
 
   assert.equal(sonuc.eczaneler.length, 1);
@@ -59,8 +63,8 @@ test("sınır: kişisiz eczaneyi gösterir ve oranlarda sıfıra bölmez", () =>
 
 test("lig: aynı eczanedeki teknisyenleri gerçek kişi kimlikleriyle ayrı sıralar", () => {
   const lig = eclubLiginiOlustur([
-    satir({ kisi_id: "tek-1", kisi_ad: "Deniz", kisi_soyad: "A", kisi_rol: "eczane_teknisyeni", izleme_puani: 10, cevaplama_puani: 0 }),
-    satir({ kisi_id: "tek-2", kisi_ad: "Ece", kisi_soyad: "B", kisi_rol: "eczane_teknisyeni", izleme_puani: 20, cevaplama_puani: 5 }),
+    satir({ kisi_id: "tek-1", kisi_ad: "Deniz", kisi_soyad: "A", kisi_rol: "eczane_teknisyeni", izleme_puani: 10, cevaplama_puani: 0, cekli_puan: 10 }),
+    satir({ kisi_id: "tek-2", kisi_ad: "Ece", kisi_soyad: "B", kisi_rol: "eczane_teknisyeni", izleme_puani: 20, cevaplama_puani: 5, cekli_puan: 25 }),
   ]);
 
   assert.equal(lig.length, 2);
@@ -74,6 +78,8 @@ test("lig sınırı: puan kazanmayan üyeye yapay sıra vermez", () => {
   const lig = eclubLiginiOlustur([satir({
     izleme_puani: 0,
     cevaplama_puani: 0,
+    cekli_puan: 0,
+    ceksiz_puan: 0,
     tamamlanan_izleme: 0,
     dogru_cevap: 0,
     yanlis_cevap: 0,

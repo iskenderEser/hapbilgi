@@ -53,11 +53,11 @@ export async function GET(request: NextRequest) {
     }));
     const siralama: (string | number)[][] = [[
       "Takım", "BM", "Bölge", "UTT", "Sıra", "Ad Soyad", "Rol", "Eczane", "GLN", "Gönderilen", "Tamamlanan",
-      "Doğru", "Yanlış", "İzleme Puanı", "Cevaplama Puanı", "Çekli Puan", "Çeksiz Puan", "Toplam Puan",
+      "Doğru", "Yanlış", "İzleme Puanı", "Cevaplama Puanı", "Çekli Puan", "Çeksiz Puan", "Lig Puanı",
     ]];
     const detay: (string | number)[][] = [[
       "Takım", "BM", "Bölge", "UTT", "Sıra", "Ad Soyad", "Eczane", "Ürün / İçerik", "Gönderilen", "Tamamlanan",
-      "Doğru", "Yanlış", "İzleme Puanı", "Cevaplama Puanı", "Çekli Puan", "Çeksiz Puan", "Toplam Puan",
+      "Doğru", "Yanlış", "İzleme Puanı", "Cevaplama Puanı", "Çekli Puan", "Çeksiz Puan", "Lig Puanı",
     ]];
 
     for (const { utt, lig } of ligler) {
