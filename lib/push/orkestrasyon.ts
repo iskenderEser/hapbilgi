@@ -27,6 +27,16 @@ interface PushAyarlari {
   olayAktifMi: boolean;
 }
 
+export interface PushYayinSonucu {
+  aliciSayisi: number;
+  abonelikSayisi: number;
+  gonderilen: number;
+  basarisiz: number;
+  abonelikOlu: number;
+  atlanan: number;
+  hataKodu?: string;
+}
+
 async function ayarlariOku(
   adminSupabase: SupabaseClient,
   olayTuru: PushOlayTuru
@@ -59,18 +69,27 @@ async function ayarlariOku(
  * aliciAuthIdler: auth_user_id listesi — null/undefined/tekrar temizlenir
  * (K-P2 NULL kuralı: giriş kimliği olmayan alıcı sessizce atlanır).
  */
-export async function pushYayinla(
+async function pushYayinlaIsle(
   adminSupabase: SupabaseClient,
   olayTuru: PushOlayTuru,
   aliciAuthIdler: (string | null | undefined)[],
   baglam: PushBaglami = {}
-): Promise<void> {
+): Promise<PushYayinSonucu> {
+  const sonuc: PushYayinSonucu = {
+    aliciSayisi: 0,
+    abonelikSayisi: 0,
+    gonderilen: 0,
+    basarisiz: 0,
+    abonelikOlu: 0,
+    atlanan: 0,
+  };
   try {
     const alicilar = [...new Set(aliciAuthIdler.filter((id): id is string => !!id))];
-    if (alicilar.length === 0) return;
+    sonuc.aliciSayisi = alicilar.length;
+    if (alicilar.length === 0) return sonuc;
 
     const ayarlar = await ayarlariOku(adminSupabase, olayTuru);
-    if (!ayarlar.olayAktifMi) return;
+    if (!ayarlar.olayAktifMi) return { ...sonuc, atlanan: alicilar.length, hataKodu: "PUSH_OLAY_KAPALI" };
 
     const kayitlar: {
       auth_user_id: string;
@@ -82,11 +101,16 @@ export async function pushYayinla(
     for (const alici of alicilar) {
       const rol = await rolCozucu(adminSupabase, alici);
       const yuk = icerikUret(olayTuru, rol, baglam);
-      if (!yuk) continue; // rol bu olayı almaz (icerik.ts tek kaynak — K-P10)
+      if (!yuk) {
+        sonuc.atlanan += 1;
+        continue; // rol bu olayı almaz (icerik.ts tek kaynak — K-P10)
+      }
 
       const abonelikler = await aktifAbonelikleriGetir(adminSupabase, alici);
+      sonuc.abonelikSayisi += abonelikler.length;
       for (const abonelik of abonelikler) {
         const durum = await pushGonder(adminSupabase, abonelik, yuk, ayarlar.ttlSaniye);
+        sonuc[durum === "gonderildi" ? "gonderilen" : durum === "abonelik_olu" ? "abonelikOlu" : "basarisiz"] += 1;
         kayitlar.push({ auth_user_id: alici, olay_turu: olayTuru, alici_rol: rol, durum });
       }
     }
@@ -95,10 +119,31 @@ export async function pushYayinla(
       const { error } = await adminSupabase.from("push_gonderim_kayitlari").insert(kayitlar);
       if (error) console.error("[lib/push/orkestrasyon] gönderim kaydı yazılamadı:", error.message);
     }
+    return sonuc;
   } catch (hata) {
     // K-P3 — push asla iş akışını bozmaz.
     console.error("[lib/push/orkestrasyon] pushYayinla hatası:", hata);
+    return { ...sonuc, hataKodu: "PUSH_ISLEM_HATASI" };
   }
+}
+
+export async function pushYayinla(
+  adminSupabase: SupabaseClient,
+  olayTuru: PushOlayTuru,
+  aliciAuthIdler: (string | null | undefined)[],
+  baglam: PushBaglami = {}
+): Promise<void> {
+  await pushYayinlaIsle(adminSupabase, olayTuru, aliciAuthIdler, baglam);
+}
+
+/** Kuyruk worker'larının teslimat sonucunu doğrulayabilmesi için özet döndürür. */
+export function pushYayinlaSonuclu(
+  adminSupabase: SupabaseClient,
+  olayTuru: PushOlayTuru,
+  aliciAuthIdler: (string | null | undefined)[],
+  baglam: PushBaglami = {}
+): Promise<PushYayinSonucu> {
+  return pushYayinlaIsle(adminSupabase, olayTuru, aliciAuthIdler, baglam);
 }
 
 // ─────────────────────────────────────────────────────────────────────────

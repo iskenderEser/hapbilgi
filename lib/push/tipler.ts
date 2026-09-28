@@ -35,6 +35,7 @@ export type PushOlayTuru =
   | "video_onerisi" // BM → UTT
   | "video_yayini" // yeni video yayında → UTT (app-tarafı yayın bildirimi; pg_cron aktivasyonu kapsam dışı — C.9)
   | "eclub_oneri" // UTT → eclub kişisi
+  | "eclub_cek_teslim" // E-Club eczanesine hediye çeki teslimi
   | "challenge" // BM → BM (§3.3)
   | "eczanem_gonderim" // eczacı → müşteri (K-P3 istisnası: in-app kaynak yok)
   | "eczanem_siparis" // sipariş onay akışı (K-P3 istisnası)

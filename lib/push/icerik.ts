@@ -51,6 +51,18 @@ export function icerikUret(olayTuru: PushOlayTuru, aliciRol: string, baglam: Pus
       }
       return null;
 
+    case "eclub_cek_teslim":
+      if (ECLUB_TUKETICI_ROLLERI.includes(aliciRol)) {
+        return {
+          baslik: "HapBilgi E-Club",
+          govde: "Eczanenizin Migros hediye çeki hazır.",
+          url: baglam.bagId
+            ? `/eclub/store/siparislerim?talep_id=${encodeURIComponent(baglam.bagId)}`
+            : "/eclub/store/siparislerim",
+        };
+      }
+      return null;
+
     case "challenge":
       return baglam.yayinId
         ? { baslik: "Challenge Club", govde: "Size bir challenge geldi.", url: `/challenge-club/izle/${encodeURIComponent(baglam.yayinId)}${baglam.bagId ? `?challenge_id=${encodeURIComponent(baglam.bagId)}` : ""}` }
