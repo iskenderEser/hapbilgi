@@ -36,7 +36,7 @@ interface CekTalebi {
   created_at: string;
 }
 
-export default function EclubSiparislerimPage() {
+export default function EclubCekTaleplerimPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
@@ -55,7 +55,7 @@ export default function EclubSiparislerimPage() {
   const talepleriCek = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/eclub/store/api/siparis");
+      const res = await fetch("/eclub/api/cek-talepleri");
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Çek talepleri yüklenemedi.", data.adim, data.detay); return; }
       setTalepler(data.talepler ?? []);
@@ -94,7 +94,7 @@ export default function EclubSiparislerimPage() {
   const talepIptal = async (talepId: string) => {
     setIslemId(talepId);
     try {
-      const res = await fetch("/eclub/store/api/siparis", {
+      const res = await fetch("/eclub/api/cek-talepleri", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ talep_id: talepId, action: "iptal" }),
@@ -118,7 +118,7 @@ export default function EclubSiparislerimPage() {
         ikon={Gift}
         baslik="Çek Taleplerim"
         aciklama="Hediye çeki taleplerinizi, onay durumlarını ve teslim edilen dijital çek kodlarını takip edin."
-        aksiyon={<Link href="/eclub/store" className="inline-flex items-center gap-2 rounded-xl border border-[#cfe3f4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#237ac8] shadow-sm hover:bg-[#f4f9fd]"><Store size={15} /> E-Club Store&apos;a Dön</Link>}
+        aksiyon={<Link href="/eclub/store" className="inline-flex items-center gap-2 rounded-xl border border-[#cfe3f4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#237ac8] shadow-sm hover:bg-[#f4f9fd]"><Store size={15} /> Hediye Çeki Ekranına Dön</Link>}
       />
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">

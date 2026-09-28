@@ -9,24 +9,24 @@ test("fiziksel katalog, adres ve yönetim yüzeyleri kaldırıldı", () => {
   for (const yol of [
     "app/(panel)/eclub/store/adreslerim/page.tsx",
     "app/(panel)/eclub/store/api/adres/route.ts",
-    "app/admin/eclub-store/api/kategori/route.ts",
-    "app/admin/eclub-store/api/urun/route.ts",
-    "app/admin/eclub-store/api/urun-firma/route.ts",
+    "app/admin/eclub-cek-teslimat/api/kategori/route.ts",
+    "app/admin/eclub-cek-teslimat/api/urun/route.ts",
+    "app/admin/eclub-cek-teslimat/api/urun-firma/route.ts",
     "lib/eclub/store/eclubStoreSiparis.ts",
     "lib/eclub/store/eclubStoreBakiye.ts",
   ]) assert.equal(existsSync(yol), false, yol);
 });
 
-test("aktif E-Club Store rotaları yalnız hediye çeki sözleşmesini kullanır", () => {
+test("aktif E-Club hediye çeki rotaları yalnız çek sözleşmesini kullanır", () => {
   for (const yol of [
     "app/(panel)/eclub/store/api/route.ts",
-    "app/(panel)/eclub/store/api/siparis/route.ts",
-    "app/(panel)/eclub/siparisler/api/route.ts",
-    "app/admin/eclub-store/api/siparis/route.ts",
+    "app/(panel)/eclub/api/cek-talepleri/route.ts",
+    "app/(panel)/eclub/cek-onay-takip/api/route.ts",
+    "app/admin/eclub-cek-teslimat/api/cek-talepleri/route.ts",
   ]) assert.doesNotMatch(oku(yol), fizikselSozlesme, yol);
 
-  assert.match(oku("app/(panel)/eclub/store/api/siparis/route.ts"), /eclub_store_cek_talebi_olustur/);
-  assert.match(oku("app/admin/eclub-store/api/siparis/route.ts"), /eclub_store_admin_kod_teslim/);
+  assert.match(oku("app/(panel)/eclub/api/cek-talepleri/route.ts"), /eclub_store_cek_talebi_olustur/);
+  assert.match(oku("app/admin/eclub-cek-teslimat/api/cek-talepleri/route.ts"), /eclub_store_admin_kod_teslim/);
 });
 
 test("geçmiş veri silinmeden eski yazma kapıları kapatılır", () => {

@@ -208,7 +208,7 @@ function SiparisListesi({
     if (seciliTalepler.length === 0) return;
     setIslemYapiliyor(true);
     try {
-      const res = await fetch("/eclub/siparisler/api", {
+      const res = await fetch("/eclub/cek-onay-takip/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, talep_idler: seciliTalepler }),
@@ -516,10 +516,10 @@ export default function EclubSiparislerPage() {
     if (sessiz) setYenileniyor(true);
     else setYukleniyor(true);
     try {
-      const response = await fetch(`/eclub/siparisler/api?${queryOlustur(0)}`);
+      const response = await fetch(`/eclub/cek-onay-takip/api?${queryOlustur(0)}`);
       const sonuc = await response.json();
       if (!response.ok) {
-        hataRef.current(sonuc.hata ?? "E-Club siparişleri yüklenemedi.", sonuc.adim, sonuc.detay);
+        hataRef.current(sonuc.hata ?? "Çek talepleri yüklenemedi.", sonuc.adim, sonuc.detay);
         return;
       }
       setData({
@@ -531,7 +531,7 @@ export default function EclubSiparislerPage() {
         utt_ozetleri: sonuc.utt_ozetleri ?? [],
       });
     } catch (error) {
-      hataRef.current("E-Club siparişleri yüklenemedi.", "GET /eclub/siparisler/api", String(error));
+      hataRef.current("Çek talepleri yüklenemedi.", "GET /eclub/cek-onay-takip/api", String(error));
     } finally {
       if (sessiz) setYenileniyor(false);
       else setYukleniyor(false);
@@ -549,7 +549,7 @@ export default function EclubSiparislerPage() {
     if (dahaYukleniyor) return;
     setDahaYukleniyor(true);
     try {
-      const response = await fetch(`/eclub/siparisler/api?${queryOlustur(data.siparisler.length)}`);
+      const response = await fetch(`/eclub/cek-onay-takip/api?${queryOlustur(data.siparisler.length)}`);
       const sonuc = await response.json();
       if (!response.ok) {
         hataRef.current(sonuc.hata ?? "Daha fazla sipariş yüklenemedi.", sonuc.adim, sonuc.detay);
@@ -557,7 +557,7 @@ export default function EclubSiparislerPage() {
       }
       setData((onceki) => ({ ...onceki, siparisler: [...onceki.siparisler, ...(sonuc.siparisler ?? [])] }));
     } catch (error) {
-      hataRef.current("Daha fazla sipariş yüklenemedi.", "GET /eclub/siparisler/api", String(error));
+      hataRef.current("Daha fazla çek talebi yüklenemedi.", "GET /eclub/cek-onay-takip/api", String(error));
     } finally {
       setDahaYukleniyor(false);
     }
@@ -613,7 +613,7 @@ export default function EclubSiparislerPage() {
         <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">E‑Club</div>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.03em] text-[#203653]">Siparişler & Çek Talepleri</h1>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.03em] text-[#203653]">Çek Onay ve Takip</h1>
             <p className="mt-1 text-xs font-semibold text-[#8190a3]">
               {data.kapsam_hiyerarsi?.gorunum === "utt"
                 ? "Eczanelerinizin hediye çeki ve sipariş taleplerini inceleyin, seçerek BM onayına iletin."

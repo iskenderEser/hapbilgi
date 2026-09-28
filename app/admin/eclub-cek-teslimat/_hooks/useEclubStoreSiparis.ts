@@ -18,8 +18,8 @@ export function useEclubStoreSiparis({ hata, basari }: Props) {
   const cekTalepleriYukle = useCallback(async (durum?: string) => {
     setCekYukleniyor(true);
     const url = durum
-      ? `/admin/eclub-store/api/siparis?durum=${encodeURIComponent(durum)}`
-      : "/admin/eclub-store/api/siparis";
+      ? `/admin/eclub-cek-teslimat/api/cek-talepleri?durum=${encodeURIComponent(durum)}`
+      : "/admin/eclub-cek-teslimat/api/cek-talepleri";
     try {
       const res = await fetch(url);
       const data = await res.json();
@@ -43,7 +43,7 @@ export function useEclubStoreSiparis({ hata, basari }: Props) {
     }
     setIslemLoading(true);
     try {
-      const res = await fetch("/admin/eclub-store/api/siparis", {
+      const res = await fetch("/admin/eclub-cek-teslimat/api/cek-talepleri", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "cek_kodu_teslim", talep_id, cek_kodu: cek_kodu.trim() }),

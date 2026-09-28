@@ -5,9 +5,9 @@ import { ECLUB_SIPARIS_DURUMLARI } from "@/lib/eclub/store/ekipSiparis";
 
 const oku = (yol: string) => readFileSync(yol, "utf8");
 const sql = oku("scripts/sql/eclub_cek_teslimat_outbox.sql");
-const adminApi = oku("app/admin/eclub-store/api/siparis/route.ts");
-const firmaApi = oku("app/(panel)/eclub/siparisler/api/route.ts");
-const firmaTablosu = oku("app/(panel)/eclub/siparisler/page.tsx");
+const adminApi = oku("app/admin/eclub-cek-teslimat/api/cek-talepleri/route.ts");
+const firmaApi = oku("app/(panel)/eclub/cek-onay-takip/api/route.ts");
+const firmaTablosu = oku("app/(panel)/eclub/cek-onay-takip/page.tsx");
 
 test("outbox şeması e-posta ve push işlerini ortak sözleşmede tutar", () => {
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.eclub_cek_teslimat_outbox/);

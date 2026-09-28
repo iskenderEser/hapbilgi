@@ -10,7 +10,7 @@ const sayfalar = [
   oku("app/(panel)/eclub/videolarim/page.tsx"),
   oku("app/(panel)/eclub/gonderilen-videolar/page.tsx"),
   oku("app/(panel)/eclub/eczanelerim/page.tsx"),
-  oku("app/(panel)/eclub/siparisler/page.tsx"),
+  oku("app/(panel)/eclub/cek-onay-takip/page.tsx"),
   oku("app/(panel)/eczanem/eczane/dagitim/page.tsx"),
   oku("app/(panel)/eczanem/eczane/musterilerim/page.tsx"),
   oku("app/(panel)/eczanem/eczane/_components/EczanemSiparisKuyrugu.tsx"),

@@ -250,13 +250,18 @@ export async function proxy(request: NextRequest) {
   }
   // -------------------------------------------------------------------------
 
-  // --- E-Club Store firma bekçisi ------------------------------------------
-  // /eclub/store/* ve UTT ekip sipariş görünümü yalnızca firması E-Club Store açık
+  // --- E-Club Hediye Çeki firma bekçisi -----------------------------------
+  // Hediye çeki, kişisel talep ve firma onay yüzeyleri yalnızca firması açık
   // (firmalar.eclub_store_aktif = true) olan kullanıcıya açıktır. Bu bekçi
   // /eclub bekçisinden ÖNCE gelir çünkü /eclub/store aynı zamanda /eclub ile
   // başlar; store kapalı ama E-Club açık firmada yalnızca store engellenir.
   // (E-Club de kapalıysa /eclub bekçisi zaten aşağıda tüm /eclub'ı keser.)
-  if (pathname.startsWith("/eclub/store") || pathname.startsWith("/eclub/siparisler")) {
+  if (
+    pathname.startsWith("/eclub/store")
+    || pathname.startsWith("/eclub/cek-taleplerim")
+    || pathname.startsWith("/eclub/api/cek-talepleri")
+    || pathname.startsWith("/eclub/cek-onay-takip")
+  ) {
     const storeApiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
 
     if (!user) {
@@ -277,7 +282,7 @@ export async function proxy(request: NextRequest) {
       .maybeSingle();
 
     if (esKullaniciError) {
-      if (storeApiYolu) return NextResponse.json({ error: "E-Club Store erişimi doğrulanamadı." }, { status: 500 });
+      if (storeApiYolu) return NextResponse.json({ error: "E-Club Hediye Çeki erişimi doğrulanamadı." }, { status: 500 });
       return NextResponse.redirect(new URL("/profil", request.url));
     }
 
@@ -291,7 +296,7 @@ export async function proxy(request: NextRequest) {
       if (esFirma && esFirma.eclub_store_aktif === false) {
         if (storeApiYolu) {
           return NextResponse.json(
-            { error: "E-Club Store firmanız için kapalıdır." },
+            { error: "E-Club Hediye Çeki firmanız için kapalıdır." },
             { status: 403 }
           );
         }
@@ -303,12 +308,12 @@ export async function proxy(request: NextRequest) {
         const kisiErisim = await eclubKisiErisimOku(esSupabase);
         if (!kisiErisim.kisi || !kisiErisim.eclub_store_aktif) {
           if (storeApiYolu) {
-            return NextResponse.json({ error: "E-Club Store bağlı olduğunuz firmalar için kapalıdır." }, { status: 403 });
+            return NextResponse.json({ error: "E-Club Hediye Çeki bağlı olduğunuz firmalar için kapalıdır." }, { status: 403 });
           }
           return NextResponse.redirect(new URL(kisiErisim.eclub_aktif ? "/eclub/panel" : "/profil", request.url));
         }
       } catch {
-        if (storeApiYolu) return NextResponse.json({ error: "E-Club Store erişimi doğrulanamadı." }, { status: 500 });
+        if (storeApiYolu) return NextResponse.json({ error: "E-Club Hediye Çeki erişimi doğrulanamadı." }, { status: 500 });
         return NextResponse.redirect(new URL("/profil", request.url));
       }
     }

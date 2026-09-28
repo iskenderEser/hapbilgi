@@ -404,11 +404,11 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 29. E-CLUB STORE MAĞAZAM (KİŞİ / ECZACI & TEKNİSYEN) ──────────────────
+  // ─── 29. E-CLUB HEDİYE ÇEKİ (KİŞİ / ECZACI & TEKNİSYEN) ───────────────────
   "eclub-store-magaza": {
     anahtar: "eclub-store-magaza",
-    baslik: "Mağazam",
-    ozet: "E-Club eğitimlerinden kazandığınız harcanabilir puan bakiyenizle ürünleri incelemenizi ve sipariş vermenizi sağlar.",
+    baslik: "Hediye Çeki",
+    ozet: "E-Club eğitimlerinden eczanenizin kazandığı Çekli Puanı, uygun Migros Hediye Çeki karşılığını ve talep dönemini gösterir.",
     maddeler: [],
   },
 

@@ -7,7 +7,7 @@ const sql = oku("scripts/sql/eclub_cek_uygulama_bildirimleri.sql");
 const bildirimApi = oku("app/bildirimler/api/route.ts");
 const panelLayout = oku("app/(panel)/layout.tsx");
 const panelNav = oku("components/panel/panelNav.config.ts");
-const ceklerim = oku("app/(panel)/eclub/store/siparislerim/page.tsx");
+const ceklerim = oku("app/(panel)/eclub/cek-taleplerim/page.tsx");
 const bildirimGosterimi = oku("components/panel/YayinSonucBildirimi.tsx");
 
 test("çek kaydıyla uygulama bildirimi aynı transaction içinde oluşur", () => {

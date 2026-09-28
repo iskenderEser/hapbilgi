@@ -5,9 +5,9 @@ import { ECLUB_SIPARIS_DURUMLARI, ECLUB_SIPARIS_DURUM_ETIKETLERI } from "@/lib/e
 
 const oku = (yol: string) => readFileSync(yol, "utf8");
 const sql = oku("scripts/sql/eclub_store_tm_son_onay.sql");
-const api = oku("app/(panel)/eclub/siparisler/api/route.ts");
-const sayfa = oku("app/(panel)/eclub/siparisler/page.tsx");
-const adminApi = oku("app/admin/eclub-store/api/siparis/route.ts");
+const api = oku("app/(panel)/eclub/cek-onay-takip/api/route.ts");
+const sayfa = oku("app/(panel)/eclub/cek-onay-takip/page.tsx");
+const adminApi = oku("app/admin/eclub-cek-teslimat/api/cek-talepleri/route.ts");
 
 test("TM onayı kanonik talep durumlarına eklendi", () => {
   assert.ok(ECLUB_SIPARIS_DURUMLARI.includes("tm_onayinda"));

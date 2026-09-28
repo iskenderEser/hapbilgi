@@ -31,8 +31,8 @@ test("çek push içeriği yalnız E-Club çalışan rollerine ve çek ekranına 
   const eczaci = icerikUret("eclub_cek_teslim", "eczaci", { bagId: "talep-1" });
   const teknisyen = icerikUret("eclub_cek_teslim", "eczane_teknisyeni", { bagId: "talep-1" });
   assert.equal(eczaci?.govde, "Eczanenizin Migros hediye çeki hazır.");
-  assert.equal(eczaci?.url, "/eclub/store/siparislerim?talep_id=talep-1");
-  assert.equal(teknisyen?.url, "/eclub/store/siparislerim?talep_id=talep-1");
+  assert.equal(eczaci?.url, "/eclub/cek-taleplerim?talep_id=talep-1");
+  assert.equal(teknisyen?.url, "/eclub/cek-taleplerim?talep_id=talep-1");
   assert.equal(icerikUret("eclub_cek_teslim", "utt", { bagId: "talep-1" }), null);
 });
 

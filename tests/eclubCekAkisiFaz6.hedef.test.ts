@@ -11,8 +11,8 @@ const outboxSql = oku("scripts/sql/eclub_cek_teslimat_outbox.sql");
 const epostaSql = oku("scripts/sql/eclub_cek_eposta_worker.sql");
 const pushSql = oku("scripts/sql/eclub_cek_push_worker.sql");
 const bildirimSql = oku("scripts/sql/eclub_cek_uygulama_bildirimleri.sql");
-const ekipApi = oku("app/(panel)/eclub/siparisler/api/route.ts");
-const adminApi = oku("app/admin/eclub-store/api/siparis/route.ts");
+const ekipApi = oku("app/(panel)/eclub/cek-onay-takip/api/route.ts");
+const adminApi = oku("app/admin/eclub-cek-teslimat/api/cek-talepleri/route.ts");
 const cronApi = oku("app/api/cron/eclub-cek-eposta/route.ts");
 
 test("Faz 6 seed'i e-posta ve tüm aktif çalışan teslimat hedeflerini sabitler", () => {

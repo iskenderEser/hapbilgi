@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json({ talepler });
   } catch (error) {
-    return sunucuHatasi(error, "GET /admin/eclub-store/api/siparis");
+    return sunucuHatasi(error, "GET /admin/eclub-cek-teslimat/api/cek-talepleri");
   }
 }
 
@@ -108,6 +108,6 @@ export async function PATCH(request: NextRequest) {
 
     return validasyonHatasi("Geçersiz işlem.", ["action"]);
   } catch (error) {
-    return sunucuHatasi(error, "PATCH /admin/eclub-store/api/siparis");
+    return sunucuHatasi(error, "PATCH /admin/eclub-cek-teslimat/api/cek-talepleri");
   }
 }

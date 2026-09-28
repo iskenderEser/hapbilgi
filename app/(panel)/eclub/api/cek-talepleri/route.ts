@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ talepler: sonuc }, { status: 200 });
   } catch (err) {
-    return sunucuHatasi(err, "GET /eclub/store/api/siparis");
+    return sunucuHatasi(err, "GET /eclub/api/cek-talepleri");
   }
 }
 
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     if (!eclubStoreSiparisAcikMi()) {
       const durum = eclubStoreTakvimDurumu();
       return isKuraluHatasi(
-        `E-Club Store şu an talebe kapalıdır. Talepler yalnızca E-Club Store Günleri (${durum.sonrakiDonemEtiketi}) döneminde oluşturulabilir.`
+        `Hediye çeki talepleri şu an kapalıdır. Talepler yalnızca Hediye Çeki Günleri (${durum.sonrakiDonemEtiketi}) döneminde oluşturulabilir.`
       );
     }
 
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       devreden_puan: sonuc.devreden_puan,
     }, { status: 201 });
   } catch (err) {
-    return sunucuHatasi(err, "POST /eclub/store/api/siparis");
+    return sunucuHatasi(err, "POST /eclub/api/cek-talepleri");
   }
 }
 
@@ -187,6 +187,6 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ mesaj: "Çek talebi iptal edildi; devreden puan geri açıldı." }, { status: 200 });
   } catch (err) {
-    return sunucuHatasi(err, "PATCH /eclub/store/api/siparis");
+    return sunucuHatasi(err, "PATCH /eclub/api/cek-talepleri");
   }
 }

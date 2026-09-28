@@ -265,7 +265,7 @@ export default function PanelNavbar({
                     style={{ color: eclubTakvim.acik ? "#027a48" : "#4b5563" }}
                     title={
                       eclubTakvim.acik
-                        ? `E-Club Store açık · Kapanışa ${eclubTakvim.kalanSureMetni} kaldı`
+                        ? `Hediye Çeki açık · Kapanışa ${eclubTakvim.kalanSureMetni} kaldı`
                         : `Sonraki sipariş dönemi: ${eclubTakvim.sonrakiDonemEtiketi} (${eclubTakvim.kalanSureMetni} kaldı)`
                     }
                   >

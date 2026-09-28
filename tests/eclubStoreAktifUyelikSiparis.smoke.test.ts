@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const route = readFileSync("app/(panel)/eclub/store/api/siparis/route.ts", "utf8");
+const route = readFileSync("app/(panel)/eclub/api/cek-talepleri/route.ts", "utf8");
 const rolloutSql = readFileSync("scripts/sql/eclub_store_aktif_uyelik_siparis_kapisi.sql", "utf8");
 const kaynakSql = readFileSync("scripts/sql/eclub_store_firma_urun_gorunurlugu.sql", "utf8");
 
-test("E-Club Store sipariş API'si pasif kişinin yeni siparişini reddeder", () => {
+test("E-Club hediye çeki API'si pasif kişinin yeni talebini reddeder", () => {
   assert.match(route, /eclubKisiErisimi\(adminSupabase, user\.id\)/);
   assert.match(route, /!erisim\.eclub_aktif\s*\|\|\s*!erisim\.eclub_store_aktif/);
   assert.match(route, /Aktif E-Club üyeliğiniz bulunmadığı için çek talebi oluşturamazsınız/);

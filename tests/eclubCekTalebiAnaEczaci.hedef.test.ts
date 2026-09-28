@@ -6,7 +6,7 @@ import { eclubCekTalebiOlusturabilirMi } from "@/lib/eclub/store/cekTalebiYetkis
 const oku = (yol: string) => readFileSync(yol, "utf8");
 
 const sql = oku("scripts/sql/eclub_cek_talebi_ana_eczaci.sql");
-const route = oku("app/(panel)/eclub/store/api/siparis/route.ts");
+const route = oku("app/(panel)/eclub/api/cek-talepleri/route.ts");
 const sayfa = oku("app/(panel)/eclub/store/page.tsx");
 
 test("yalnız ana eczacı rolü çek talebi oluşturabilir", () => {
@@ -76,7 +76,7 @@ test("POST route çek talebinde rolü RPC çağrısından önce yeniden doğrula
   assert.match(route, /Hediye çeki talebini yalnız ana eczacı oluşturabilir\./);
 });
 
-test("Store arayüzü yetkisiz rollere talep aksiyonu sunmaz", () => {
+test("Hediye çeki arayüzü yetkisiz rollere talep aksiyonu sunmaz", () => {
   assert.match(sayfa, /const cekTalebiOlusturabilir = eclubCekTalebiOlusturabilirMi\(kullanici\?\.rol\)/);
   assert.match(sayfa, /if \(!cekTalebiOlusturabilir\) \{[\s\S]*?Hediye çeki talebini yalnız ana eczacı oluşturabilir\./);
   assert.match(sayfa, /!cekTalebiOlusturabilir \? \([\s\S]*?Hediye çeki talebini yalnız ana eczacı oluşturabilir\./);

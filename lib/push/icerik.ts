@@ -57,8 +57,8 @@ export function icerikUret(olayTuru: PushOlayTuru, aliciRol: string, baglam: Pus
           baslik: "HapBilgi E-Club",
           govde: "Eczanenizin Migros hediye çeki hazır.",
           url: baglam.bagId
-            ? `/eclub/store/siparislerim?talep_id=${encodeURIComponent(baglam.bagId)}`
-            : "/eclub/store/siparislerim",
+            ? `/eclub/cek-taleplerim?talep_id=${encodeURIComponent(baglam.bagId)}`
+            : "/eclub/cek-taleplerim",
         };
       }
       return null;

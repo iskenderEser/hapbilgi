@@ -37,7 +37,7 @@ export function useEclubStore({ hata, basari }: Args) {
   }, [vitrinCek]);
 
   const cekTalebiOlustur = useCallback(async (yayin_id: string, siparis_verilsin_mi: boolean) => {
-    const res = await fetch("/eclub/store/api/siparis", {
+    const res = await fetch("/eclub/api/cek-talepleri", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ yayin_id, siparis_verilsin_mi }),

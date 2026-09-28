@@ -1,11 +1,11 @@
-// app/admin/eclub-store/page.tsx
+// app/admin/eclub-cek-teslimat/page.tsx
 //
-// M2-b — E-Club Store yönetimi ana panele taşındı (/admin → üst bar E-Club Store bölümü).
+// E-Club çek teslimatı ana panele taşındı (/admin → üst bar Çek Teslimatı bölümü).
 // Bu eski URL kalıcı olarak ana panele yönlendirir; içerik bileşenleri
 // _components/ altında yaşamaya devam eder (ana panel gömer).
 
 import { redirect } from "next/navigation";
 
-export default function AdminEclubStorePage() {
+export default function AdminEclubCekTeslimatPage() {
   redirect("/admin");
 }

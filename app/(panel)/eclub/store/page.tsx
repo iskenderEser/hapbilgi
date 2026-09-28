@@ -73,7 +73,7 @@ export default function EclubStorePage() {
     }
     if (!storeAcik) {
       hata(
-        `E-Club Store şu an siparişe kapalıdır. Talepler 2 ayda bir ilk 7 günde (${takvim?.sonrakiDonemEtiketi ?? "Store Günleri"}) verilebilir.`,
+        `Hediye çeki talepleri şu an kapalıdır. Talepler 2 ayda bir ilk 7 günde (${takvim?.sonrakiDonemEtiketi ?? "Hediye Çeki Günleri"}) verilebilir.`,
       );
       return;
     }
@@ -102,7 +102,7 @@ export default function EclubStorePage() {
     <EclubKisiSayfa>
       <EclubKisiBaslik
         ikon={Store}
-        baslik="E-Club Store"
+        baslik="Hediye Çeki"
         rehberAnahtar="eclub-store-magaza"
         aciklama="Eczane çalışanlarının kazandığı puanlar eczane havuzunda toplanır ve satış şartına göre Migros Hediye Çeki'ne dönüşür."
         aksiyon={
@@ -113,7 +113,7 @@ export default function EclubStorePage() {
               disabled={islemLoading}
             />
             <Link
-              href="/eclub/store/siparislerim"
+              href="/eclub/cek-taleplerim"
               className="rounded-xl border border-[#d7e1ec] bg-white px-3.5 py-2 text-xs font-extrabold text-[#45627f] hover:bg-[#f6f9fc]"
             >
               Çek Taleplerim
@@ -143,8 +143,8 @@ export default function EclubStorePage() {
         <div className="sm:col-span-2 lg:col-span-1">
           <EclubKisiStat
             ikon={Calendar}
-            etiket="Store Sipariş Takvimi"
-            deger={storeAcik ? "Siparişe Açık" : "Siparişe Kapalı"}
+            etiket="Çek Talep Takvimi"
+            deger={storeAcik ? "Talebe Açık" : "Talebe Kapalı"}
             detay={takvim?.sonrakiDonemEtiketi ? `Dönem: ${takvim.sonrakiDonemEtiketi}` : "2 ayda bir ilk 7 gün"}
             renk={storeAcik ? "#16865f" : "#d97706"}
             zemin={storeAcik ? "#ebf8f2" : "#fef3c7"}
@@ -152,7 +152,7 @@ export default function EclubStorePage() {
         </div>
       </section>
 
-      {/* Sipariş & Devir Kuralı Bilgi Kutusu */}
+      {/* Çek talebi ve devir kuralı bilgi kutusu */}
       <section className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-purple-50/50 to-white p-4 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow">
@@ -160,11 +160,11 @@ export default function EclubStorePage() {
           </div>
           <div className="text-xs leading-relaxed text-slate-700">
             <h3 className="text-sm font-bold text-slate-900">
-              📌 Migros Hediye Çeki & Sipariş Kuralları
+              📌 Migros Hediye Çeki Kuralları
             </h3>
             <ul className="mt-1.5 list-disc space-y-1 pl-4 text-slate-600">
               <li>
-                <strong>Sipariş Penceresi:</strong> Siparişler 2 ayda bir, takip eden ayın ilk 7 gününde verilir.
+                <strong>Talep Penceresi:</strong> Çek talepleri 2 ayda bir, takip eden ayın ilk 7 gününde oluşturulur.
               </li>
               <li>
                 <strong>Puan Karşılığı:</strong> Toplanan puanlar yayında tanımlanan puan/TL karşılığıyla Migros Hediye Çeki&apos;ne dönüştürülür.
@@ -173,7 +173,7 @@ export default function EclubStorePage() {
                 <strong>Devir & Bakiye Kuralı:</strong> İlk baremin altında kalan puanlar ile son baremin üzerindeki artık puanlar sonraki iki aylık döneme devreder.
               </li>
               <li>
-                <strong>Zaman Aşımı:</strong> Sipariş dönemi içerisinde talep edilmeyen barem puanları dönem bitiminde yanar.
+                <strong>Zaman Aşımı:</strong> Talep dönemi içerisinde kullanılmayan barem puanları dönem bitiminde yanar.
               </li>
             </ul>
           </div>

@@ -70,8 +70,8 @@ export function eclubStoreTakvimDurumu(tarih: Date = new Date()): EclubTakvimDur
   const kalan = formatKalanSure(kalanMs); const kisa = formatKisaKalanSure(kalanMs);
   return { acik, simdiIso: tarih.toISOString(), aktifPencere: acik ? pencere : null, sonrakiPencere, kalanMs,
     kalanSureMetni: kalan, kisaKalanSureMetni: kisa,
-    durumMetni: acik ? `E-Club Store açık · ${kalan} kaldı` : `E-Club Store Günleri’ne ${kalan} kaldı`,
-    navMetni: acik ? `E-Club Store açık · ${kisa}` : `E-Club Store Günleri’ne ${kisa}`,
+    durumMetni: acik ? `Hediye Çeki açık · ${kalan} kaldı` : `Hediye Çeki Günleri’ne ${kalan} kaldı`,
+    navMetni: acik ? `Hediye Çeki açık · ${kisa}` : `Hediye Çeki Günleri’ne ${kisa}`,
     sonrakiDonemEtiketi: acik ? pencere.etiket : sonrakiPencere.etiket,
     kapanisMetni: formatDonemKapanis(acik ? pencere : sonrakiPencere), acilisMetni: formatDonemAcilis(sonrakiPencere) };
 }

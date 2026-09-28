@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function EclubStoreRaporYonlendirme() {
-  redirect("/eclub/siparisler");
+  redirect("/eclub/cek-onay-takip");
 }

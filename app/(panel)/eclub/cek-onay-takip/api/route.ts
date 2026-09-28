@@ -218,14 +218,14 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (kullaniciError || !kullanici) {
-      return hataYaniti("Kullanıcı bulunamadı.", "kullanicilar SELECT — E-Club sipariş", kullaniciError, 404);
+      return hataYaniti("Kullanıcı bulunamadı.", "kullanicilar SELECT — E-Club çek talepleri", kullaniciError, 404);
     }
 
     const rol = (kullanici.rol ?? "").toLowerCase();
     if (!ECLUB_YONETIM_ROLLERI.includes(rol)) {
-      return rolHatasi("E-Club siparişlerine erişim yetkiniz yok.");
+      return rolHatasi("E-Club çek taleplerine erişim yetkiniz yok.");
     }
-    if (!kullanici.firma_id) return rolHatasi("E-Club siparişleri için firma bağlantısı bulunamadı.");
+    if (!kullanici.firma_id) return rolHatasi("E-Club çek talepleri için firma bağlantısı bulunamadı.");
 
     const { data: firma, error: firmaError } = await adminSupabase
       .from("firmalar")
@@ -234,9 +234,9 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (firmaError || !firma) {
-      return hataYaniti("Firma mağaza ayarı doğrulanamadı.", "firmalar SELECT — E-Club Store", firmaError);
+      return hataYaniti("Firma hediye çeki ayarı doğrulanamadı.", "firmalar SELECT — E-Club Hediye Çeki", firmaError);
     }
-    if (firma.eclub_store_aktif === false) return rolHatasi("E-Club Store firmanız için kapalıdır.");
+    if (firma.eclub_store_aktif === false) return rolHatasi("E-Club Hediye Çeki firmanız için kapalıdır.");
 
     const sonuc = eclubSiparisSorgusunuParse(request.nextUrl.searchParams);
     if (!sonuc.ok) return validasyonHatasi(sonuc.hata, sonuc.alanlar);
@@ -281,7 +281,7 @@ export async function GET(request: NextRequest) {
       })),
     }, { status: 200 });
   } catch (error) {
-    return sunucuHatasi(error, "GET /eclub/siparisler/api");
+    return sunucuHatasi(error, "GET /eclub/cek-onay-takip/api");
   }
 }
 
@@ -388,6 +388,6 @@ export async function POST(request: NextRequest) {
 
     return validasyonHatasi(`Geçersiz işlem: ${action}`, ["action"]);
   } catch (error) {
-    return sunucuHatasi(error, "POST /eclub/siparisler/api");
+    return sunucuHatasi(error, "POST /eclub/cek-onay-takip/api");
   }
 }
