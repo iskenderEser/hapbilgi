@@ -58,6 +58,8 @@ async function cekTalepleriniGetir(
       utt_id,
       bm_id,
       bm_onay_tarihi,
+      tm_id,
+      tm_onay_tarihi,
       cek_kodu,
       cek_gonderim_tarihi,
       devreden_puan,
@@ -105,6 +107,16 @@ async function cekTalepleriniGetir(
     if (masterError) throw new Error(`eclub_eczane_master SELECT: ${masterError.message}`);
     for (const master of masterlar ?? []) eczaneAdlari.set(master.gln, master.eczane_adi);
   }
+  const tmIdler = [...new Set((talepler ?? []).map((t: any) => t.tm_id).filter(Boolean))] as string[];
+  const tmAdlari = new Map<string, string>();
+  if (tmIdler.length > 0) {
+    const { data: tmler, error: tmError } = await supabase
+      .from("kullanicilar")
+      .select("kullanici_id, ad, soyad")
+      .in("kullanici_id", tmIdler);
+    if (tmError) throw new Error(`TM bilgileri SELECT: ${tmError.message}`);
+    for (const tm of tmler ?? []) tmAdlari.set(tm.kullanici_id, `${tm.ad ?? ""} ${tm.soyad ?? ""}`.trim() || "TM");
+  }
 
   return (talepler ?? []).map((t: any) => {
     const eczane = Array.isArray(t.eclub_eczaneler) ? t.eclub_eczaneler[0] : t.eclub_eczaneler;
@@ -146,6 +158,7 @@ async function cekTalepleriniGetir(
       utt_id: utt?.utt_id ?? t.utt_id,
       utt_adi: utt?.utt_adi ?? "—",
       bm_adi: utt?.bm_adi ?? "—",
+      tm_adi: t.tm_id ? tmAdlari.get(t.tm_id) ?? "—" : "—",
       takim_adi: utt?.takim_adi ?? "—",
       bolge_adi: utt?.bolge_adi ?? "—",
     };
@@ -155,7 +168,7 @@ async function cekTalepleriniGetir(
 function siparisOzetiniHesapla(siparisler: EclubEkipSiparisSatiri[]): EclubSiparisOzet {
   return siparisler.reduce<EclubSiparisOzet>((ozet, siparis) => {
     ozet.toplam += 1;
-    if (siparis.durum === "beklemede" || siparis.durum === "hazirlaniyor" || siparis.durum === "bm_onayinda") {
+    if (["beklemede", "hazirlaniyor", "bm_onayinda", "tm_onayinda"].includes(siparis.durum)) {
       ozet.islemde += 1;
     }
     if (siparis.durum === "kargoda") ozet.kargoda += 1;
@@ -279,7 +292,7 @@ export async function POST(request: NextRequest) {
 
     const { data: seciliTalepler, error: seciliTalepError } = await adminSupabase
       .from("eclub_store_cek_talepleri")
-      .select("talep_id, firma_id, utt_id, bm_id, durum")
+      .select("talep_id, firma_id, utt_id, bm_id, tm_id, durum")
       .in("talep_id", talep_idler);
     if (seciliTalepError) return hataYaniti("Seçili talepler doğrulanamadı.", "eclub_store_cek_talepleri SELECT — kapsam", seciliTalepError);
     if ((seciliTalepler ?? []).length !== new Set(talep_idler).size || (seciliTalepler ?? []).some((t) => t.firma_id !== kullanici.firma_id)) {
@@ -325,7 +338,29 @@ export async function POST(request: NextRequest) {
       const guncellenen = Array.isArray(rpcRes) ? (rpcRes[0]?.guncellenen_adet ?? 0) : Number(rpcRes ?? 0);
       return NextResponse.json({
         ok: true,
-        mesaj: `${guncellenen} adet talep onaylandı, Admin kod teslimatına sevk edildi.`,
+        mesaj: `${guncellenen} adet talep onaylandı ve TM son onayına gönderildi.`,
+        guncellenen_adet: guncellenen,
+      }, { status: 200 });
+    }
+
+    if (action === "tm_onayla") {
+      if (rol !== "tm") {
+        return rolHatasi("Bu işlem yalnız Takım Müdürü (TM) rolüne açıktır.");
+      }
+      if ((seciliTalepler ?? []).some((t) => t.tm_id !== kullanici.kullanici_id || t.durum !== "tm_onayinda")) {
+        return rolHatasi("Seçilen talepler TM kapsamınızda veya son onay aşamasında değil.");
+      }
+
+      const { data: rpcRes, error: rpcErr } = await adminSupabase.rpc("eclub_store_tm_onayla", {
+        p_tm_id: kullanici.kullanici_id,
+        p_talep_idler: talep_idler,
+      });
+
+      if (rpcErr) return hataYaniti("Talepler TM tarafından onaylanamadı.", "eclub_store_tm_onayla RPC", rpcErr);
+      const guncellenen = Array.isArray(rpcRes) ? (rpcRes[0]?.guncellenen_adet ?? 0) : Number(rpcRes ?? 0);
+      return NextResponse.json({
+        ok: true,
+        mesaj: `${guncellenen} adet talep son onaydan geçti ve Admin kod teslimatına sevk edildi.`,
         guncellenen_adet: guncellenen,
       }, { status: 200 });
     }

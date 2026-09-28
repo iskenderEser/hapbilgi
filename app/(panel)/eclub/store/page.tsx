@@ -293,11 +293,15 @@ export default function EclubStorePage() {
                               Tutar: {item.cek_tutari_tl ?? bazCek} TL
                             </span>
                           </div>
-                        ) : item.talep_durumu === "bm_onayladi" ? (
+                        ) : item.talep_durumu === "onaylandi" ? (
                           <span className="rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-800">
-                            ⏳ BM Onayladı — Kod Bekleniyor
+                            ⏳ TM Onayladı — Kod Bekleniyor
                           </span>
-                        ) : item.talep_durumu === "utt_onayladi" ? (
+                        ) : item.talep_durumu === "tm_onayinda" ? (
+                          <span className="rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-800">
+                            ⏳ BM Onayladı — TM Onayı Bekleniyor
+                          </span>
+                        ) : item.talep_durumu === "bm_onayinda" ? (
                           <span className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800">
                             ⌛ UTT Onayladı — BM Onayı Bekleniyor
                           </span>

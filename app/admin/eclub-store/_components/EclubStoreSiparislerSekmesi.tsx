@@ -15,17 +15,13 @@ interface Props {
 }
 
 const DURUM_ETIKET: Record<string, { ad: string; renk: string; bg: string }> = {
-  beklemede: { ad: "Beklemede (UTT)", renk: "#92400e", bg: "#fef3c7" },
-  bm_onayinda: { ad: "BM Onayında", renk: "#1e40af", bg: "#eff6ff" },
-  onaylandi: { ad: "Onaylandı (Kod Bekliyor)", renk: "#065f46", bg: "#ecfdf5" },
+  onaylandi: { ad: "TM Onayladı (Kod Bekliyor)", renk: "#065f46", bg: "#ecfdf5" },
   iptal: { ad: "İptal", renk: "#bc2d0d", bg: "#fee2e2" },
   cek_kodlari_gonderildi: { ad: "Çek Kodu Gönderildi", renk: "#15803d", bg: "#dcfce7" },
 };
 
 const CEK_FILTRELER = [
   { id: "", ad: "Tümü" },
-  { id: "beklemede", ad: "Beklemede" },
-  { id: "bm_onayinda", ad: "BM Onayında" },
   { id: "onaylandi", ad: "Kod Bekleyen" },
   { id: "cek_kodlari_gonderildi", ad: "Kod Gönderildi" },
 ];

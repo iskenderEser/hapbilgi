@@ -138,7 +138,7 @@ function Alici({ siparis }: { siparis: EclubEkipSiparisSatiri }) {
       </div>
       {siparis.bm_adi && siparis.bm_adi !== "—" && (
         <div className="mt-0.5 truncate text-[9px] font-bold text-[#3589d8]">
-          UTT: {siparis.utt_adi} · BM: {siparis.bm_adi}
+          UTT: {siparis.utt_adi} · BM: {siparis.bm_adi}{siparis.tm_adi && siparis.tm_adi !== "—" ? ` · TM: ${siparis.tm_adi}` : ""}
         </div>
       )}
     </div>
@@ -167,7 +167,7 @@ function SiparisListesi({
 
   const isUtt = ["utt", "kd_utt"].includes(kullaniciRol);
   const isBm = ["bm", "bolge_muduru"].includes(kullaniciRol);
-  const isAdmin = ["admin", "superadmin"].includes(kullaniciRol);
+  const isTm = kullaniciRol === "tm";
 
   // Aksiyon verilebilecek talepler
   const aksiyonUygunTalepler = useMemo(() => {
@@ -175,10 +175,10 @@ function SiparisListesi({
       if (!s.talep_id) return false;
       if (isUtt && s.durum === "beklemede") return true;
       if (isBm && s.durum === "bm_onayinda") return true;
-      if (isAdmin && (s.durum === "beklemede" || s.durum === "bm_onayinda")) return true;
+      if (isTm && s.durum === "tm_onayinda") return true;
       return false;
     });
-  }, [data.siparisler, isUtt, isBm, isAdmin]);
+  }, [data.siparisler, isUtt, isBm, isTm]);
 
   const tumunuSec = () => {
     if (seciliTalepler.length === aksiyonUygunTalepler.length) {
@@ -194,7 +194,7 @@ function SiparisListesi({
     );
   };
 
-  const topluOnayCalistir = async (action: "bm_onayina_gonder" | "bm_onayla") => {
+  const topluOnayCalistir = async (action: "bm_onayina_gonder" | "bm_onayla" | "tm_onayla") => {
     if (seciliTalepler.length === 0) return;
     setIslemYapiliyor(true);
     try {
@@ -239,7 +239,7 @@ function SiparisListesi({
 
         <div className="flex flex-wrap items-center gap-2">
           {/* UTT Aksiyonu: BM Onayına Gönder */}
-          {(isUtt || isAdmin) && (
+          {isUtt && (
             <button
               type="button"
               disabled={seciliTalepler.length === 0 || islemYapiliyor}
@@ -252,7 +252,7 @@ function SiparisListesi({
           )}
 
           {/* BM Aksiyonu: Onayla */}
-          {(isBm || isAdmin) && (
+          {isBm && (
             <button
               type="button"
               disabled={seciliTalepler.length === 0 || islemYapiliyor}
@@ -260,7 +260,19 @@ function SiparisListesi({
               className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ShieldCheck size={14} />
-              Seçilenleri Onayla {seciliTalepler.length > 0 ? `(${seciliTalepler.length})` : ""}
+              TM Onayına Gönder {seciliTalepler.length > 0 ? `(${seciliTalepler.length})` : ""}
+            </button>
+          )}
+
+          {isTm && (
+            <button
+              type="button"
+              disabled={seciliTalepler.length === 0 || islemYapiliyor}
+              onClick={() => topluOnayCalistir("tm_onayla")}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ShieldCheck size={14} />
+              Son Onayı Ver {seciliTalepler.length > 0 ? `(${seciliTalepler.length})` : ""}
             </button>
           )}
 
@@ -309,7 +321,7 @@ function SiparisListesi({
                     talepId &&
                     ((isUtt && siparis.durum === "beklemede") ||
                      (isBm && siparis.durum === "bm_onayinda") ||
-                     (isAdmin && (siparis.durum === "beklemede" || siparis.durum === "bm_onayinda")))
+                     (isTm && siparis.durum === "tm_onayinda"))
                   );
                   const isSecili = talepId ? seciliTalepler.includes(talepId) : false;
 
@@ -375,7 +387,7 @@ function SiparisListesi({
                 talepId &&
                 ((isUtt && siparis.durum === "beklemede") ||
                  (isBm && siparis.durum === "bm_onayinda") ||
-                 (isAdmin && (siparis.durum === "beklemede" || siparis.durum === "bm_onayinda")))
+                 (isTm && siparis.durum === "tm_onayinda"))
               );
               const isSecili = talepId ? seciliTalepler.includes(talepId) : false;
 

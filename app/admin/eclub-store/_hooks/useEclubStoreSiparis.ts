@@ -76,6 +76,7 @@ export function useEclubStoreSiparis({ hata, basari }: Props) {
       Takım: talep.takim_adi || "—",
       "UTT Adı": talep.utt_adi || "—",
       "BM Adı": talep.bm_adi || "—",
+      "TM Adı": talep.tm_adi || "—",
       "Eczane GLN": talep.gln || "—",
       "Eczane Adı": talep.eczane_adi || "—",
       "Talep Eden": talep.talep_eden_ad_soyad || "—",

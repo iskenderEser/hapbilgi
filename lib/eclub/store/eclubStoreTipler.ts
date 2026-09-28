@@ -51,6 +51,7 @@ export interface EclubEczaneStoreOzetItem {
 export type CekTalepDurumu =
   | "beklemede"
   | "bm_onayinda"
+  | "tm_onayinda"
   | "onaylandi"
   | "cek_kodlari_gonderildi"
   | "iptal";
@@ -87,6 +88,9 @@ export interface EclubStoreCekTalebiSatiri {
   bm_id?: string | null;
   bm_adi?: string | null;
   bm_onay_tarihi?: string | null;
+  tm_id?: string | null;
+  tm_adi?: string | null;
+  tm_onay_tarihi?: string | null;
   cek_kodu?: string | null;
   cek_gonderim_tarihi?: string | null;
   devreden_puan?: number;

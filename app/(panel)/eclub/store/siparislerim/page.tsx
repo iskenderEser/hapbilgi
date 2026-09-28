@@ -32,7 +32,8 @@ interface CekTalebi {
 const DURUM_ETIKET: Record<string, { ad: string; renk: string; bg: string; ikon: typeof Clock3 }> = {
   beklemede: { ad: "UTT Onayı Bekleniyor", renk: "#a66215", bg: "#fff6e8", ikon: Clock3 },
   bm_onayinda: { ad: "BM Onayı Bekleniyor", renk: "#1e40af", bg: "#eff6ff", ikon: Clock3 },
-  onaylandi: { ad: "Çek Kodu Bekleniyor", renk: "#065f46", bg: "#ecfdf5", ikon: CheckCircle2 },
+  tm_onayinda: { ad: "TM Son Onayı Bekleniyor", renk: "#6d28d9", bg: "#f5f3ff", ikon: Clock3 },
+  onaylandi: { ad: "TM Onayladı — Çek Kodu Bekleniyor", renk: "#065f46", bg: "#ecfdf5", ikon: CheckCircle2 },
   iptal: { ad: "İptal", renk: "#bc4b4b", bg: "#fff0f0", ikon: XCircle },
   cek_kodlari_gonderildi: { ad: "Çek Kodu Gönderildi", renk: "#15803d", bg: "#f0fdf4", ikon: CheckCircle2 },
 };
@@ -76,7 +77,7 @@ export default function EclubSiparislerimPage() {
 
   const ozet = useMemo(() => ({
     toplam: talepler.length,
-    onayda: talepler.filter((talep) => ["beklemede", "bm_onayinda", "onaylandi"].includes(talep.durum)).length,
+    onayda: talepler.filter((talep) => ["beklemede", "bm_onayinda", "tm_onayinda", "onaylandi"].includes(talep.durum)).length,
     teslim: talepler.filter((talep) => talep.durum === "cek_kodlari_gonderildi").length,
     iptal: talepler.filter((talep) => talep.durum === "iptal").length,
   }), [talepler]);
@@ -113,7 +114,7 @@ export default function EclubSiparislerimPage() {
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <EclubKisiStat ikon={Gift} etiket="Toplam Talep" deger={ozet.toplam} detay="Tüm çek talepleriniz" />
-        <EclubKisiStat ikon={Clock3} etiket="Onay Sürecinde" deger={ozet.onayda} detay="UTT, BM veya kod bekleyen" renk="#a66215" zemin="#fff6e8" />
+        <EclubKisiStat ikon={Clock3} etiket="Onay Sürecinde" deger={ozet.onayda} detay="UTT, BM, TM veya kod bekleyen" renk="#a66215" zemin="#fff6e8" />
         <EclubKisiStat ikon={CheckCircle2} etiket="Teslim Edilen" deger={ozet.teslim} detay="Kodu gönderilen çekler" renk="#16865f" zemin="#ebf8f2" />
         <EclubKisiStat ikon={XCircle} etiket="İptal" deger={ozet.iptal} detay="İptal edilen talepler" renk="#bc4b4b" zemin="#fff0f0" />
       </section>

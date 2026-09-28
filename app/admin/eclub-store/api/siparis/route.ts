@@ -4,6 +4,8 @@ import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import { hataYaniti, isKuraluHatasi, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { eclubCekEpostaKuyrugunuTuket } from "@/lib/eclub/store/cekEpostaKuyrukIsleyici";
 
+const ADMIN_ISLEM_DURUMLARI = ["onaylandi", "cek_kodlari_gonderildi"];
+
 export async function GET(request: NextRequest) {
   try {
     const kontrol = await adminGirisKontrol();
@@ -11,18 +13,23 @@ export async function GET(request: NextRequest) {
 
     const supabase = createAdminClient();
     const durum = request.nextUrl.searchParams.get("durum");
+    if (durum && !ADMIN_ISLEM_DURUMLARI.includes(durum)) {
+      return validasyonHatasi("Admin yalnız TM onayından geçen talepleri görüntüleyebilir.", ["durum"]);
+    }
     let query = supabase
       .from("eclub_store_cek_talepleri")
       .select(`
         talep_id, eczane_id, firma_id, yayin_id, talep_eden_kisi_id, toplanan_puan,
         talep_edilen_cek_tl, siparis_tipi, siparis_verildi_mi, siparis_adet,
-        siparis_mal_fazlasi, durum, utt_id, bm_id, bm_onay_tarihi, cek_kodu,
+        siparis_mal_fazlasi, durum, utt_id, bm_id, bm_onay_tarihi,
+        tm_id, tm_onay_tarihi, cek_kodu,
         cek_gonderim_tarihi, devreden_puan, created_at,
         eclub_eczaneler ( gln ), firmalar ( firma_adi ),
         eclub_kisiler ( ad, soyad, rol, telefon )
       `)
       .order("created_at", { ascending: false });
     if (durum) query = query.eq("durum", durum);
+    else query = query.in("durum", ADMIN_ISLEM_DURUMLARI);
 
     const { data, error } = await query;
     if (error) return hataYaniti("Çek talepleri alınamadı.", "eclub_store_cek_talepleri SELECT", error);

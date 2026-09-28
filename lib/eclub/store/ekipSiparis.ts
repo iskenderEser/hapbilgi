@@ -5,6 +5,7 @@ export const ECLUB_SIPARIS_DURUMLARI = [
   "teslim_edildi",
   "iptal",
   "bm_onayinda",
+  "tm_onayinda",
   "onaylandi",
   "cek_kodlari_gonderildi",
 ] as const;
@@ -14,7 +15,8 @@ export type EclubSiparisDurum = (typeof ECLUB_SIPARIS_DURUMLARI)[number];
 export const ECLUB_SIPARIS_DURUM_ETIKETLERI: Record<EclubSiparisDurum, string> = {
   beklemede: "Beklemede (UTT)",
   bm_onayinda: "BM Onayında",
-  onaylandi: "BM Onayladı / Kod Bekliyor",
+  tm_onayinda: "TM Onayında",
+  onaylandi: "TM Onayladı / Kod Bekliyor",
   hazirlaniyor: "Hazırlanıyor",
   kargoda: "Kargoda",
   teslim_edildi: "Teslim Edildi",
@@ -28,6 +30,7 @@ export const ECLUB_SIPARIS_DURUM_RENKLERI: Record<
 > = {
   beklemede: { metin: "#854d0e", arka: "#fefce8", kenar: "#fde68a" },
   bm_onayinda: { metin: "#1e40af", arka: "#eff6ff", kenar: "#bfdbfe" },
+  tm_onayinda: { metin: "#6d28d9", arka: "#f5f3ff", kenar: "#ddd6fe" },
   onaylandi: { metin: "#065f46", arka: "#ecfdf5", kenar: "#a7f3d0" },
   hazirlaniyor: { metin: "#6d28d9", arka: "#f5f3ff", kenar: "#ddd6fe" },
   kargoda: { metin: "#1d4ed8", arka: "#e6f1fb", kenar: "#bfdbfe" },
@@ -50,6 +53,7 @@ export interface EclubEkipSiparisSatiri {
   utt_id?: string;
   utt_adi?: string;
   bm_adi?: string;
+  tm_adi?: string;
   takim_adi?: string;
   bolge_adi?: string;
   siparis_id: string;
