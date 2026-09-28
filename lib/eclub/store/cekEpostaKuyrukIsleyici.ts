@@ -2,7 +2,8 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/server";
 
 interface CekEpostaIsi {
-  is_id: string;
+  outbox_id: string;
+  talep_id: string;
   alici_eposta: string;
   alici_adi?: string | null;
   cek_kodu: string;
@@ -18,17 +19,22 @@ export async function eclubCekEpostaKuyrugunuTuket(maxIsSayisi = 10) {
   if (!apiKey || !from) throw new Error("ECLUB_EMAIL_ENV_EKSIK");
   const supabase = createAdminClient();
   let tamamlanan = 0;
+  let hatali = 0;
 
   for (let i = 0; i < maxIsSayisi; i += 1) {
-    const { data, error } = await supabase.rpc("eclub_store_cek_eposta_isi_al", { p_lease_saniye: 120 });
+    const { data, error } = await supabase.rpc("eclub_cek_eposta_isi_al", { p_lease_saniye: 120 });
     if (error) throw new Error(`ECLUB_EMAIL_CLAIM:${error.message}`);
     const is = (Array.isArray(data) ? data[0] : data) as CekEpostaIsi | null;
-    if (!is?.is_id) break;
+    if (!is?.outbox_id) break;
 
     try {
       const yanit = await fetch("https://api.resend.com/emails", {
         method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": `eclub-cek/${is.outbox_id}`,
+        },
         body: JSON.stringify({
           from,
           to: [is.alici_eposta],
@@ -37,13 +43,22 @@ export async function eclubCekEpostaKuyrugunuTuket(maxIsSayisi = 10) {
         }),
       });
       if (!yanit.ok) throw new Error(`RESEND_${yanit.status}`);
-      const { error: tamamlaHatasi } = await supabase.rpc("eclub_store_cek_eposta_tamamla", { p_is_id: is.is_id });
+      const { data: tamamlandi, error: tamamlaHatasi } = await supabase.rpc("eclub_cek_teslimat_tamamla", {
+        p_outbox_id: is.outbox_id,
+        p_kanal: "eposta",
+      });
       if (tamamlaHatasi) throw new Error(`ECLUB_EMAIL_COMPLETE:${tamamlaHatasi.message}`);
+      if (!tamamlandi) throw new Error("ECLUB_EMAIL_COMPLETE:ISLEM_DURUMU_GECERSIZ");
       tamamlanan += 1;
     } catch (error) {
       const kod = error instanceof Error ? error.message.split(":")[0] : "EMAIL_ERROR";
-      await supabase.rpc("eclub_store_cek_eposta_hata", { p_is_id: is.is_id, p_hata_kodu: kod });
+      await supabase.rpc("eclub_cek_teslimat_hata", {
+        p_outbox_id: is.outbox_id,
+        p_kanal: "eposta",
+        p_hata_kodu: kod,
+      });
+      hatali += 1;
     }
   }
-  return { tamamlanan };
+  return { tamamlanan, hatali };
 }
