@@ -204,7 +204,7 @@ export function mobilPanelNavOlustur(gruplar: NavGrup[], ctx: NavContext): NavGr
   ];
 }
 
-// eclub_kisi (eczacı/teknisyen) dar gezinmesi — kişi paneli + kendi mağaza yolları.
+// eclub_kisi (eczacı/teknisyen) dar gezinmesi — kişi paneli + hediye çeki yolları.
 // Çok-firmalı erişim bayrakları aktif eczane→firma zincirinden profil API'sinde çözülür.
 export function eclubKisiNavOlustur(firmalar: Array<{ firma_id: string; firma_adi: string }>): NavGrup[] {
   return [
@@ -224,11 +224,10 @@ export function eclubKisiNavOlustur(firmalar: Array<{ firma_id: string; firma_ad
     ],
   },
   {
-    baslik: "E-Club Store",
+    baslik: "E-Club Hediye Çeki",
     oglar: [
-      { etiket: "Mağazam", path: "/eclub/store", tamEslesme: true, gate: (c) => c.eclubAcik && c.eclubStoreAcik },
-      { etiket: "Siparişlerim", path: "/eclub/store/siparislerim", gate: (c) => c.eclubAcik && c.eclubStoreAcik },
-      { etiket: "Adreslerim", path: "/eclub/store/adreslerim", gate: (c) => c.eclubAcik && c.eclubStoreAcik },
+      { etiket: "Hediye Çeki", path: "/eclub/store", tamEslesme: true, gate: (c) => c.eclubAcik && c.eclubStoreAcik },
+      { etiket: "Çek Taleplerim", path: "/eclub/store/siparislerim", gate: (c) => c.eclubAcik && c.eclubStoreAcik },
     ],
   },
   {

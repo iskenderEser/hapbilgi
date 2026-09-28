@@ -47,8 +47,6 @@ export default function EclubStorePage() {
 
   const [islemId, setIslemId] = useState<string | null>(null);
   const islemLoading = Boolean(islemId);
-  const [seciliUrun, setSeciliUrun] = useState<unknown | null>(null);
-
   useEffect(() => {
     if (authYukleniyor) return;
     if (!kullanici) {
@@ -108,13 +106,13 @@ export default function EclubStorePage() {
             <YenileButonu
               yenileniyor={yenileniyor}
               onYenile={tumunuYenile}
-              disabled={Boolean(seciliUrun) || islemLoading}
+              disabled={islemLoading}
             />
             <Link
               href="/eclub/store/siparislerim"
               className="rounded-xl border border-[#d7e1ec] bg-white px-3.5 py-2 text-xs font-extrabold text-[#45627f] hover:bg-[#f6f9fc]"
             >
-              Çeklerim & Taleplerim
+              Çek Taleplerim
             </Link>
           </div>
         }

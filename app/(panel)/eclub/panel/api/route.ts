@@ -12,7 +12,6 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ECLUB_TUKETICI_ROLLERI, hedefRolleriOku, yayinTuketiciRoluneAcikMi, type HedefRoller } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { eclubOneriDurumu } from "@/lib/eclub/izlemeKurali";
-import { eclubStoreFirmaBakiye } from "@/lib/eclub/store/eclubStoreBakiye";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
@@ -44,7 +43,7 @@ export async function GET() {
 
     if (oneriError) return hataYaniti("Öneriler çekilemedi.", "eclub_oneri_kayitlari SELECT — kisi_id", oneriError);
 
-    const [izlemeSonucu, puanSonucu, kayipSonucu, dogruSonucu, yanlisSonucu, firmaBakiyeleri] = await Promise.all([
+    const [izlemeSonucu, puanSonucu, kayipSonucu, dogruSonucu, yanlisSonucu] = await Promise.all([
       adminSupabase
         .from("eclub_izleme_kayitlari")
         .select("izleme_id, oneri_id, yayin_id, tamamlandi_mi, izleme_baslangic, izleme_bitis, created_at")
@@ -65,7 +64,6 @@ export async function GET() {
         .from("eclub_yanlis_cevap_kayitlari")
         .select("yayin_id, izleme_id")
         .eq("kisi_id", kisi.kisi_id),
-      eclubStoreFirmaBakiye(adminSupabase, kisi.kisi_id),
     ]);
     if (izlemeSonucu.error) return hataYaniti("İzleme özeti alınamadı.", "eclub_izleme_kayitlari SELECT — kişi paneli", izlemeSonucu.error);
     if (puanSonucu.error) return hataYaniti("Puan özeti alınamadı.", "eclub_kazanilan_puanlar SELECT — kişi paneli", puanSonucu.error);
@@ -245,9 +243,6 @@ export async function GET() {
       if (!yayin?.firma_id) continue;
       firmaOzetiniAl(yayin.firma_id, yayin.firma_adi ?? "Firma").dogru_cevap += 1;
     }
-    for (const bakiye of firmaBakiyeleri) {
-      firmaOzetiniAl(bakiye.firma_id, bakiye.firma_adi).harcanabilir_puan = Number(bakiye.bakiye ?? 0);
-    }
     for (const oneri of sonuc) {
       if (!oneri.firma_id) continue;
       firmaOzetiniAl(oneri.firma_id, oneri.firma_adi ?? "Firma").video_sayisi += 1;
@@ -260,7 +255,7 @@ export async function GET() {
       ozet: {
         toplam_kazanilan_puan: puanlar.reduce((toplam, puan) => toplam + Number(puan.puan ?? 0), 0),
         ileri_sarma_kaybi: (kayipSonucu.data ?? []).reduce((toplam, kayip) => toplam + Number(kayip.kaybedilen_puan ?? 0), 0),
-        harcanabilir_puan: firmaBakiyeleri.reduce((toplam, firma) => toplam + Number(firma.bakiye ?? 0), 0),
+        harcanabilir_puan: 0,
         dogru_cevap: (dogruSonucu.data ?? []).length,
       },
     }, { status: 200 });

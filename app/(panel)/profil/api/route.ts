@@ -8,7 +8,6 @@ import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
 import { harcamaBakiyesi } from "@/lib/tclub/store/bakiye";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
-import { eclubStoreToplamBakiye } from "@/lib/eclub/store/eclubStoreBakiye";
 
 export async function GET() {
   try {
@@ -46,10 +45,6 @@ export async function GET() {
       const aktifFirmalar = eclubErisim.firmalar
         .filter((firma) => firma.aktif !== false && firma.eclub_aktif === true)
         .map((firma) => ({ firma_id: firma.firma_id, firma_adi: firma.firma_adi }));
-      const storePuani = eclubErisim.eclub_store_aktif
-        ? await eclubStoreToplamBakiye(adminSupabase, kisi.kisi_id)
-        : 0;
-
       return NextResponse.json({
         profil: {
           kullanici_id: kisi.kisi_id,
@@ -73,7 +68,7 @@ export async function GET() {
           eczanem_aktif: eclubErisim.eczanem_aktif,
         },
         eclub_firmalar: aktifFirmalar,
-        eclub_navbar_ozet: { store_puani: storePuani },
+        eclub_navbar_ozet: { store_puani: null },
       }, { status: 200 });
     }
 

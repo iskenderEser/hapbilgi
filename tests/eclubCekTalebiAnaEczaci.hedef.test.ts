@@ -67,13 +67,12 @@ test("RPC yalnız service_role tarafından çalıştırılabilir", () => {
 
 test("POST route çek talebinde rolü RPC çağrısından önce yeniden doğrular", () => {
   const talepDali = route.indexOf("if (body.yayin_id)");
-  const rolKontrolu = route.indexOf("eclubCekTalebiOlusturabilirMi(kisi.rol)", talepDali);
-  const rpc = route.indexOf('adminSupabase.rpc("eclub_store_cek_talebi_olustur"', talepDali);
-  const fizikselStore = route.indexOf("const { urun_id, adres_id, adet } = body", talepDali);
+  const rolKontrolu = route.indexOf("eclubCekTalebiOlusturabilirMi(kisi.rol)");
+  const rpc = route.indexOf('adminSupabase.rpc("eclub_store_cek_talebi_olustur"');
 
-  assert.ok(talepDali >= 0);
-  assert.ok(rolKontrolu > talepDali && rolKontrolu < rpc);
-  assert.ok(rpc < fizikselStore, "Ana eczacı kontrolü yalnız çek talebi dalında kalmalı");
+  assert.equal(talepDali, -1, "Fiziksel Store ayrım dalı kalmamalı");
+  assert.ok(rolKontrolu >= 0 && rolKontrolu < rpc);
+  assert.doesNotMatch(route, /urun_id, adres_id, adet/);
   assert.match(route, /Hediye çeki talebini yalnız ana eczacı oluşturabilir\./);
 });
 
