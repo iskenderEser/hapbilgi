@@ -18,7 +18,6 @@ import {
   Send,
   ShieldCheck,
   Store,
-  Truck,
   UserRound,
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -33,6 +32,7 @@ import {
   type EclubSiparisApiData,
   type EclubSiparisDurum,
 } from "@/lib/eclub/store/ekipSiparis";
+import { CEK_KODU_GORUNUR_DURUMLARI } from "@/lib/eclub/store/eclubStoreTipler";
 import type { EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
 import { ECLUB_YONETIM_ROLLERI, eclubKisiRolEtiketi } from "@/lib/utils/roller";
 
@@ -64,7 +64,7 @@ interface EclubSiparisSayfaData extends EclubSiparisApiData {
 const BOS_DATA: EclubSiparisSayfaData = {
   siparisler: [],
   toplam: 0,
-  ozet: { toplam: 0, islemde: 0, kargoda: 0, teslim_edildi: 0, iptal: 0, firma_kullanilan_puan: 0 },
+  ozet: { toplam: 0, islemde: 0, teslimat_bekliyor: 0, tamamlandi: 0, iptal: 0, firma_kullanilan_puan: 0 },
   kapsam: { eczaneler: [], kisiler: [] },
   kapsam_hiyerarsi: null,
   utt_ozetleri: [],
@@ -323,7 +323,7 @@ function SiparisListesi({
                   <th className={th}>Durum</th>
                   <th className={th}>E-posta</th>
                   <th className={th}>Push</th>
-                  <th className={th}>Çek Kodu / Kargo</th>
+                  <th className={th}>Çek Kodu</th>
                 </tr>
               </thead>
               <tbody>
@@ -364,7 +364,7 @@ function SiparisListesi({
                       <td className={td}><TeslimatDurumu durum={siparis.eposta_teslimat_durumu} /></td>
                       <td className={td}><TeslimatDurumu durum={siparis.push_teslimat_durumu} /></td>
                       <td className={`${td} min-w-[150px]`}>
-                        {siparis.durum === "cek_kodlari_gonderildi" && siparis.cek_kodu ? (
+                        {CEK_KODU_GORUNUR_DURUMLARI.includes(siparis.durum) && siparis.cek_kodu ? (
                           <div className="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1">
                             <span className="font-mono text-xs font-bold text-emerald-900">{siparis.cek_kodu}</span>
                             <button
@@ -376,11 +376,6 @@ function SiparisListesi({
                               {kopyalandiKod === siparis.cek_kodu ? <Check size={12} /> : <Copy size={12} />}
                             </button>
                           </div>
-                        ) : siparis.kargo_firmasi ? (
-                          <>
-                            <div className="font-bold text-[#40556d]">{siparis.kargo_firmasi}</div>
-                            <div className="text-[10px] text-[#8190a3]">{siparis.kargo_takip_no || "Takip no bekleniyor"}</div>
-                          </>
                         ) : (
                           <span className="text-[#9aa8b8]">—</span>
                         )}
@@ -573,10 +568,10 @@ export default function EclubSiparislerPage() {
     [data.kapsam.kisiler, filtreler.eczane_id],
   );
   const uttOzetleri = useMemo(() => Object.fromEntries(data.utt_ozetleri.map(({ utt_id, ozet }) => [utt_id, [
-    { etiket: "Sipariş", deger: ozet.toplam },
+    { etiket: "Talep", deger: ozet.toplam },
     { etiket: "İşlemde", deger: ozet.islemde },
-    { etiket: "Kargoda", deger: ozet.kargoda },
-    { etiket: "Teslim", deger: ozet.teslim_edildi },
+    { etiket: "Teslimat", deger: ozet.teslimat_bekliyor },
+    { etiket: "Tamamlandı", deger: ozet.tamamlandi },
   ]])), [data.utt_ozetleri]);
   const uttSec = useCallback((uttId: string | null) => {
     setFiltreler((onceki) => ({
@@ -604,8 +599,8 @@ export default function EclubSiparislerPage() {
   const ozetKartlari = [
     { etiket: "Toplam Talep", deger: data.ozet.toplam, icon: Package, renk: "#237ac8", zemin: "#edf6fd" },
     { etiket: "İşlemde / Onayda", deger: data.ozet.islemde, icon: Clock3, renk: "#7c5ce7", zemin: "#f3f0ff" },
-    { etiket: "Kargoda", deger: data.ozet.kargoda, icon: Truck, renk: "#d78022", zemin: "#fff6e8" },
-    { etiket: "Teslim / Kod Gönderildi", deger: data.ozet.teslim_edildi, icon: CircleCheckBig, renk: "#16865f", zemin: "#ebf8f2" },
+    { etiket: "Teslimat Kuyruğunda", deger: data.ozet.teslimat_bekliyor, icon: Send, renk: "#0f766e", zemin: "#f0fdfa" },
+    { etiket: "Tamamlandı", deger: data.ozet.tamamlandi, icon: CircleCheckBig, renk: "#16865f", zemin: "#ebf8f2" },
   ];
 
   return (

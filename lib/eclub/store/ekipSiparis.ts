@@ -1,46 +1,21 @@
-export const ECLUB_SIPARIS_DURUMLARI = [
-  "beklemede",
-  "hazirlaniyor",
-  "kargoda",
-  "teslim_edildi",
-  "iptal",
-  "bm_onayinda",
-  "tm_onayinda",
-  "onaylandi",
-  "teslimat_bekliyor",
-  "cek_kodlari_gonderildi",
-] as const;
+import {
+  CEK_TALEP_DURUMLARI,
+  CEK_TALEP_DURUM_META,
+  type CekTalepDurumu,
+} from "./eclubStoreTipler";
 
-export type EclubSiparisDurum = (typeof ECLUB_SIPARIS_DURUMLARI)[number];
-
-export const ECLUB_SIPARIS_DURUM_ETIKETLERI: Record<EclubSiparisDurum, string> = {
-  beklemede: "Beklemede (UTT)",
-  bm_onayinda: "BM Onayında",
-  tm_onayinda: "TM Onayında",
-  onaylandi: "TM Onayladı / Kod Bekliyor",
-  teslimat_bekliyor: "Teslimat Kuyruğunda",
-  hazirlaniyor: "Hazırlanıyor",
-  kargoda: "Kargoda",
-  teslim_edildi: "Teslim Edildi",
-  iptal: "İptal Edildi",
-  cek_kodlari_gonderildi: "Çek Kodları Gönderildi",
-};
-
-export const ECLUB_SIPARIS_DURUM_RENKLERI: Record<
-  EclubSiparisDurum,
-  { metin: string; arka: string; kenar: string }
-> = {
-  beklemede: { metin: "#854d0e", arka: "#fefce8", kenar: "#fde68a" },
-  bm_onayinda: { metin: "#1e40af", arka: "#eff6ff", kenar: "#bfdbfe" },
-  tm_onayinda: { metin: "#6d28d9", arka: "#f5f3ff", kenar: "#ddd6fe" },
-  onaylandi: { metin: "#065f46", arka: "#ecfdf5", kenar: "#a7f3d0" },
-  teslimat_bekliyor: { metin: "#0f766e", arka: "#f0fdfa", kenar: "#99f6e4" },
-  hazirlaniyor: { metin: "#6d28d9", arka: "#f5f3ff", kenar: "#ddd6fe" },
-  kargoda: { metin: "#1d4ed8", arka: "#e6f1fb", kenar: "#bfdbfe" },
-  teslim_edildi: { metin: "#16865f", arka: "#effaf5", kenar: "#bbf7d0" },
-  iptal: { metin: "#bc2d0d", arka: "#fef2f2", kenar: "#fecaca" },
-  cek_kodlari_gonderildi: { metin: "#15803d", arka: "#f0fdf4", kenar: "#86efac" },
-};
+export const ECLUB_SIPARIS_DURUMLARI = CEK_TALEP_DURUMLARI;
+export type EclubSiparisDurum = CekTalepDurumu;
+export const ECLUB_SIPARIS_DURUM_ETIKETLERI = Object.fromEntries(
+  CEK_TALEP_DURUMLARI.map((durum) => [durum, CEK_TALEP_DURUM_META[durum].etiket]),
+) as Record<CekTalepDurumu, string>;
+export const ECLUB_SIPARIS_DURUM_RENKLERI = Object.fromEntries(
+  CEK_TALEP_DURUMLARI.map((durum) => [durum, {
+    metin: CEK_TALEP_DURUM_META[durum].metin,
+    arka: CEK_TALEP_DURUM_META[durum].arka,
+    kenar: CEK_TALEP_DURUM_META[durum].kenar,
+  }]),
+) as Record<CekTalepDurumu, { metin: string; arka: string; kenar: string }>;
 
 export interface EclubSiparisAdresSnapshot {
   ad_soyad?: string;
@@ -83,8 +58,6 @@ export interface EclubEkipSiparisSatiri {
   siparis_mal_fazlasi?: number;
   cek_kodu?: string | null;
   durum: EclubSiparisDurum;
-  kargo_firmasi: string | null;
-  kargo_takip_no: string | null;
   iptal_sebebi: string | null;
   created_at: string;
   guncellenme_at: string | null;
@@ -110,8 +83,8 @@ export interface EclubSiparisKapsamKisi {
 export interface EclubSiparisOzet {
   toplam: number;
   islemde: number;
-  kargoda: number;
-  teslim_edildi: number;
+  teslimat_bekliyor: number;
+  tamamlandi: number;
   iptal: number;
   firma_kullanilan_puan: number;
 }

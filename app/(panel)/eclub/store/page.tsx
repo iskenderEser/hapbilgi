@@ -23,7 +23,11 @@ import {
   EclubKisiYukleniyor,
 } from "@/components/eclub/EclubKisiSayfa";
 import { useEclubStore } from "./_hooks/useEclubStore";
-import type { BaremSatiri } from "@/lib/eclub/store/eclubStoreTipler";
+import {
+  CEK_KODU_GORUNUR_DURUMLARI,
+  CEK_TALEP_DURUM_META,
+  type BaremSatiri,
+} from "@/lib/eclub/store/eclubStoreTipler";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { useEclubStoreTakvim } from "@/hooks/useEclubStoreTakvim";
 import { eclubCekTalebiOlusturabilirMi } from "@/lib/eclub/store/cekTalebiYetkisi";
@@ -281,37 +285,28 @@ export default function EclubStorePage() {
                     {/* Talep Durumu Varsa Göster */}
                     {item.talep_durumu ? (
                       <div className="flex flex-col items-end gap-1">
-                        {item.talep_durumu === "cek_kodlari_gonderildi" ? (
+                        {CEK_KODU_GORUNUR_DURUMLARI.includes(item.talep_durumu) && item.cek_kodu ? (
                           <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-right">
                             <span className="flex items-center gap-1 text-xs font-extrabold text-emerald-800">
-                              <CheckCircle2 size={15} /> Çek Kodunuz Teslim Edildi
+                              <CheckCircle2 size={15} /> Çek Kodunuz Hazır
                             </span>
                             <span className="font-mono text-sm font-black text-emerald-950">
-                              {item.cek_kodu || "KOD HAZIR"}
+                              {item.cek_kodu}
                             </span>
                             <span className="block text-[10px] text-emerald-700">
                               Tutar: {item.cek_tutari_tl ?? bazCek} TL
                             </span>
                           </div>
-                        ) : item.talep_durumu === "teslimat_bekliyor" ? (
-                          <span className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800">
-                            📤 Çek Teslimatı Hazırlanıyor
-                          </span>
-                        ) : item.talep_durumu === "onaylandi" ? (
-                          <span className="rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-800">
-                            ⏳ TM Onayladı — Kod Bekleniyor
-                          </span>
-                        ) : item.talep_durumu === "tm_onayinda" ? (
-                          <span className="rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-800">
-                            ⏳ BM Onayladı — TM Onayı Bekleniyor
-                          </span>
-                        ) : item.talep_durumu === "bm_onayinda" ? (
-                          <span className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800">
-                            ⌛ UTT Onayladı — BM Onayı Bekleniyor
-                          </span>
                         ) : (
-                          <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
-                            🕒 Talep Alındı — UTT Onayı Bekleniyor
+                          <span
+                            className="rounded-lg border px-3 py-1.5 text-xs font-bold"
+                            style={{
+                              color: CEK_TALEP_DURUM_META[item.talep_durumu].metin,
+                              background: CEK_TALEP_DURUM_META[item.talep_durumu].arka,
+                              borderColor: CEK_TALEP_DURUM_META[item.talep_durumu].kenar,
+                            }}
+                          >
+                            {CEK_TALEP_DURUM_META[item.talep_durumu].etiket}
                           </span>
                         )}
                       </div>

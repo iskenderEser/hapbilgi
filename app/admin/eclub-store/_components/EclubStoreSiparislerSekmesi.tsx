@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { EclubStoreCekTalebiSatiri } from "@/lib/eclub/store/eclubStoreTipler";
+import {
+  CEK_KODU_GORUNUR_DURUMLARI,
+  CEK_TALEP_ADMIN_DURUMLARI,
+  CEK_TALEP_DURUM_META,
+  type EclubStoreCekTalebiSatiri,
+} from "@/lib/eclub/store/eclubStoreTipler";
 import { Check, Copy, FileSpreadsheet } from "lucide-react";
 
 interface Props {
@@ -14,18 +19,9 @@ interface Props {
   excelExport: (talepler: EclubStoreCekTalebiSatiri[]) => void;
 }
 
-const DURUM_ETIKET: Record<string, { ad: string; renk: string; bg: string }> = {
-  onaylandi: { ad: "TM Onayladı (Kod Bekliyor)", renk: "#065f46", bg: "#ecfdf5" },
-  teslimat_bekliyor: { ad: "Teslimat Kuyruğunda", renk: "#0f766e", bg: "#f0fdfa" },
-  iptal: { ad: "İptal", renk: "#bc2d0d", bg: "#fee2e2" },
-  cek_kodlari_gonderildi: { ad: "Çek Kodu Gönderildi", renk: "#15803d", bg: "#dcfce7" },
-};
-
 const CEK_FILTRELER = [
   { id: "", ad: "Tümü" },
-  { id: "onaylandi", ad: "Kod Bekleyen" },
-  { id: "teslimat_bekliyor", ad: "Teslimat Kuyruğu" },
-  { id: "cek_kodlari_gonderildi", ad: "Kod Gönderildi" },
+  ...CEK_TALEP_ADMIN_DURUMLARI.map((id) => ({ id, ad: CEK_TALEP_DURUM_META[id].etiket })),
 ];
 
 export default function EclubStoreSiparislerSekmesi({
@@ -92,8 +88,8 @@ export default function EclubStoreSiparislerSekmesi({
             </thead>
             <tbody>
               {cekTalepleri.map((talep) => {
-                const durum = DURUM_ETIKET[talep.durum] ?? { ad: talep.durum, renk: "#6b7280", bg: "#f3f4f6" };
-                const kodGonderildi = talep.durum === "cek_kodlari_gonderildi" && talep.cek_kodu;
+                const durum = CEK_TALEP_DURUM_META[talep.durum];
+                const kodGonderildi = CEK_KODU_GORUNUR_DURUMLARI.includes(talep.durum) && talep.cek_kodu;
                 return (
                   <tr key={talep.talep_id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                     <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{new Date(talep.created_at).toLocaleDateString("tr-TR")}</td>
@@ -103,7 +99,7 @@ export default function EclubStoreSiparislerSekmesi({
                     <td style={{ padding: "10px 12px" }}><strong>{talep.urun_adi}</strong><div style={{ color: "#047857" }}>{talep.siparis_adet ? `${talep.siparis_adet} adet + ${talep.siparis_mal_fazlasi} MF` : "Siparişsiz"}</div></td>
                     <td style={{ padding: "10px 12px", fontWeight: 700 }}>{talep.toplanan_puan.toLocaleString("tr-TR")}</td>
                     <td style={{ padding: "10px 12px", fontWeight: 800, color: "#047857" }}>{talep.talep_edilen_cek_tl.toLocaleString("tr-TR")} TL</td>
-                    <td style={{ padding: "10px 12px" }}><span style={{ padding: "3px 8px", borderRadius: "999px", color: durum.renk, background: durum.bg, fontWeight: 700, whiteSpace: "nowrap" }}>{durum.ad}</span></td>
+                    <td style={{ padding: "10px 12px" }}><span style={{ padding: "3px 8px", borderRadius: "999px", color: durum.metin, background: durum.arka, fontWeight: 700, whiteSpace: "nowrap" }}>{durum.etiket}</span></td>
                     <td style={{ padding: "10px 12px" }}>
                       {kodGonderildi ? (
                         <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f0fdf4", border: "1px solid #86efac", padding: "4px 8px", borderRadius: "6px" }}>

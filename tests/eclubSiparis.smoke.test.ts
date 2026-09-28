@@ -5,13 +5,13 @@ import { eclubSiparisSorgusunuParse } from "@/lib/eclub/store/ekipSiparis";
 
 test("mutlu: sipariş filtrelerini ve sayfalamayı doğrular", () => {
   const sonuc = eclubSiparisSorgusunuParse(new URLSearchParams(
-    "utt_id=123e4567-e89b-42d3-a456-426614174001&eczane_id=123e4567-e89b-42d3-a456-426614174000&durum=kargoda&tarih_baslangic=2026-08-01&tarih_bitis=2026-08-14&offset=30&limit=200",
+    "utt_id=123e4567-e89b-42d3-a456-426614174001&eczane_id=123e4567-e89b-42d3-a456-426614174000&durum=teslimat_bekliyor&tarih_baslangic=2026-08-01&tarih_bitis=2026-08-14&offset=30&limit=200",
   ));
 
   assert.equal(sonuc.ok, true);
   if (!sonuc.ok) return;
   assert.equal(sonuc.sorgu.uttId, "123e4567-e89b-42d3-a456-426614174001");
-  assert.equal(sonuc.sorgu.durum, "kargoda");
+  assert.equal(sonuc.sorgu.durum, "teslimat_bekliyor");
   assert.equal(sonuc.sorgu.offset, 30);
   assert.equal(sonuc.sorgu.limit, 100);
 });

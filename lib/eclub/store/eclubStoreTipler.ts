@@ -15,6 +15,54 @@ export const VARSAYILAN_BAREM_TABLOSU: BaremSatiri[] = [
   { min_puan: 800, max_puan: 1000, adet: 50, mal_fazlasi: 25 },
 ];
 
+export const CEK_TALEP_DURUMLARI = [
+  "beklemede",
+  "bm_onayinda",
+  "tm_onayinda",
+  "onaylandi",
+  "teslimat_bekliyor",
+  "cek_kodlari_gonderildi",
+  "iptal",
+] as const;
+
+export type CekTalepDurumu = (typeof CEK_TALEP_DURUMLARI)[number];
+
+export const CEK_TALEP_DURUM_META: Record<
+  CekTalepDurumu,
+  { etiket: string; metin: string; arka: string; kenar: string }
+> = {
+  beklemede: { etiket: "Beklemede (UTT)", metin: "#854d0e", arka: "#fefce8", kenar: "#fde68a" },
+  bm_onayinda: { etiket: "BM Onayında", metin: "#1e40af", arka: "#eff6ff", kenar: "#bfdbfe" },
+  tm_onayinda: { etiket: "TM Onayında", metin: "#6d28d9", arka: "#f5f3ff", kenar: "#ddd6fe" },
+  onaylandi: { etiket: "TM Onayladı / Kod Bekliyor", metin: "#065f46", arka: "#ecfdf5", kenar: "#a7f3d0" },
+  teslimat_bekliyor: { etiket: "Teslimat Kuyruğunda", metin: "#0f766e", arka: "#f0fdfa", kenar: "#99f6e4" },
+  cek_kodlari_gonderildi: { etiket: "Çek Kodu Gönderildi", metin: "#15803d", arka: "#f0fdf4", kenar: "#86efac" },
+  iptal: { etiket: "İptal Edildi", metin: "#bc2d0d", arka: "#fef2f2", kenar: "#fecaca" },
+};
+
+export const CEK_TALEP_ISLEMDE_DURUMLARI: readonly CekTalepDurumu[] = [
+  "beklemede",
+  "bm_onayinda",
+  "tm_onayinda",
+  "onaylandi",
+  "teslimat_bekliyor",
+];
+
+export const CEK_TALEP_ADMIN_DURUMLARI: readonly CekTalepDurumu[] = [
+  "onaylandi",
+  "teslimat_bekliyor",
+  "cek_kodlari_gonderildi",
+];
+
+export const CEK_KODU_GORUNUR_DURUMLARI: readonly CekTalepDurumu[] = [
+  "teslimat_bekliyor",
+  "cek_kodlari_gonderildi",
+];
+
+export function cekTalepDurumuMu(deger: unknown): deger is CekTalepDurumu {
+  return typeof deger === "string" && CEK_TALEP_DURUMLARI.includes(deger as CekTalepDurumu);
+}
+
 export interface EclubEczaneStoreOzetItem {
   yayin_id: string;
   urun_id: string;
@@ -39,7 +87,7 @@ export interface EclubEczaneStoreOzetItem {
   baz_cek_tutari_tl?: number;
   katlanmis_cek_tl: number;
   katlanmis_cek_tutari_tl?: number;
-  talep_durumu?: string | null;
+  talep_durumu?: CekTalepDurumu | null;
   cek_tutari_tl?: number | null;
   cek_kodu?: string | null;
   donem_kodu?: string;
@@ -47,15 +95,6 @@ export interface EclubEczaneStoreOzetItem {
   donem_bitis?: string;
   talep_penceresi_acik_mi?: boolean;
 }
-
-export type CekTalepDurumu =
-  | "beklemede"
-  | "bm_onayinda"
-  | "tm_onayinda"
-  | "onaylandi"
-  | "teslimat_bekliyor"
-  | "cek_kodlari_gonderildi"
-  | "iptal";
 
 export interface EclubStoreCekTalebiSatiri {
   talep_id: string;

@@ -14,6 +14,12 @@ import {
   EclubKisiStat,
   EclubKisiYukleniyor,
 } from "@/components/eclub/EclubKisiSayfa";
+import {
+  CEK_KODU_GORUNUR_DURUMLARI,
+  CEK_TALEP_DURUM_META,
+  CEK_TALEP_ISLEMDE_DURUMLARI,
+  type CekTalepDurumu,
+} from "@/lib/eclub/store/eclubStoreTipler";
 
 interface CekTalebi {
   talep_id: string;
@@ -25,20 +31,10 @@ interface CekTalebi {
   siparis_verildi_mi: boolean;
   siparis_adet: number;
   siparis_mal_fazlasi: number;
-  durum: string;
+  durum: CekTalepDurumu;
   cek_kodu: string | null;
   created_at: string;
 }
-
-const DURUM_ETIKET: Record<string, { ad: string; renk: string; bg: string; ikon: typeof Clock3 }> = {
-  beklemede: { ad: "UTT Onayı Bekleniyor", renk: "#a66215", bg: "#fff6e8", ikon: Clock3 },
-  bm_onayinda: { ad: "BM Onayı Bekleniyor", renk: "#1e40af", bg: "#eff6ff", ikon: Clock3 },
-  tm_onayinda: { ad: "TM Son Onayı Bekleniyor", renk: "#6d28d9", bg: "#f5f3ff", ikon: Clock3 },
-  onaylandi: { ad: "TM Onayladı — Çek Kodu Bekleniyor", renk: "#065f46", bg: "#ecfdf5", ikon: CheckCircle2 },
-  teslimat_bekliyor: { ad: "Çek Teslimatı Hazırlanıyor", renk: "#0f766e", bg: "#f0fdfa", ikon: Clock3 },
-  iptal: { ad: "İptal", renk: "#bc4b4b", bg: "#fff0f0", ikon: XCircle },
-  cek_kodlari_gonderildi: { ad: "Çek Kodu Gönderildi", renk: "#15803d", bg: "#f0fdf4", ikon: CheckCircle2 },
-};
 
 export default function EclubSiparislerimPage() {
   const router = useRouter();
@@ -90,7 +86,7 @@ export default function EclubSiparislerimPage() {
 
   const ozet = useMemo(() => ({
     toplam: talepler.length,
-    onayda: talepler.filter((talep) => ["beklemede", "bm_onayinda", "tm_onayinda", "onaylandi", "teslimat_bekliyor"].includes(talep.durum)).length,
+    onayda: talepler.filter((talep) => CEK_TALEP_ISLEMDE_DURUMLARI.includes(talep.durum)).length,
     teslim: talepler.filter((talep) => talep.durum === "cek_kodlari_gonderildi").length,
     iptal: talepler.filter((talep) => talep.durum === "iptal").length,
   }), [talepler]);
@@ -137,8 +133,8 @@ export default function EclubSiparislerimPage() {
       ) : (
         <section className="grid gap-3">
           {talepler.map((talep) => {
-            const durum = DURUM_ETIKET[talep.durum] ?? { ad: talep.durum, renk: "#71859d", bg: "#f3f6f9", ikon: Clock3 };
-            const DurumIcon = durum.ikon;
+            const durum = CEK_TALEP_DURUM_META[talep.durum];
+            const DurumIcon = talep.durum === "iptal" ? XCircle : talep.durum === "onaylandi" || talep.durum === "cek_kodlari_gonderildi" ? CheckCircle2 : Clock3;
             const islemSuruyor = islemId === talep.talep_id;
             return (
               <article key={talep.talep_id} className="rounded-2xl border border-[#dfe7f1] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
@@ -150,14 +146,14 @@ export default function EclubSiparislerimPage() {
                         <h2 className="text-sm font-extrabold text-[#203653]">{talep.urun_adi}</h2>
                         <p className="mt-0.5 text-[10px] font-semibold text-[#8a99aa]">{talep.firma_adi} · {new Date(talep.created_at).toLocaleDateString("tr-TR")}</p>
                       </div>
-                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold" style={{ color: durum.renk, background: durum.bg }}><DurumIcon size={12} /> {durum.ad}</span>
+                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold" style={{ color: durum.metin, background: durum.arka }}><DurumIcon size={12} /> {durum.etiket}</span>
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       <div className="rounded-xl bg-[#f5f8fb] px-3 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Kullanılan Puan</small><strong className="text-xs text-[#40556d]">{talep.toplanan_puan.toLocaleString("tr-TR")}</strong></div>
                       <div className="rounded-xl bg-[#f5f8fb] px-3 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Çek Tutarı</small><strong className="text-xs text-emerald-700">{talep.talep_edilen_cek_tl.toLocaleString("tr-TR")} TL</strong></div>
                       <div className="col-span-2 rounded-xl bg-[#f5f8fb] px-3 py-2 sm:col-span-1"><small className="block text-[9px] font-bold text-[#8190a3]">Satış Şartı</small><strong className="text-xs text-[#40556d]">{talep.siparis_verildi_mi ? `${talep.siparis_adet} adet + ${talep.siparis_mal_fazlasi} MF` : "Siparişsiz"}</strong></div>
                     </div>
-                    {["teslimat_bekliyor", "cek_kodlari_gonderildi"].includes(talep.durum) && talep.cek_kodu && (
+                    {CEK_KODU_GORUNUR_DURUMLARI.includes(talep.durum) && talep.cek_kodu && (
                       <div className="mt-2.5 rounded-xl border border-emerald-300 bg-emerald-50 p-3">
                         <span className="text-[11px] font-extrabold text-emerald-800">Migros Hediye Çeki Kodunuz</span>
                         <div className="mt-1.5 flex items-center justify-between gap-2">

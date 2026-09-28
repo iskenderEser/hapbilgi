@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import { hataYaniti, isKuraluHatasi, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-const ADMIN_ISLEM_DURUMLARI = ["onaylandi", "teslimat_bekliyor", "cek_kodlari_gonderildi"];
+import { CEK_TALEP_ADMIN_DURUMLARI, cekTalepDurumuMu } from "@/lib/eclub/store/eclubStoreTipler";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createAdminClient();
     const durum = request.nextUrl.searchParams.get("durum");
-    if (durum && !ADMIN_ISLEM_DURUMLARI.includes(durum)) {
+    if (durum && (!cekTalepDurumuMu(durum) || !CEK_TALEP_ADMIN_DURUMLARI.includes(durum))) {
       return validasyonHatasi("Admin yalnız TM onayından geçen talepleri görüntüleyebilir.", ["durum"]);
     }
     let query = supabase
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       `)
       .order("created_at", { ascending: false });
     if (durum) query = query.eq("durum", durum);
-    else query = query.in("durum", ADMIN_ISLEM_DURUMLARI);
+    else query = query.in("durum", [...CEK_TALEP_ADMIN_DURUMLARI]);
 
     const { data, error } = await query;
     if (error) return hataYaniti("Çek talepleri alınamadı.", "eclub_store_cek_talepleri SELECT", error);

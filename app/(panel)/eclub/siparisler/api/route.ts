@@ -8,6 +8,7 @@ import {
   type EclubSiparisOzet,
   type EclubSiparisSorgusu,
 } from "@/lib/eclub/store/ekipSiparis";
+import { CEK_TALEP_ISLEMDE_DURUMLARI } from "@/lib/eclub/store/eclubStoreTipler";
 import { eclubYonetimKapsaminiGetir, type EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
 import { ECLUB_YONETIM_ROLLERI } from "@/lib/utils/roller";
 import { trGunEkle } from "@/lib/zaman/kontrol";
@@ -22,8 +23,8 @@ import {
 const BOS_OZET: EclubSiparisOzet = {
   toplam: 0,
   islemde: 0,
-  kargoda: 0,
-  teslim_edildi: 0,
+  teslimat_bekliyor: 0,
+  tamamlandi: 0,
   iptal: 0,
   firma_kullanilan_puan: 0,
 };
@@ -171,8 +172,6 @@ async function cekTalepleriniGetir(
       siparis_mal_fazlasi: t.siparis_mal_fazlasi,
       cek_kodu: t.cek_kodu,
       durum: t.durum as EclubSiparisDurum,
-      kargo_firmasi: t.cek_kodu ? "Migros Dijital Kod" : null,
-      kargo_takip_no: t.cek_kodu ?? null,
       iptal_sebebi: null,
       created_at: t.created_at,
       guncellenme_at: t.guncellenme_at,
@@ -192,13 +191,11 @@ async function cekTalepleriniGetir(
 function siparisOzetiniHesapla(siparisler: EclubEkipSiparisSatiri[]): EclubSiparisOzet {
   return siparisler.reduce<EclubSiparisOzet>((ozet, siparis) => {
     ozet.toplam += 1;
-    if (["beklemede", "hazirlaniyor", "bm_onayinda", "tm_onayinda", "teslimat_bekliyor"].includes(siparis.durum)) {
+    if (CEK_TALEP_ISLEMDE_DURUMLARI.includes(siparis.durum)) {
       ozet.islemde += 1;
     }
-    if (siparis.durum === "kargoda") ozet.kargoda += 1;
-    if (siparis.durum === "teslim_edildi" || siparis.durum === "cek_kodlari_gonderildi") {
-      ozet.teslim_edildi += 1;
-    }
+    if (siparis.durum === "teslimat_bekliyor") ozet.teslimat_bekliyor += 1;
+    if (siparis.durum === "cek_kodlari_gonderildi") ozet.tamamlandi += 1;
     if (siparis.durum === "iptal") ozet.iptal += 1;
     if (siparis.durum !== "iptal") {
       ozet.firma_kullanilan_puan += Number(siparis.firma_kullanilan_puan ?? 0);
