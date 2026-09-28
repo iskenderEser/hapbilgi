@@ -1,6 +1,6 @@
 # 📘 HapBilgi — BLUEBOOK
 ### İş Modeli, Mimari, İş Kuralları ve Teknik Envanter Anayasası
-*Son genel inceleme: 21 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026 | Ortak yayın arayüzü, mobil akış ve tanbur güncellemesi: 21 Eylül 2026*
+*Son genel inceleme: 28 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026 | Ortak yayın arayüzü, mobil akış ve tanbur güncellemesi: 21 Eylül 2026 | E-Club iş modeli ve teknik kapanış güncellemesi: 28 Eylül 2026*
 
 ---
 
@@ -151,32 +151,41 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 *Eczane Kullanıcı Katmanı — Çok Firmalı Öğrenme, Takım, Lig, Rapor ve Ödül Yapısı*
 
 ### 1. Aşama: Rol ve Görev Tanımları
-* **E-Club Kullanıcıları:** `eczaci`, `ikinci_eczaci`, `yardimci_eczaci` ve `eczane_teknisyeni` ayrı unvanlardır. İlk üç unvan yayın hedeflemesinde `eczaci`, teknisyen ise `eczane_teknisyeni` hedef grubuna bağlanır. Eczanede bir aktif ana `eczaci` kaydı bulunabilir; ikinci ve yardımcı eczacı ayrı unvanlarla yaşar.
-* **E-Club Takımım (`/eclub/eczanelerim`):** UTT/KD_UTT, takımına ad verir (`eclub_takim_adlari`), onaylı GLN üzerinden eczaneleri kendi listesine bağlar, eczane kullanıcılarını yönetir ve öğrenme aracı önerilerini oluşturur.
-* **E-Club Ligi (`/eclub/ligi`):** Firma genelindeki UTT takımlarının dönemsel yarışmasını, ilk üç takım podyumunu, genel sıralamayı ve kullanıcının kendi takımını gösterir.
-* **E-Club Takım Raporları (`/eclub/raporlar`):** Eczane ve kişi düzeyinde gönderim, tamamlama, doğru cevap ve puan sonuçlarını gösterir. UTT, BM, TM, üretici ve yönetici rollerinin lig, rapor ve sipariş kapsamı kendi firma–takım–bölge hiyerarşilerine göre çözülür.
-* **Kurumsal Eczane ve Liste Üyeliği:** `eclub_eczane_master` onaylı GLN kaynağıdır; `eclub_eczaneler` platform eczanesini, `eclub_eczane_firma` firma–eczane kurumsal bağını tutar. Bu bağdan `eclub_utt_eczane` ile UTT'nin kişisel liste üyeliği, `eclub_kisi_eczane` ile eczane kullanıcısının eczane ilişkisi ayrılır. Aynı firmanın birden fazla UTT'si aynı kurumsal eczane bağında ayrı üyelikler kurabilir. Bir UTT'nin listeden çıkması diğer UTT üyeliklerini bozmaz; son aktif UTT de çıktığında firma–eczane bağı pasife alınır.
-* **Öneri ve Tüketim:** UTT, kendi firma ve takım kapsamındaki Video, Podcast, Dijital Broşür veya Literatür aracını bir veya birden fazla eczane kullanıcısına önerir. Öneri `yayin_id`, `arac_id` ve `arac_turu` kimlikleriyle saklanır. Önerinin puanlı ve sorulu geçerlilik süresi ayarlanabilir; varsayılan 7 gündür. Aynı UTT'nin aynı kişiye aynı aracı yeniden göndermesi için önceki önerinin bitişinden sonra ayarlanabilir bir süre beklenir; varsayılan 21 gündür. Süresi geçmiş öneri izlenebilir ancak puan ve soru hakkı vermez.
-* **Puan Kuralları:** Aktif öneride uygun tamamlama ve doğru cevaplar puan kazandırır. İleri sarma, atlanan sürenin araç puanındaki oransal karşılığını ilgili firma bakiyesinden düşürür; yanlış cevap kayıp üretmez. Soru kümesi izleme kimliğine sabitlenir ve tamamlamadan sonra terk edilen soru hakkı yeni oturumda yeniden açılmaz.
-* **E-Club Store:** Kişinin aktif firma bağlarından kazandığı puanlar firma bazında izlenir ve uygun ürün için tek siparişte birleştirilebilir. Ürün görünürlüğü global katalog ile firma ayarlarının kesişimidir. Sipariş yalnız aktif E-Club üyeliğiyle açılır; puanlar ürüne izin veren firmalar arasında en yüksek bakiyeden başlayarak kademeli düşülür ve `eclub_store_siparis_firma_puan` ile kaynak firmalara dağıtılır.
-* **Mobil Yayın Akışı ve HOYK Standardı:** E-Club firma video kataloğu (`EclubFirmaVideoKatalogu.tsx`), mobilde `MobilYayinAkisi` (2+5 dikey akış) motoruna bağlanmıştır; tablet ve masaüstünde yatay, kaydırılabilir snap rafı korunur. Kart gösteriminde `YayinKarti` (HOYK) standart kapsül hiyerarşisi ve video puanı rozeti kullanılır.
+* **Amaç ve Kapsam:** E-Club, ürün tanıtım temsilcilerinin sorumlu oldukları eczanelerde görev yapan eczacı ve eczane teknisyenlerinden öğrenme takımları oluşturduğu HapBilgi alanıdır. Eczane ve üye yönetimi, öğrenme aracı gönderimi ve tüketimi, puanlama, raporlama, E-Club Ligi ve hediye çeki süreçleri bu yapı içinde yürütülür.
+* **E-Club Kullanıcıları:** `eczaci`, `ikinci_eczaci`, `yardimci_eczaci` ve `eczane_teknisyeni` ayrı unvanlardır. İlk üç unvan yayın hedeflemesinde `eczaci`, teknisyen ise `eczane_teknisyeni` hedef grubuna bağlanır. Eczanede yalnız bir aktif ana `eczaci` kaydı bulunabilir; ikinci ve yardımcı eczacı ayrı unvanlarla yaşar.
+* **UTT / KD_UTT Görevi:** UTT/KD_UTT, sorumluluk alanındaki onaylı eczaneleri kişisel listesine bağlar, E-Club Takımı'nı ve takım adını yönetir, eczane kullanıcılarını takıma ekler, uygun öğrenme araçlarını seçtiği üyelere gönderir ve gönderim, tamamlama, cevap ve puan sonuçlarını izler.
+* **E-Club Takımım (`/eclub/eczanelerim`):** UTT/KD_UTT, takımına ad verir (`eclub_takim_adlari`), onaylı GLN üzerinden eczaneleri kendi listesine bağlar, eczane kullanıcılarını görüntüler, ekler, günceller veya eczanedeki üyeliklerini pasife alır. Kişi ekleme yalnız bir iletişim kaydı değildir; aktif kişi–eczane bağı, kişinin hangi takımda yer aldığını, kimden içerik alabileceğini, kazandığı çekli puanın hangi eczaneye ait olduğunu ve hangi eczanenin çek bildirimlerini görebileceğini belirler.
+* **Kurumsal Eczane ve Liste Üyeliği:** `eclub_eczane_master` onaylı GLN kaynağıdır; `eclub_eczaneler` platform eczanesini, `eclub_eczane_firma` firma–eczane kurumsal bağını tutar. Bu bağdan `eclub_utt_eczane` ile UTT'nin kişisel liste üyeliği, `eclub_kisi_eczane` ile E-Club kullanıcısının eczane ilişkisi ayrılır. Eczane tek bir firmanın mülkiyetinde değildir. Aynı firmanın birden fazla UTT'si aynı kurumsal eczane bağında ayrı üyelikler kurabilir. Bir UTT'nin listeden çıkması diğer UTT üyeliklerini bozmaz; son aktif UTT de çıktığında firma–eczane bağı pasife alınır, eczane kimliği silinmez.
+* **Kişi–Eczane ve Puan Aidiyeti:** Çekli puan, kazanıldığı anda kişinin aktif olarak bağlı bulunduğu eczaneye sabitlenir. Kişinin daha sonra pasife alınması, başka bir eczaneye bağlanması veya önceki eczaneyle ilişkisinin sona ermesi, daha önce kazandığı puanın eczane aidiyetini değiştirmez.
+* **E-Club Yayın Ayarları:** E-Club; Video, Podcast, Dijital Broşür ve Literatür öğrenme araçlarını destekler. Yayın ile gerçek öğrenme aracı bağı `yayin_id`, `arac_id` ve `arac_turu` kimlikleriyle korunur. Üretici rol, E-Club yayınını yayına alırken puanı `Çekli Puan` veya `Çeksiz Puan` olarak belirler. Çekli Puan E-Club performansı, lig ve hediye çeki hesabına; Çeksiz Puan yalnız E-Club performansı ve lig hesabına katılır.
+* **Sipariş Şartı ve Çek Karşılığı:** Üretici rol, Çekli Puan yayınında siparişi zorunlu veya zorunlu değil olarak belirler; puan–TL dönüşümünü ve sipariş baremlerini tanımlar. Sipariş zorunluysa çek hakkı için tanımlanan ürün siparişi verilmelidir. Sipariş zorunlu değilse eczacı sipariş vermeden çek işlemini başlatabilir; sipariş verilirse çek tutarı üretici rolün belirlediği oran kadar artırılabilir.
+* **Öneri ve Tüketim:** E-Club yayını bütün üyelere doğrudan dağıtılmaz. UTT, kendi firma ve takım kapsamındaki uygun Video, Podcast, Dijital Broşür veya Literatür aracını kişisel listesindeki bir veya birden fazla E-Club kullanıcısına gönderir. Öneri `yayin_id`, `arac_id` ve `arac_turu` kimlikleriyle saklanır. Önerinin puanlı ve sorulu geçerlilik süresi ayarlanabilir; varsayılan 7 gündür. Aynı UTT'nin aynı kişiye aynı aracı yeniden göndermesi için önceki önerinin bitişinden sonra ayarlanabilir bir süre beklenir; varsayılan 21 gündür. Süresi geçmiş öneri tüketilebilir ancak puan ve soru hakkı vermez.
+* **Puan Kuralları:** Aktif öneride uygun tamamlama ve doğru cevaplar puan kazandırır. İleri sarma, atlanan sürenin öğrenme aracı puanındaki oransal karşılığı kadar kayıp üretir; yanlış cevap kayıp üretmez. Soru kümesi izleme kimliğine sabitlenir ve tamamlamadan sonra terk edilen soru hakkı yeni oturumda yeniden açılmaz. E-Club üyeleri için Extra puan uygulanmaz.
+* **E-Club Raporları (`/eclub/raporlar`):** Eczane ve kişi düzeyinde gönderim, tamamlama, doğru ve yanlış cevap, izleme puanı, cevap puanı, Çekli Puan ve Çeksiz Puan sonuçlarını gösterir. UTT kendi takımını; BM, TM, üretici ve yönetici roller ise kendi firma–takım–bölge hiyerarşilerindeki kapsamı izler.
+* **E-Club Ligi (`/eclub/ligi`):** Firma genelindeki UTT takımlarının dönemsel yarışmasını, ilk üç takım podyumunu, genel sıralamayı ve kullanıcının kendi takımını gösterir. Çekli ve çeksiz puanların ikisi de E-Club performansı ve lig hesabına katılır.
+* **E-Club Store — Hediye Çeki:** E-Club Store'un güncel karşılığı hediye çekidir; yeni seçenekli ürün kataloğu siparişi oluşturulmaz. Eski ürün mağazasına ait tarihî sipariş kayıtları korunur. Aynı eczanedeki E-Club üyelerinin Çekli Puanları, kazanım anındaki eczane aidiyeti korunarak ilgili yayın ve dönem kapsamında eczane havuzunda birleşir; bir eczanenin puanı, çek hakkı veya çek bilgisi başka bir eczaneye aktarılmaz ve gösterilmez.
+* **Çek Dönemi ve İşlem Yetkisi:** Çekli puanlar iki aylık kazanım döneminde birikir. Hediye çeki işlemi bu dönemi takip eden ayın yalnız 1–7. günleri arasında başlatılabilir; pencere ayın 8'inde kapanır. Yeterli puan oluştuğunda işlemi yalnız ilgili eczanenin aktif `eczaci` rolündeki üyesi başlatabilir. Kanonik onay sırası `beklemede` (UTT) → `bm_onayinda` (BM) → `tm_onayinda` (TM son onayı) → `onaylandi` (admin kod girişi bekleniyor) → `teslimat_bekliyor` → `cek_kodlari_gonderildi` biçimindedir. Admin, TM son onayı bulunmayan talebe çek kodu tanımlayamaz.
+* **Tek Ekrandan Yetkili Takip:** Firma rolleri çek taleplerini `/eclub/siparisler` tablosunda kendi UTT–bölge–takım–firma kapsamlarıyla izler. Tablo; talep durumu, UTT/BM/TM zinciri, e-posta teslimatı ve toplu push teslimatı durumlarını aynı satırda gösterir. UTT yalnız kendi taleplerini BM'ye, BM yalnız kendi onayındaki talepleri TM'ye, TM yalnız kendi son onayındaki talepleri admine ilerletebilir. Admin kod girişi ayrı ve admin yetkili `/admin/eclub-store` yüzeyindedir.
+* **Çek Teslimatı ve Eczane İzolasyonu:** Adminin çek kodunu kaydetmesi aynı transaction içinde e-posta ve push outbox işlerini, ayrıca uygulama içi çek bildirimlerini oluşturur. E-posta yalnız eczanenin tek aktif ana `eczaci` hesabına gönderilir. Push ve uygulama içi bildirim, rol ayrımı yapılmadan ilgili eczanede aktif çalışan ve HapBilgi hesabı bulunan bütün E-Club üyelerine yöneltilir. Başka bir eczanenin üyeleri bu çek bilgisini göremez. Talep ancak e-posta ve bütün push işleri tamamlandığında `cek_kodlari_gonderildi` durumuna geçer.
+* **Mobil Yayın Akışı ve HOYK Standardı:** E-Club öğrenme aracı kataloğu, mobilde `MobilYayinAkisi` (2+5 dikey akış) motoruna bağlanmıştır; tablet ve masaüstünde yatay, kaydırılabilir snap rafı korunur. Kart gösteriminde `YayinKarti` (HOYK) standart kapsül hiyerarşisi ve öğrenme aracı puanı rozeti kullanılır.
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
 * **Eczane, UTT ve Kişi Bağları:** `app/(panel)/eclub/listem/`, `lib/eclub/uttEczane.ts`, `lib/eclub/kisiErisim.ts`, `eclub_utt_eczaneye_bagla`, `eclub_utt_eczaneden_cikar`, `eclub_yeni_kisi_provizyonu`, `eclub_mevcut_kisi_provizyonu`.
 * **Öneri ve Tüketim:** `app/(panel)/eclub/oneriler/`, `app/(panel)/eclub/videolarim/`, `app/(panel)/eclub/panel/`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `lib/eclub/oneriLimit.ts`, `lib/eclub/oneriKapsam.ts`, `lib/eclub/izlemeKurali.ts`, `lib/eclub/aktifYayinYetkisi.ts`.
-* **Lig, Rapor ve Sipariş:** `app/(panel)/eclub/ligi/`, `app/(panel)/eclub/raporlar/`, `app/(panel)/eclub/siparisler/`, `lib/eclub/rapor.ts`, `lib/eclub/yonetimKapsami.ts`.
-* **E-Club Store:** `app/(panel)/eclub/store/`, `lib/eclub/store/`, `scripts/sql/eclub_store_firma_urun_gorunurlugu.sql`, `scripts/sql/eclub_store_aktif_uyelik_siparis_kapisi.sql`.
-* **Güvenlik Kapıları:** UTT liste üyeliği, kişi–eczane bağı, firma modül bayrakları, yayın kapsamı, araç kimliği, öneri süresi ve aktif üyelik sunucuda doğrulanır. Öneri, tamamlama, cevap ve sipariş yazımları korumalı RPC'lerden geçer.
+* **Lig, Rapor ve Çek Takibi:** `app/(panel)/eclub/ligi/`, `app/(panel)/eclub/raporlar/`, `app/(panel)/eclub/siparisler/`, `lib/eclub/rapor.ts`, `lib/eclub/yonetimKapsami.ts`.
+* **Hediye Çeki:** `app/(panel)/eclub/store/`, `app/admin/eclub-store/`, `lib/eclub/store/`, `scripts/sql/eclub_cek_talebi_ana_eczaci.sql`, `scripts/sql/eclub_store_tm_son_onay.sql`, `scripts/sql/eclub_cek_teslimat_outbox.sql`, `scripts/sql/eclub_cek_eposta_worker.sql`, `scripts/sql/eclub_cek_push_worker.sql`, `scripts/sql/eclub_cek_uygulama_bildirimleri.sql`.
+* **Güvenlik Kapıları:** UTT liste üyeliği, kişi–eczane bağı, firma modül bayrakları, yayın kapsamı, araç kimliği, öneri süresi ve aktif üyelik sunucuda doğrulanır. Çek oluşturma yalnız ana eczacıya; UTT, BM ve TM geçişleri rol, firma ve kayıt kapsamına; admin kod girişi admin oturumuna bağlıdır. Outbox tablosu ile worker RPC'leri `PUBLIC`, `anon` ve `authenticated` rollerine kapalı, `service_role` erişimine açıktır.
+* **Operasyon Kaydı:** Kurulum sırası, ortam değişkenleri, canlıya çıkış kapıları ve arıza yönetimi `docs/ECLUB_CEK_OPERASYON_REHBERI.md`; ertelenen gerçek dış servis testi `docs/ECLUB_CANLI_DOGRULAMA_TAKIBI.md` içinde tutulur.
 
-**Doğrulama kaydı — 3 Eylül 2026:** E-Club unvan, üyelik, çoklu UTT, öneri, tüketim, lig, rapor, Store ve ortak öğrenme aracı sözleşmelerine yönelik seçili otomatik testlerin **38 / 38'i başarılıdır**.
+**Doğrulama kaydı — 28 Eylül 2026:** Ana eczacı → UTT → BM → TM → admin → e-posta/push/uygulama içi bildirim zinciri, çekli–çeksiz puan ayrımı, eczane aidiyeti, rol güvenliği ve fiziksel Store'un kapatılması dâhil tam E-Club otomatik regresyon paketi hatasız geçmiştir. Gerçek Resend/web push teslimatı canlıya çıkış öncesi operasyon kapısıdır; bu doğrulama veritabanına bağlanmadan yapılmıştır.
 
 ### 3. Aşama: Depo Şema ve DDL Kaydı
 Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json` içindeki **31 Ağustos 2026 tarihli depo şema anlık görüntüsü** ile kaynak SQL sözleşmelerini ifade eder.
 
 * **Eczane ve Üyelik Tabloları:** `eclub_eczane_master`, `eclub_eczaneler`, `eclub_eczane_firma`, `eclub_utt_eczane`, `eclub_kisiler`, `eclub_kisi_eczane`, `eclub_takim_adlari`.
 * **Öneri, Tüketim ve Puan Tabloları:** `eclub_oneri_kayitlari`, `eclub_izleme_kayitlari`, `eclub_kazanilan_puanlar`, `eclub_ileri_sarma_kayitlari`, `eclub_dogru_cevap_kayitlari`, `eclub_yanlis_cevap_kayitlari`, `eclub_oneri_kayip_kayitlari`, `eclub_utt_puanlari`.
-* **E-Club Store Tabloları:** `eclub_store_urunler`, `eclub_store_urun_firma_ayarlari`, `eclub_store_siparisler`, `eclub_store_siparis_firma_puan`, `eclub_store_adresler`.
-* **Çekirdek RPC'ler:** `eclub_utt_eczaneye_bagla`, `eclub_utt_eczaneden_cikar`, `eclub_oneri_atomik_kaydet`, `eclub_izleme_tamamla`, `eclub_cevaplari_kaydet`, `eclub_ileri_sarma_kaydet`, `get_eclub_utt_rapor`, dönemsel `get_eclub_ligi_*` ailesi, `get_eclub_store_firma_bakiye`, `eclub_store_siparis_olustur`, `eclub_store_siparis_iptal`, `eclub_store_teslim_aldim`.
+* **Hediye Çeki Tabloları:** `eclub_store_cek_talepleri`, `eclub_store_puan_devirleri`, `eclub_cek_teslimat_outbox`, `eclub_bildirimler`. Tarihî fiziksel Store tabloları veri kaybı yaratmamak için şemada korunabilir; yeni yazma ve kullanıcı işlemi üretmez.
+* **Çekirdek RPC'ler:** `eclub_utt_eczaneye_bagla`, `eclub_utt_eczaneden_cikar`, `eclub_oneri_atomik_kaydet`, `eclub_izleme_tamamla`, `eclub_cevaplari_kaydet`, `eclub_ileri_sarma_kaydet`, `get_eclub_utt_rapor`, dönemsel `get_eclub_ligi_*` ailesi, `get_eclub_eczane_store_ozet`, `eclub_store_cek_talebi_olustur`, `eclub_store_bm_onayina_gonder`, `eclub_store_bm_onayla`, `eclub_store_tm_onayla`, `eclub_store_admin_kod_teslim`, `eclub_store_cek_talebi_iptal`, `eclub_cek_eposta_isi_al`, `eclub_cek_push_isi_al`, `eclub_cek_teslimat_tamamla`, `eclub_cek_teslimat_hata`.
 
 ---
 
@@ -912,25 +921,25 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | `/eclub/siparisler` rotasında E-Club kapsamındaki siparişler arayüzünü sunan Next.js sayfa bileşenidir. |
+| `page.tsx` | UI / React | UTT, BM, TM, üretici ve yönetici rollerinin kendi kapsamlarındaki çek taleplerini, onay zincirini ve e-posta/push teslimatını tek tabloda izlediği; UTT/BM/TM'nin yetkili aşamada toplu işlem yaptığı sayfadır. |
 
 ### 📁 app/(panel)/eclub/siparisler/api/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | API / Route Handler | `/eclub/siparisler/api` uç noktasında GET isteklerini işler; E-Club için E-Club siparişler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+| `route.ts` | API / Route Handler | `/eclub/siparisler/api` uç noktasında GET ve POST isteklerini işler; rolün firma–takım–bölge kapsamını uygular, çek ve outbox durumlarını döndürür, UTT → BM → TM onay geçişlerini doğrular. |
 
 ### 📁 app/(panel)/eclub/store/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | Eczacı ve teknisyenlerin biriken puanlarıyla ürün siparişi verdiği çok-firmalı E-Club mağazası. |
+| `page.tsx` | UI / React | Eczanenin Çekli Puan bakiyesini ve uygun Migros hediye çeki hakkını gösterir; talep oluşturma eylemini yalnız aktif ana eczacıya açar. |
 
 ### 📁 app/(panel)/eclub/store/_hooks/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `useEclubStore.ts` | TypeScript / Lib | use E-Club Store hook'u, E-Club Store ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useEclubStore.ts` | TypeScript / Lib | Hediye çeki ekranının özet ve talep verisini yükler; talep uygunluğu ve yenileme durumunu yönetir. |
 
 ### 📁 app/(panel)/eclub/store/adreslerim/
 
