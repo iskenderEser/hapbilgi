@@ -53,6 +53,7 @@ export type CekTalepDurumu =
   | "bm_onayinda"
   | "tm_onayinda"
   | "onaylandi"
+  | "teslimat_bekliyor"
   | "cek_kodlari_gonderildi"
   | "iptal";
 
@@ -91,6 +92,8 @@ export interface EclubStoreCekTalebiSatiri {
   tm_id?: string | null;
   tm_adi?: string | null;
   tm_onay_tarihi?: string | null;
+  eposta_teslimat_durumu?: string | null;
+  push_teslimat_durumu?: string | null;
   cek_kodu?: string | null;
   cek_gonderim_tarihi?: string | null;
   devreden_puan?: number;

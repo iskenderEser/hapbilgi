@@ -96,6 +96,16 @@ function DurumRozeti({ durum }: { durum: EclubSiparisDurum }) {
   );
 }
 
+function TeslimatDurumu({ durum }: { durum?: string | null }) {
+  const etiketler: Record<string, string> = {
+    bekliyor: "Bekliyor",
+    isleniyor: "İşleniyor",
+    tamamlandi: "Tamamlandı",
+    basarisiz: "Başarısız",
+  };
+  return <span className="whitespace-nowrap text-[10px] font-bold text-[#60758d]">{durum ? etiketler[durum] ?? durum : "—"}</span>;
+}
+
 function Urun({ siparis }: { siparis: EclubEkipSiparisSatiri }) {
   const isCek = Boolean(siparis.talep_id) || Boolean(siparis.talep_edilen_cek_tl);
   return (
@@ -311,6 +321,8 @@ function SiparisListesi({
                   <th className={`${th} text-right`}>Kullanılan Puan</th>
                   <th className={`${th} text-right`}>Çek Tutarı (TL)</th>
                   <th className={th}>Durum</th>
+                  <th className={th}>E-posta</th>
+                  <th className={th}>Push</th>
                   <th className={th}>Çek Kodu / Kargo</th>
                 </tr>
               </thead>
@@ -349,6 +361,8 @@ function SiparisListesi({
                         {siparis.talep_edilen_cek_tl ? `${siparis.talep_edilen_cek_tl.toLocaleString("tr-TR")} TL` : "—"}
                       </td>
                       <td className={td}><DurumRozeti durum={siparis.durum} /></td>
+                      <td className={td}><TeslimatDurumu durum={siparis.eposta_teslimat_durumu} /></td>
+                      <td className={td}><TeslimatDurumu durum={siparis.push_teslimat_durumu} /></td>
                       <td className={`${td} min-w-[150px]`}>
                         {siparis.durum === "cek_kodlari_gonderildi" && siparis.cek_kodu ? (
                           <div className="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1">

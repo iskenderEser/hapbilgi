@@ -34,6 +34,7 @@ const DURUM_ETIKET: Record<string, { ad: string; renk: string; bg: string; ikon:
   bm_onayinda: { ad: "BM Onayı Bekleniyor", renk: "#1e40af", bg: "#eff6ff", ikon: Clock3 },
   tm_onayinda: { ad: "TM Son Onayı Bekleniyor", renk: "#6d28d9", bg: "#f5f3ff", ikon: Clock3 },
   onaylandi: { ad: "TM Onayladı — Çek Kodu Bekleniyor", renk: "#065f46", bg: "#ecfdf5", ikon: CheckCircle2 },
+  teslimat_bekliyor: { ad: "Çek Teslimatı Hazırlanıyor", renk: "#0f766e", bg: "#f0fdfa", ikon: Clock3 },
   iptal: { ad: "İptal", renk: "#bc4b4b", bg: "#fff0f0", ikon: XCircle },
   cek_kodlari_gonderildi: { ad: "Çek Kodu Gönderildi", renk: "#15803d", bg: "#f0fdf4", ikon: CheckCircle2 },
 };
@@ -77,7 +78,7 @@ export default function EclubSiparislerimPage() {
 
   const ozet = useMemo(() => ({
     toplam: talepler.length,
-    onayda: talepler.filter((talep) => ["beklemede", "bm_onayinda", "tm_onayinda", "onaylandi"].includes(talep.durum)).length,
+    onayda: talepler.filter((talep) => ["beklemede", "bm_onayinda", "tm_onayinda", "onaylandi", "teslimat_bekliyor"].includes(talep.durum)).length,
     teslim: talepler.filter((talep) => talep.durum === "cek_kodlari_gonderildi").length,
     iptal: talepler.filter((talep) => talep.durum === "iptal").length,
   }), [talepler]);

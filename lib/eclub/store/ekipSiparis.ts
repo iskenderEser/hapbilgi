@@ -7,6 +7,7 @@ export const ECLUB_SIPARIS_DURUMLARI = [
   "bm_onayinda",
   "tm_onayinda",
   "onaylandi",
+  "teslimat_bekliyor",
   "cek_kodlari_gonderildi",
 ] as const;
 
@@ -17,6 +18,7 @@ export const ECLUB_SIPARIS_DURUM_ETIKETLERI: Record<EclubSiparisDurum, string> =
   bm_onayinda: "BM Onayında",
   tm_onayinda: "TM Onayında",
   onaylandi: "TM Onayladı / Kod Bekliyor",
+  teslimat_bekliyor: "Teslimat Kuyruğunda",
   hazirlaniyor: "Hazırlanıyor",
   kargoda: "Kargoda",
   teslim_edildi: "Teslim Edildi",
@@ -32,6 +34,7 @@ export const ECLUB_SIPARIS_DURUM_RENKLERI: Record<
   bm_onayinda: { metin: "#1e40af", arka: "#eff6ff", kenar: "#bfdbfe" },
   tm_onayinda: { metin: "#6d28d9", arka: "#f5f3ff", kenar: "#ddd6fe" },
   onaylandi: { metin: "#065f46", arka: "#ecfdf5", kenar: "#a7f3d0" },
+  teslimat_bekliyor: { metin: "#0f766e", arka: "#f0fdfa", kenar: "#99f6e4" },
   hazirlaniyor: { metin: "#6d28d9", arka: "#f5f3ff", kenar: "#ddd6fe" },
   kargoda: { metin: "#1d4ed8", arka: "#e6f1fb", kenar: "#bfdbfe" },
   teslim_edildi: { metin: "#16865f", arka: "#effaf5", kenar: "#bbf7d0" },
@@ -86,6 +89,8 @@ export interface EclubEkipSiparisSatiri {
   created_at: string;
   guncellenme_at: string | null;
   teslim_alma_at: string | null;
+  eposta_teslimat_durumu?: string | null;
+  push_teslimat_durumu?: string | null;
 }
 
 export interface EclubSiparisKapsamEczane {

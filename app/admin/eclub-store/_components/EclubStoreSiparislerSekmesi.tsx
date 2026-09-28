@@ -16,6 +16,7 @@ interface Props {
 
 const DURUM_ETIKET: Record<string, { ad: string; renk: string; bg: string }> = {
   onaylandi: { ad: "TM Onayladı (Kod Bekliyor)", renk: "#065f46", bg: "#ecfdf5" },
+  teslimat_bekliyor: { ad: "Teslimat Kuyruğunda", renk: "#0f766e", bg: "#f0fdfa" },
   iptal: { ad: "İptal", renk: "#bc2d0d", bg: "#fee2e2" },
   cek_kodlari_gonderildi: { ad: "Çek Kodu Gönderildi", renk: "#15803d", bg: "#dcfce7" },
 };
@@ -23,6 +24,7 @@ const DURUM_ETIKET: Record<string, { ad: string; renk: string; bg: string }> = {
 const CEK_FILTRELER = [
   { id: "", ad: "Tümü" },
   { id: "onaylandi", ad: "Kod Bekleyen" },
+  { id: "teslimat_bekliyor", ad: "Teslimat Kuyruğu" },
   { id: "cek_kodlari_gonderildi", ad: "Kod Gönderildi" },
 ];
 

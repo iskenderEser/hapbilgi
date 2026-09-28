@@ -51,7 +51,7 @@ test("firma API ve tablo ekranı TM rolüne yalnız kendi son onay aksiyonunu ve
 });
 
 test("Admin yalnız TM onayından geçen talepleri görür ve işler", () => {
-  assert.match(adminApi, /ADMIN_ISLEM_DURUMLARI = \["onaylandi", "cek_kodlari_gonderildi"\]/);
+  assert.match(adminApi, /ADMIN_ISLEM_DURUMLARI = \["onaylandi", "teslimat_bekliyor", "cek_kodlari_gonderildi"\]/);
   assert.match(adminApi, /query = query\.in\("durum", ADMIN_ISLEM_DURUMLARI\)/);
   assert.match(adminApi, /tm_id, tm_onay_tarihi/);
 });

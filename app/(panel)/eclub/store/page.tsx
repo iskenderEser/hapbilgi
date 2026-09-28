@@ -293,6 +293,10 @@ export default function EclubStorePage() {
                               Tutar: {item.cek_tutari_tl ?? bazCek} TL
                             </span>
                           </div>
+                        ) : item.talep_durumu === "teslimat_bekliyor" ? (
+                          <span className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800">
+                            📤 Çek Teslimatı Hazırlanıyor
+                          </span>
                         ) : item.talep_durumu === "onaylandi" ? (
                           <span className="rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-800">
                             ⏳ TM Onayladı — Kod Bekleniyor

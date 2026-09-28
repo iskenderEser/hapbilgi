@@ -86,6 +86,28 @@ async function cekTalepleriniGetir(
     throw new Error(`eclub_store_cek_talepleri SELECT: ${error.message}`);
   }
 
+  const talepIdler = (talepler ?? []).map((talep: any) => talep.talep_id as string);
+  const teslimatHaritasi = new Map<string, string[]>();
+  if (talepIdler.length > 0) {
+    const { data: teslimatlar, error: teslimatError } = await supabase
+      .from("eclub_cek_teslimat_outbox")
+      .select("talep_id, kanal, durum")
+      .in("talep_id", talepIdler);
+    if (teslimatError) throw new Error(`eclub_cek_teslimat_outbox SELECT: ${teslimatError.message}`);
+    for (const teslimat of teslimatlar ?? []) {
+      const anahtar = `${teslimat.talep_id}:${teslimat.kanal}`;
+      teslimatHaritasi.set(anahtar, [...(teslimatHaritasi.get(anahtar) ?? []), teslimat.durum]);
+    }
+  }
+  const teslimatDurumu = (talepId: string, kanal: "eposta" | "push") => {
+    const durumlar = teslimatHaritasi.get(`${talepId}:${kanal}`) ?? [];
+    if (durumlar.length === 0) return null;
+    if (durumlar.includes("basarisiz")) return "basarisiz";
+    if (durumlar.includes("isleniyor")) return "isleniyor";
+    if (durumlar.includes("bekliyor")) return "bekliyor";
+    return "tamamlandi";
+  };
+
   const uttMap = new Map(kapsam.uttler.map((u) => [u.utt_id, u]));
   const urunIdler = [...new Set((talepler ?? []).map((t: any) => {
     const kunye = Array.isArray(t.v_yayin_kunye) ? t.v_yayin_kunye[0] : t.v_yayin_kunye;
@@ -155,6 +177,8 @@ async function cekTalepleriniGetir(
       created_at: t.created_at,
       guncellenme_at: t.guncellenme_at,
       teslim_alma_at: t.cek_gonderim_tarihi,
+      eposta_teslimat_durumu: teslimatDurumu(t.talep_id, "eposta"),
+      push_teslimat_durumu: teslimatDurumu(t.talep_id, "push"),
       utt_id: utt?.utt_id ?? t.utt_id,
       utt_adi: utt?.utt_adi ?? "—",
       bm_adi: utt?.bm_adi ?? "—",
@@ -168,7 +192,7 @@ async function cekTalepleriniGetir(
 function siparisOzetiniHesapla(siparisler: EclubEkipSiparisSatiri[]): EclubSiparisOzet {
   return siparisler.reduce<EclubSiparisOzet>((ozet, siparis) => {
     ozet.toplam += 1;
-    if (["beklemede", "hazirlaniyor", "bm_onayinda", "tm_onayinda"].includes(siparis.durum)) {
+    if (["beklemede", "hazirlaniyor", "bm_onayinda", "tm_onayinda", "teslimat_bekliyor"].includes(siparis.durum)) {
       ozet.islemde += 1;
     }
     if (siparis.durum === "kargoda") ozet.kargoda += 1;

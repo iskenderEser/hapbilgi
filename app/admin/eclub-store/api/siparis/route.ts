@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import { hataYaniti, isKuraluHatasi, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { eclubCekEpostaKuyrugunuTuket } from "@/lib/eclub/store/cekEpostaKuyrukIsleyici";
-
-const ADMIN_ISLEM_DURUMLARI = ["onaylandi", "cek_kodlari_gonderildi"];
+const ADMIN_ISLEM_DURUMLARI = ["onaylandi", "teslimat_bekliyor", "cek_kodlari_gonderildi"];
 
 export async function GET(request: NextRequest) {
   try {
@@ -92,8 +90,7 @@ export async function PATCH(request: NextRequest) {
       if (error) return hataYaniti("Çek kodu kaydedilemedi.", "eclub_store_admin_kod_teslim RPC", error);
       const sonuc = Array.isArray(data) ? data[0] : data;
       if (!sonuc?.ok) return isKuraluHatasi(sonuc?.hata ?? "Çek kodu kaydedilemedi.");
-      await eclubCekEpostaKuyrugunuTuket(1).catch(() => undefined);
-      return NextResponse.json({ mesaj: "Çek kodu kaydedildi ve teslimat kuyruğuna alındı." });
+      return NextResponse.json({ mesaj: "Çek kodu kaydedildi; e-posta ve push teslimat kuyruğuna alındı." });
     }
 
     if (body.action === "iptal") {
