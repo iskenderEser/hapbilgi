@@ -29,7 +29,7 @@ test("mutlu: yetkili personel kararı aynı firma kapsamındaki UTT mutabakatın
   assert.match(siparisRozeti, /\.eq\("eczane_id", eden\.eczaneId!\)[\s\S]*\.eq\("durum", "bekliyor"\)/);
   assert.match(siparisRozeti, /eczanem_siparis_bekleyen/);
   assert.match(panelNav, /Sipariş Onayı[\s\S]*badgeKey: "eczanem_siparis_bekleyen"/);
-  assert.match(panelLayout, /isEclubKisi \? "\/eczanem\/eczane\/api\/rozet" : "\/bildirimler\/api"/);
+  assert.match(panelLayout, /isEclubKisi[\s\S]*?\["\/bildirimler\/api", "\/eczanem\/eczane\/api\/rozet"\]/);
   assert.match(siparisKuyrugu, /bildirimRozetleriniYenile\(\)/);
 });
 

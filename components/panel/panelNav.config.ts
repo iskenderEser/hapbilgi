@@ -227,7 +227,7 @@ export function eclubKisiNavOlustur(firmalar: Array<{ firma_id: string; firma_ad
     baslik: "E-Club Hediye Çeki",
     oglar: [
       { etiket: "Hediye Çeki", path: "/eclub/store", tamEslesme: true, gate: (c) => c.eclubAcik && c.eclubStoreAcik },
-      { etiket: "Çek Taleplerim", path: "/eclub/store/siparislerim", gate: (c) => c.eclubAcik && c.eclubStoreAcik },
+      { etiket: "Çek Taleplerim", path: "/eclub/store/siparislerim", badgeKey: "cek", gate: (c) => c.eclubAcik && c.eclubStoreAcik },
     ],
   },
   {

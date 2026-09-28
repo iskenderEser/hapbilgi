@@ -22,7 +22,7 @@ import SolListe from "@/components/panel/SolListe";
 import MobilDrawer from "@/components/panel/MobilDrawer";
 import { PANEL_NAV, eclubKisiNavOlustur, type NavContext } from "@/components/panel/panelNav.config";
 import { HBSTORE_BAKIYE_DEGISTI } from "@/lib/tclub/store/olay";
-import { BILDIRIM_ROZETLERI_DEGISTI } from "@/lib/bildirimler/rozet";
+import { BILDIRIM_ROZETLERI_DEGISTI, bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import { HapbiProvider } from "@/components/hapbi/HapbiProvider";
 import HapbiMaskot from "@/components/hapbi/HapbiMaskot";
 import HapbiChatModal from "@/components/hapbi/HapbiChatModal";
@@ -149,18 +149,27 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   }, [profilVeOzetiCek]);
 
   // Rozet çekimi (B) — bir kez burada; SolListe + MobilDrawer'a dağıtılır.
-  // E-Club kişisinde genel üretim bildirimleri yerine yalnız aktif eczanenin
-  // bekleyen indirim talepleri okunur; açık oturum 30 saniyede bir tazelenir.
+  // E-Club kişisinde uygulama bildirimleri ile eczane operasyon rozetleri
+  // birleştirilir; açık oturum 30 saniyede bir tazelenir.
   useEffect(() => {
     if (!rolKucu) return;
     const badgelariCek = async () => {
       try {
-        const adres = isEclubKisi ? "/eczanem/eczane/api/rozet" : "/bildirimler/api";
-        const res = await fetch(adres, { cache: "no-store" });
-        if (res.ok) {
+        const adresler = isEclubKisi
+          ? ["/bildirimler/api", "/eczanem/eczane/api/rozet"]
+          : ["/bildirimler/api"];
+        const yanitlar = await Promise.allSettled(adresler.map((adres) => fetch(adres, { cache: "no-store" })));
+        const birlesikSayilar: Record<string, number> = {};
+        let basariliYanitVar = false;
+        for (const sonuc of yanitlar) {
+          if (sonuc.status !== "fulfilled") continue;
+          const res = sonuc.value;
+          if (!res.ok) continue;
           const data = await res.json();
-          setBadge(data.sayilar ?? {});
+          Object.assign(birlesikSayilar, data.sayilar ?? {});
+          basariliYanitVar = true;
         }
+        if (basariliYanitVar) setBadge(birlesikSayilar);
       } catch {}
     };
     badgelariCek();
@@ -169,7 +178,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     };
     const zamanlayici = isEclubKisi
       ? window.setInterval(() => {
-          if (document.visibilityState === "visible") badgelariCek();
+          if (document.visibilityState === "visible") bildirimRozetleriniYenile();
         }, 30000)
       : null;
     window.addEventListener(BILDIRIM_ROZETLERI_DEGISTI, badgelariCek);

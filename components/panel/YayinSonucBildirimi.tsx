@@ -23,6 +23,12 @@ export default function YayinSonucBildirimi() {
       const bildirimler = (data.bildirimler ?? []) as BildirimSatiri[];
 
       for (const b of bildirimler) {
+        if (b.kayit_turu === "cek") {
+          if (islenenBildirimler.current.has(b.bildirim_id)) continue;
+          islenenBildirimler.current.add(b.bildirim_id);
+          basari(b.mesaj);
+          continue;
+        }
         if (b.kayit_turu !== "yayin") continue;
         if (islenenBildirimler.current.has(b.bildirim_id)) continue;
 

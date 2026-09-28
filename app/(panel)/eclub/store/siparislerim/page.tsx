@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, CheckCircle2, Clock3, Copy, Gift, Store, XCircle } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import {
   EclubKisiBaslik,
   EclubKisiBosDurum,
@@ -76,6 +77,17 @@ export default function EclubSiparislerimPage() {
     void talepleriCek();
   }, [kullanici, authYukleniyor, eclubKisi, router, talepleriCek]);
 
+  useEffect(() => {
+    if (authYukleniyor || !eclubKisi) return;
+    void fetch("/bildirimler/api", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kayit_turu: "cek" }),
+    }).then((yanit) => {
+      if (yanit.ok) bildirimRozetleriniYenile();
+    }).catch(() => {});
+  }, [authYukleniyor, eclubKisi]);
+
   const ozet = useMemo(() => ({
     toplam: talepler.length,
     onayda: talepler.filter((talep) => ["beklemede", "bm_onayinda", "tm_onayinda", "onaylandi", "teslimat_bekliyor"].includes(talep.durum)).length,
@@ -145,7 +157,7 @@ export default function EclubSiparislerimPage() {
                       <div className="rounded-xl bg-[#f5f8fb] px-3 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Çek Tutarı</small><strong className="text-xs text-emerald-700">{talep.talep_edilen_cek_tl.toLocaleString("tr-TR")} TL</strong></div>
                       <div className="col-span-2 rounded-xl bg-[#f5f8fb] px-3 py-2 sm:col-span-1"><small className="block text-[9px] font-bold text-[#8190a3]">Satış Şartı</small><strong className="text-xs text-[#40556d]">{talep.siparis_verildi_mi ? `${talep.siparis_adet} adet + ${talep.siparis_mal_fazlasi} MF` : "Siparişsiz"}</strong></div>
                     </div>
-                    {talep.durum === "cek_kodlari_gonderildi" && talep.cek_kodu && (
+                    {["teslimat_bekliyor", "cek_kodlari_gonderildi"].includes(talep.durum) && talep.cek_kodu && (
                       <div className="mt-2.5 rounded-xl border border-emerald-300 bg-emerald-50 p-3">
                         <span className="text-[11px] font-extrabold text-emerald-800">Migros Hediye Çeki Kodunuz</span>
                         <div className="mt-1.5 flex items-center justify-between gap-2">
