@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, CheckCircle2, Edit3, LoaderCircle, Plus, Search, Sparkles, Trophy, Users, UserCheck } from "lucide-react";
+import { Building2, CheckCircle2, Edit3, LoaderCircle, Plus, Search, Trophy, Users, UserCheck } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { Badge } from "@/components/ui/badge";
@@ -164,11 +164,8 @@ export default function EclubEczanelerimPage() {
       <div className="mx-auto flex max-w-[1480px] flex-col gap-4 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#3589d8]">
-              <Sparkles className="size-3.5" /> E‑Club Takım Oluşturma ve Yönetim
-            </div>
             <div className="inline-flex items-center">
-              <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">E-Club Takımım</h1>
+              <h1 className="text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">E-Club Takımım</h1>
               <SayfaRehberi anahtar="eclub-eczanelerim" className="ml-1.5 -translate-y-1.5" />
             </div>
             

@@ -138,15 +138,15 @@ export const PANEL_NAV: NavGrup[] = [
     oglar: [
       { etiket: "E-Club Takımım",    path: "/eclub/eczanelerim",  gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
       {
-        etiket: "Video Yönetimi",
+        etiket: "E-Club Yayınları",
         badgeKey: "eclub_gonderilecek",
         gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu),
         altOglar: [
-          { etiket: "Gönderilecek Videolar", path: "/eclub/videolarim", badgeKey: "eclub_gonderilecek", gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
-          { etiket: "Gönderilen Videolar",   path: "/eclub/gonderilen-videolar", gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+          { etiket: "Gönderilecek Yayınlar", path: "/eclub/videolarim", badgeKey: "eclub_gonderilecek", gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+          { etiket: "Gönderilen Yayınlar",   path: "/eclub/gonderilen-videolar", gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
         ],
       },
-      { etiket: "E-Club Takım Raporlarım", path: "/eclub/raporlar", gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
+      { etiket: "E-Club Raporları", path: "/eclub/raporlar", gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
       { etiket: "E-Club Ligi",       path: "/eclub/ligi",         gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
     ],
   },

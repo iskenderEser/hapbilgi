@@ -91,9 +91,8 @@ export default function EclubVideolarimPage() {
       <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">E‑Club öğrenme içeriği gönderimi</p>
             <div className="inline-flex items-center">
-              <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Gönderilecek Öğrenme İçerikleri</h1>
+              <h1 className="text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Gönderilecek Yayınlar</h1>
               <SayfaRehberi anahtar="eclub-videolarim" className="ml-1.5 -translate-y-1.5" />
             </div>
             <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Hedef kitleye uygun öğrenme içeriğini seçin ve eczane çalışanlarınıza gönderin.</p>

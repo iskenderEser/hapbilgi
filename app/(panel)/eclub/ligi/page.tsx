@@ -237,7 +237,7 @@ export default function EclubLigiPage() {
         <header className={styles.header}>
           <div>
             <div className="inline-flex items-center">
-              <h1 className="m-0 text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">E‑Club Ligi</h1>
+              <h1 className="m-0 text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">E-Club Ligi</h1>
               <SayfaRehberi anahtar="eclub-ligi" className="ml-1.5 -translate-y-1" />
             </div>
             <p className="mt-1 text-xs font-semibold text-[#78889d]">

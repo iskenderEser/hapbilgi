@@ -1,15 +1,12 @@
 "use client";
 
 import { Fragment, useCallback, useState } from "react";
-import Link from "next/link";
 import {
-  ArrowLeft,
   BookOpenCheck,
   ChevronDown,
   CircleCheckBig,
   CircleHelp,
   Send,
-  Sparkles,
   Store,
   Users,
 } from "lucide-react";
@@ -116,7 +113,7 @@ export default function EclubRaporlarPage() {
           <header className={styles.header}>
             <div>
               <h1 className="inline-flex flex-wrap items-center text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
-                <span>E-Club Takımları Raporları</span>
+                <span>E-Club Raporları</span>
                 <SayfaRehberi anahtar="eclub-takim-raporlar" className="ml-1.5 -translate-y-1.5" />
               </h1>
               <p className="mt-0.5 text-xs font-semibold text-[#78889d]">Eclub&apos;da var olan takımların detaylı performansını inceleyebilirsiniz.</p>
@@ -147,21 +144,10 @@ export default function EclubRaporlarPage() {
   return (
     <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className={styles.container}>
-        {data.kapsam.gorunum === "utt" && (
-          <Link href="/eclub/videolarim" className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#7890aa] hover:text-[#237ac8]">
-            <ArrowLeft className="h-3.5 w-3.5" /> Videolarım
-          </Link>
-        )}
-
         <header className={styles.header}>
           <div>
-            {data.kapsam.gorunum === "utt" && (
-              <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
-                <Sparkles className="h-3.5 w-3.5" /> E-Club Takım Performans Karnesi
-              </div>
-            )}
             <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d] inline-flex items-center flex-wrap">
-              <span>E-Club Takımları Raporları</span>
+              <span>E-Club Raporları</span>
               <SayfaRehberi anahtar="eclub-takim-raporlar" className="ml-1.5 -translate-y-1.5" />
             </h1>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">Eclub&apos;da var olan takımların detaylı performansını inceleyebilirsiniz.</p>

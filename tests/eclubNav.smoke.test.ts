@@ -19,8 +19,8 @@ test("UTT E-Club altında kararlaştırılan yönetim alanlarını doğru sırad
     eclub.oglar.filter((oge) => oge.gate(uttBaglami)).map((oge) => [oge.etiket, oge.path]),
     [
       ["E-Club Takımım", "/eclub/eczanelerim"],
-      ["Video Yönetimi", undefined],
-      ["E-Club Takım Raporlarım", "/eclub/raporlar"],
+      ["E-Club Yayınları", undefined],
+      ["E-Club Raporları", "/eclub/raporlar"],
       ["E-Club Ligi", "/eclub/ligi"],
     ],
   );
@@ -34,7 +34,7 @@ test("BM, TM, üretici ve yönetici E-Club yönetim sayfalarını görür; video
   for (const rolKucu of ["bm", "tm", "pm", "gm"]) {
     assert.deepEqual(
       eclub.oglar.filter((oge) => oge.gate({ ...uttBaglami, rolKucu })).map((oge) => oge.etiket),
-      ["E-Club Takım Raporlarım", "E-Club Ligi"],
+      ["E-Club Raporları", "E-Club Ligi"],
     );
   }
   assert.equal(tclub.oglar.some((oge) => oge.etiket === "E-Club Ligi"), false);
@@ -61,10 +61,10 @@ test("eclub_kisi (eczacı/teknisyen) grupları ve sekmeleri eksiksiz görür", a
   assert.equal(nav[0].oglar[0].etiket, "Firmaların Videoları");
   assert.equal(nav[0].oglar[0].altOglar?.length, 2);
 
-  assert.equal(nav[1].baslik, "E-Club Store");
+  assert.equal(nav[1].baslik, "E-Club Hediye Çeki");
   assert.deepEqual(
     nav[1].oglar.filter((o) => o.gate(baglam)).map((o) => o.etiket),
-    ["Mağazam", "Siparişlerim", "Adreslerim"]
+    ["Hediye Çeki", "Çek Taleplerim"]
   );
 
   assert.equal(nav[2].baslik, "Eczanem");

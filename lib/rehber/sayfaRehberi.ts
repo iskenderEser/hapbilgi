@@ -296,14 +296,14 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   "eclub-eczanelerim": {
     anahtar: "eclub-eczanelerim",
     baslik: "E-Club Takımım",
-    ozet: "Sorumluluk alanınızdaki eczaneleri sisteme bağlamanızı, eczacı ve teknisyen kadrosunu yöneterek video öneri ağı oluşturmanızı sağlar.",
+    ozet: "E-Club Takımım, ürün tanıtım temsilcisinin sorumlu olduğu eczanelerde görev yapan eczacı ve eczane teknisyenlerini bir araya getirdiği ve öğrenme süreçlerini yönettiği takımdır.",
     maddeler: [],
   },
 
   // ─── 16. E-CLUB GÖNDERİLECEK VİDEOLAR ─────────────────────────────────────
   "eclub-videolarim": {
     anahtar: "eclub-videolarim",
-    baslik: "Gönderilecek Videolar",
+    baslik: "Gönderilecek Yayınlar",
     ozet: "Eczacı ve eczane teknisyenlerine gönderebileceğiniz güncel eğitim videoları havuzunu incelemenizi ve hızlıca video önermenizi sağlar.",
     maddeler: [],
   },
@@ -311,7 +311,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   // ─── 17. E-CLUB GÖNDERİLEN VİDEOLAR ───────────────────────────────────────
   "eclub-gonderilen-videolar": {
     anahtar: "eclub-gonderilen-videolar",
-    baslik: "Gönderilen Videolar",
+    baslik: "Gönderilen Yayınlar",
     ozet: "Eczanelere yaptığınız video önerilerinin izlenme ve soru tamamlama durumlarını kişi bazında anlık olarak takip etmenizi sağlar.",
     maddeler: [],
   },
