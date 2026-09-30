@@ -7,8 +7,7 @@ const oku = (yol: string) => readFileSync(yol, "utf8");
 const ortak = oku("components/ui/yenile-butonu.tsx");
 const sayfalar = [
   oku("app/(panel)/eczanem/utt/page.tsx"),
-  oku("app/(panel)/eclub/videolarim/page.tsx"),
-  oku("app/(panel)/eclub/gonderilen-videolar/page.tsx"),
+  oku("app/(panel)/eclub/yayinlar/page.tsx"),
   oku("app/(panel)/eclub/eczanelerim/page.tsx"),
   oku("app/(panel)/eclub/cek-onay-takip/page.tsx"),
   oku("app/(panel)/eczanem/eczane/dagitim/page.tsx"),
@@ -32,5 +31,4 @@ test("red: manuel yenileme tarayıcıyı yeniden yüklemez ve yarışan döküm 
   const tumKaynak = [ortak, ...sayfalar].join("\n");
   assert.doesNotMatch(tumKaynak, /window\.location\.reload|location\.reload|router\.refresh/);
   assert.match(oku("app/(panel)/eczanem/utt/_components/UttEczanemDokum.tsx"), /istekRef\.current\?\.abort\(\)/);
-  assert.match(oku("app/(panel)/eclub/gonderilen-videolar/page.tsx"), /istekRef\.current\?\.abort\(\)/);
 });

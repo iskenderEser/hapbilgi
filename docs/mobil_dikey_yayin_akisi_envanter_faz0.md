@@ -60,25 +60,23 @@ Sistemde yayın bilgisi taşıdığı halde **yayın kataloğu olmayan**, operas
 1. **Yayın Yönetimi — Onay ve Durdurulan İşlem Satırları (`/yayin-yonetimi`):**
    - *Bileşenler:* `BekleyenSatir.tsx` (Yayına Hazır İçerikler sekmesi), `YayinSatir.tsx` (`kartGorunumu={false}`, Durdurulan Yayınlar sekmesi).
    - *Gerekçe:* Buradaki öğeler kart değil, yayın onaylama, puan/barem atama, tekrar periyodu belirleme ve yayından kaldırma işlemlerinin yapıldığı genişletilebilir işlem satırlarıdır. (Aktif Yayınlar sekmesindeki kart listesi ise madde 12 olarak kapsama alınmıştır).
-2. **E-Club Video Dağıtım / Öneri Gönderim Formu (`/eclub/videolarim`):**
-   - *Bileşenler:* `VideoGonderimSatiri.tsx`, `DagitimIcerikOzeti.tsx`.
-   - *Gerekçe:* Temsilcinin eczane çalışanlarını seçtiği, kota/limit kontrolü yaptığı ve video önerisi yolladığı işlem formudur; kart değil işlem satırıdır.
-3. **E-Club Gönderilen Videolar Geçmişi (`/eclub/gonderilen-videolar`):**
-   - *Gerekçe:* Geçmiş önerilerin hangi tarihte kime iletildiğini ve açılma durumunu gösteren denetim akordiyonudur.
-4. **BM ve TM Öneri Takibi (`/oneriler` - BM ve TM görünümleri):**
+2. **E-Club Yayın Gönderimi ve Geçmişi (`/eclub/yayinlar`):**
+   - *Bileşenler:* `EclubYayinGonderimKarti.tsx`, `EclubGonderimDetayKarti.tsx`.
+   - *Gerekçe:* Temsilci yayınları ve alıcıları seçerek gönderim yapar; Gönderilenler görünümünde aynı kartın detay yüzünden kişi bazlı gönderim geçmişini izler. Eski `/eclub/gonderilen-videolar` rotası bu birleşik sayfaya yönlenir.
+3. **BM ve TM Öneri Takibi (`/oneriler` - BM ve TM görünümleri):**
    - *Bileşenler:* `BmOneriTakibi.tsx`, `TmOneriTakibi.tsx`.
    - *Gerekçe:* Bölgedeki UTT'lerin kendilerine atanan önerileri izleme durumunu denetleyen yönetim ve denetim tablosudur.
-5. **Eczanem Temsilci Dağıtım Yönetimi (`/eczanem/utt`):**
+4. **Eczanem Temsilci Dağıtım Yönetimi (`/eczanem/utt`):**
    - *Bileşenler:* `UttVideoGonderimSatiri.tsx`, `DagitimIcerikOzeti.tsx`.
    - *Gerekçe:* UTT'nin kendi bölgesindeki eczanelere içerik dağıtım eşiklerini, gönderim oranlarını ve hazır eczane durumunu yönettiği katlanabilir dağıtım satırlarıdır.
-6. **Eczanem Eczane Müşteri Dağıtım Paneli (`/eczanem/eczane/dagitim`):**
+5. **Eczanem Eczane Müşteri Dağıtım Paneli (`/eczanem/eczane/dagitim`):**
    - *Bileşenler:* `EczanemVideoGonderimSatiri.tsx`.
    - *Gerekçe:* Eczanenin kendi danışan/müşteri listesine video ataması yaptığı, müşteri arama ve çoklu seçim onay kutuları içeren dağıtım yönetim tablosudur.
-7. **Talep Yönetimi ve Üretim Takibi (`/talepler`, `/yayin-takip`):**
+6. **Talep Yönetimi ve Üretim Takibi (`/talepler`, `/yayin-takip`):**
    - *Gerekçe:* İçerik üretim görev ve onay tablolarıdır.
-8. **Store ve Sipariş Takibi (`/store`, `/eclub/store`):**
+7. **Store ve Sipariş Takibi (`/store`, `/eclub/store`):**
    - *Gerekçe:* Fiziksel ürün sipariş katalogları ve sipariş takip tablolarıdır.
-9. **Raporlar (`/raporlar/...`):**
+8. **Raporlar (`/raporlar/...`):**
    - *Gerekçe:* İstatistiksel izlenme, tamamlama ve puan analiz tablolarıdır.
 
 ---
@@ -117,4 +115,3 @@ Tüm 12 yayın yüzeyi merkezi `MobilYayinAkisi` bileşenine (2+5 kuralı, dikey
 | **10** | `/eclub/panel`, `/eclub/panel/firma/[firma_id]` | E-Club Kişisi | `EclubFirmaVideoKatalogu` (`VideoRafi`) | `EclubVideoKarti` -> `YayinKarti` | ✅ Tamamlandı (Faz 5) | Tek sütun `MobilYayinAkisi` | Yatay kayan raf | `oneri_id` / firma anahtarı |
 | **11** | `/eczanem` | Eczanem Müşterisi | `EczanemVideoRafi` | `YayinKarti` | ✅ Tamamlandı (Faz 5) | Tek sütun `MobilYayinAkisi` | Yatay kayan raf | `${baslik}-${video.gonderim_id}` / kapsam anahtarı |
 | **12** | `/yayin-yonetimi` (Aktif Yayınlar) | Üretici Roller | `YayinYonetimiPage` | `YayinSatir` (`kartGorunumu`) | ✅ Tamamlandı (Faz 5) | Tek sütun `MobilYayinAkisi` | Çok sütunlu ızgara + sayfalama | `yayin_id` / hedef-arama anahtarı |
-

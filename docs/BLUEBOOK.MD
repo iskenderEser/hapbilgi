@@ -187,7 +187,7 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
 * **Eczane, UTT ve Kişi Bağları:** `app/(panel)/eclub/listem/`, `lib/eclub/uttEczane.ts`, `lib/eclub/kisiErisim.ts`, `eclub_utt_eczaneye_bagla`, `eclub_utt_eczaneden_cikar`, `eclub_yeni_kisi_provizyonu`, `eclub_mevcut_kisi_provizyonu`.
-* **Öneri ve Tüketim:** `app/(panel)/eclub/oneriler/`, `app/(panel)/eclub/videolarim/`, `app/(panel)/eclub/panel/`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `lib/eclub/oneriLimit.ts`, `lib/eclub/oneriKapsam.ts`, `lib/eclub/izlemeKurali.ts`, `lib/eclub/aktifYayinYetkisi.ts`.
+* **Öneri ve Tüketim:** `app/(panel)/eclub/oneriler/`, `app/(panel)/eclub/yayinlar/`, `app/(panel)/eclub/panel/`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `lib/eclub/oneriLimit.ts`, `lib/eclub/oneriKapsam.ts`, `lib/eclub/izlemeKurali.ts`, `lib/eclub/aktifYayinYetkisi.ts`.
 * **Lig, Rapor ve Çek Takibi:** `app/(panel)/eclub/ligi/`, `app/(panel)/eclub/raporlar/`, `app/(panel)/eclub/siparisler/`, `lib/eclub/rapor.ts`, `lib/eclub/yonetimKapsami.ts`.
 * **Hediye Çeki:** `app/(panel)/eclub/store/`, `app/admin/eclub-store/`, `lib/eclub/store/`, `scripts/sql/eclub_cek_talebi_ana_eczaci.sql`, `scripts/sql/eclub_store_tm_son_onay.sql`, `scripts/sql/eclub_cek_teslimat_outbox.sql`, `scripts/sql/eclub_cek_eposta_worker.sql`, `scripts/sql/eclub_cek_push_worker.sql`, `scripts/sql/eclub_cek_uygulama_bildirimleri.sql`.
 * **Güvenlik Kapıları:** UTT liste üyeliği, kişi–eczane bağı, firma modül bayrakları, yayın kapsamı, araç kimliği, öneri süresi ve aktif üyelik sunucuda doğrulanır. Çek oluşturma yalnız ana eczacıya; UTT, BM ve TM geçişleri rol, firma ve kayıt kapsamına; admin kod girişi admin oturumuna bağlıdır. Outbox tablosu ile worker RPC'leri `PUBLIC`, `anon` ve `authenticated` rollerine kapalı, `service_role` erişimine açıktır.
@@ -776,7 +776,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | `/eclub/gonderilen-videolar` rotasında E-Club kapsamındaki gonderilen videolar arayüzünü sunan Next.js sayfa bileşenidir. |
+| `page.tsx` | UI / React | Kaldırılan `/eclub/gonderilen-videolar` sayfasına ait eski bağlantıları birleşik `/eclub/yayinlar` sayfasına yönlendirir. |
 
 ### 📁 app/(panel)/eclub/ligi/
 
@@ -997,13 +997,20 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | `/eclub/videolarim` rotasında E-Club kapsamındaki öğrenme yayınları arayüzünü sunan Next.js sayfa bileşenidir. |
+| `page.tsx` | UI / React | Eski `/eclub/videolarim` bağlantılarını `/eclub/yayinlar` sayfasına yönlendirir. |
 
-### 📁 app/(panel)/eclub/videolarim/_components/
+### 📁 app/(panel)/eclub/yayinlar/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `VideoGonderimSatiri.tsx` | UI / React | video gönderim Satiri, E-Club listesindeki bir video gönderim kaydını durumu ve izinli eylemleriyle gösterir. |
+| `page.tsx` | UI / React | `/eclub/yayinlar` rotasında E-Club kapsamındaki öğrenme yayınları arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/eclub/yayinlar/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `EclubYayinGonderimKarti.tsx` | UI / React | E-Club yayınını gönderim durumu, puanı ve koşullarıyla gösterir; gönderilen yayınlarda detay kartını bağlar. |
+| `EclubGonderimDetayKarti.tsx` | UI / React | Yayının izleyen, bekleyen ve izlemeyen alıcılarını kişi bazında gösteren açılır gönderim detay yüzüdür. |
 
 ### 📁 app/(panel)/eczanem/eczane/
 

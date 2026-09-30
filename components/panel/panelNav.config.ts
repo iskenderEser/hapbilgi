@@ -140,12 +140,9 @@ export const PANEL_NAV: NavGrup[] = [
       { etiket: "E-Club Takımım",    path: "/eclub/eczanelerim",  gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
       {
         etiket: "E-Club Yayınları",
+        path: "/eclub/yayinlar",
         badgeKey: "eclub_gonderilecek",
         gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu),
-        altOglar: [
-          { etiket: "Gönderilecek Yayınlar", path: "/eclub/videolarim", badgeKey: "eclub_gonderilecek", gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
-          { etiket: "Gönderilen Yayınlar",   path: "/eclub/gonderilen-videolar", gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
-        ],
       },
       { etiket: "Ödül Sipariş Takibi", path: "/eclub/odul-siparis-takibi", gate: (c) => c.eclubAcik && c.eclubStoreAcik && ODUL_SIPARIS_ROLLERI.includes(c.rolKucu) },
       { etiket: "E-Club Raporları", path: "/eclub/raporlar", gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },

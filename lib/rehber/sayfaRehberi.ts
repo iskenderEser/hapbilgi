@@ -300,10 +300,10 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 16. E-CLUB GÖNDERİLECEK VİDEOLAR ─────────────────────────────────────
-  "eclub-videolarim": {
-    anahtar: "eclub-videolarim",
-    baslik: "Gönderilecek Yayınlar",
+  // ─── 16. E-CLUB YAYINLARI ─────────────────────────────────────────────────
+  "eclub-yayinlar": {
+    anahtar: "eclub-yayinlar",
+    baslik: "E-Club Yayınları",
     ozet: "Eczacı ve eczane teknisyenlerine gönderebileceğiniz güncel yayınları incelemenizi ve hızlıca yayın önermenizi sağlar.",
     maddeler: [
       {
@@ -321,15 +321,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     ],
   },
 
-  // ─── 17. E-CLUB GÖNDERİLEN VİDEOLAR ───────────────────────────────────────
-  "eclub-gonderilen-videolar": {
-    anahtar: "eclub-gonderilen-videolar",
-    baslik: "Gönderilen Yayınlar",
-    ozet: "Eczanelere yaptığınız video önerilerinin izlenme ve soru tamamlama durumlarını kişi bazında anlık olarak takip etmenizi sağlar.",
-    maddeler: [],
-  },
-
-  // ─── 18. ECZANEM VİDEO DAĞITIMI (UTT) ─────────────────────────────────────
+  // ─── 17. ECZANEM VİDEO DAĞITIMI (UTT) ─────────────────────────────────────
   "eczanem-utt-dagitim": {
     anahtar: "eczanem-utt-dagitim",
     baslik: "Video Dağıtımı",
@@ -337,7 +329,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 19. ECZANEM MUTABAKAT DÖKÜMÜ (UTT) ───────────────────────────────────
+  // ─── 18. ECZANEM MUTABAKAT DÖKÜMÜ (UTT) ───────────────────────────────────
   "eczanem-utt-mutabakat": {
     anahtar: "eczanem-utt-mutabakat",
     baslik: "Mutabakat Dökümü",
@@ -345,7 +337,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 20. ÖNERİ TAKİBİ (BM / BÖLGE MÜDÜRÜ) ─────────────────────────────────
+  // ─── 19. ÖNERİ TAKİBİ (BM / BÖLGE MÜDÜRÜ) ─────────────────────────────────
   "oneriler-bm": {
     anahtar: "oneriler-bm",
     baslik: "Öneri Takibi",
@@ -353,7 +345,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 21. T-CLUB RAPORLARI (BM / BÖLGE MÜDÜRÜ) ─────────────────────────────
+  // ─── 20. T-CLUB RAPORLARI (BM / BÖLGE MÜDÜRÜ) ─────────────────────────────
   "raporlar-bm": {
     anahtar: "raporlar-bm",
     baslik: "T-Club Raporları",
@@ -361,7 +353,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 22. EKİP MAĞAZA SİPARİŞLERİ (BM / YÖNETİCİ) ──────────────────────────
+  // ─── 21. EKİP MAĞAZA SİPARİŞLERİ (BM / YÖNETİCİ) ──────────────────────────
   "store-siparisler": {
     anahtar: "store-siparisler",
     baslik: "Ekip Mağaza Siparişleri",
@@ -369,7 +361,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 23. CHALLENGE CLUB (BM) ───────────────────────────────────────────────
+  // ─── 22. CHALLENGE CLUB (BM) ───────────────────────────────────────────────
   "challenge-club": {
     anahtar: "challenge-club",
     baslik: "Challenge Club",
@@ -377,7 +369,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 24. ÖNERİ TAKİBİ (TM / TAKIM MÜDÜRÜ) ─────────────────────────────────
+  // ─── 23. ÖNERİ TAKİBİ (TM / TAKIM MÜDÜRÜ) ─────────────────────────────────
   "oneriler-tm": {
     anahtar: "oneriler-tm",
     baslik: "Öneri Takibi",
@@ -385,7 +377,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 25. T-CLUB RAPORLARI (TM / TAKIM MÜDÜRÜ) ─────────────────────────────
+  // ─── 24. T-CLUB RAPORLARI (TM / TAKIM MÜDÜRÜ) ─────────────────────────────
   "raporlar-tm": {
     anahtar: "raporlar-tm",
     baslik: "T-Club Raporları",
@@ -393,7 +385,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 26. YAYINDAKİ VİDEOLAR / ŞİRKET YAYINLARI ───────────────────────────
+  // ─── 25. YAYINDAKİ VİDEOLAR / ŞİRKET YAYINLARI ───────────────────────────
   "yayindaki-videolar": {
     anahtar: "yayindaki-videolar",
     baslik: "Şirket Yayınları",
@@ -401,7 +393,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 27. T-CLUB RAPORLARI (YÖNETİCİ / GENEL MÜDÜR) ────────────────────────
+  // ─── 26. T-CLUB RAPORLARI (YÖNETİCİ / GENEL MÜDÜR) ────────────────────────
   "raporlar-yonetici": {
     anahtar: "raporlar-yonetici",
     baslik: "T-Club Raporları",
@@ -409,7 +401,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 28. E-CLUB FİRMALARIN VİDEOLARI (KİŞİ / ECZACI & TEKNİSYEN) ──────────
+  // ─── 27. E-CLUB FİRMALARIN VİDEOLARI (KİŞİ / ECZACI & TEKNİSYEN) ──────────
   "eclub-panel": {
     anahtar: "eclub-panel",
     baslik: "Firmaların Videoları",
@@ -417,7 +409,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 29. E-CLUB HEDİYE ÇEKİ (KİŞİ / ECZACI & TEKNİSYEN) ───────────────────
+  // ─── 28. E-CLUB HEDİYE ÇEKİ (KİŞİ / ECZACI & TEKNİSYEN) ───────────────────
   "eclub-store-magaza": {
     anahtar: "eclub-store-magaza",
     baslik: "Hediye Çeki",
@@ -425,7 +417,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 30. ECZANEM MÜŞTERİLERİM (ECZANE) ────────────────────────────────────
+  // ─── 29. ECZANEM MÜŞTERİLERİM (ECZANE) ────────────────────────────────────
   "eczanem-eczane-musterilerim": {
     anahtar: "eczanem-eczane-musterilerim",
     baslik: "Müşterilerim",
@@ -433,7 +425,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 31. ECZANEM VİDEO DAĞITIMI (ECZANE) ──────────────────────────────────
+  // ─── 30. ECZANEM VİDEO DAĞITIMI (ECZANE) ──────────────────────────────────
   "eczanem-eczane-dagitim": {
     anahtar: "eczanem-eczane-dagitim",
     baslik: "Video Dağıtımı",
@@ -441,7 +433,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 32. ECZANEM SİPARİŞ ONAYI (ECZANE) ───────────────────────────────────
+  // ─── 31. ECZANEM SİPARİŞ ONAYI (ECZANE) ───────────────────────────────────
   "eczanem-eczane-siparisler": {
     anahtar: "eczanem-eczane-siparisler",
     baslik: "Sipariş Onayı",
@@ -449,7 +441,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 33. ECZANEM İŞLEM DÖKÜMÜ (ECZANE) ────────────────────────────────────
+  // ─── 32. ECZANEM İŞLEM DÖKÜMÜ (ECZANE) ────────────────────────────────────
   "eczanem-eczane-dokum": {
     anahtar: "eczanem-eczane-dokum",
     baslik: "İşlem Dökümü",

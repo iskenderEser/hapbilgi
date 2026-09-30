@@ -20,12 +20,27 @@ test("UTT E-Club altında kararlaştırılan yönetim alanlarını doğru sırad
     eclub.oglar.filter((oge) => oge.gate(uttBaglami)).map((oge) => [oge.etiket, oge.path]),
     [
       ["E-Club Takımım", "/eclub/eczanelerim"],
-      ["E-Club Yayınları", undefined],
+      ["E-Club Yayınları", "/eclub/yayinlar"],
       ["Ödül Sipariş Takibi", "/eclub/odul-siparis-takibi"],
       ["E-Club Raporları", "/eclub/raporlar"],
       ["E-Club Ligi", "/eclub/ligi"],
     ],
   );
+
+  const yayinlar = eclub.oglar.find((oge) => oge.etiket === "E-Club Yayınları");
+  assert.equal(yayinlar?.altOglar, undefined);
+});
+
+test("kaldırılan Gönderilen Yayınlar rotası birleşik sayfaya yönlenir ve ayrı rehber bırakmaz", () => {
+  const eskiRota = readFileSync("app/(panel)/eclub/gonderilen-videolar/page.tsx", "utf8");
+  const rehber = readFileSync("lib/rehber/sayfaRehberi.ts", "utf8");
+  assert.match(eskiRota, /redirect\("\/eclub\/yayinlar"\)/);
+  assert.doesNotMatch(rehber, /eclub-gonderilen-videolar/);
+});
+
+test("eski videolarım rotası E-Club Yayınları adresine yönlenir", () => {
+  const eskiRota = readFileSync("app/(panel)/eclub/videolarim/page.tsx", "utf8");
+  assert.match(eskiRota, /redirect\("\/eclub\/yayinlar"\)/);
 });
 
 test("BM, TM, üretici ve yönetici E-Club yönetim sayfalarını görür; video yönetimini görmez", () => {
