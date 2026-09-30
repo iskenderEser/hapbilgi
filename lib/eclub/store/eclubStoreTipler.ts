@@ -1,6 +1,27 @@
 // Satış şartlı / serbest siparişli puan ve hediye çeki tipleri.
 
-export type SatisSartiTipi = "satis_sartli" | "serbest_siparis";
+export type SatisSartiTipi = "satis_sartli" | "serbest_siparis" | "siparissiz_cek";
+
+export type EclubKazanimModeli = "yalniz_puan" | "siparissiz_cek" | "siparisle_artan_cek" | "siparis_zorunlu_cek";
+
+export const ECLUB_KAZANIM_SECENEKLERI: ReadonlyArray<{ model: EclubKazanimModeli; baslik: string; aciklama: string }> = [
+  { model: "yalniz_puan", baslik: "Yalnız puan", aciklama: "Puan E-Club Ligi'ne eklenir; hediye çeki yoktur." },
+  { model: "siparissiz_cek", baslik: "Siparişsiz çek", aciklama: "Puan, belirlenen karşılıkla çeke dönüşür; sipariş istenmez." },
+  { model: "siparisle_artan_cek", baslik: "Siparişle artan çek", aciklama: "Sipariş verilmezse normal çek, verilirse artırılmış çek alınır." },
+  { model: "siparis_zorunlu_cek", baslik: "Sipariş zorunlu çek", aciklama: "Çek alınabilmesi için ürün siparişi gerekir." },
+];
+
+export function eclubKazanimKosullari(model: EclubKazanimModeli) {
+  const satis_sarti_tipi: SatisSartiTipi | null =
+    model === "siparissiz_cek" ? "siparissiz_cek"
+      : model === "siparisle_artan_cek" ? "serbest_siparis"
+        : model === "siparis_zorunlu_cek" ? "satis_sartli" : null;
+  return {
+    cek_karsiligi_var_mi: model !== "yalniz_puan",
+    satis_sarti_tipi,
+    siparis_secimi_var_mi: model === "siparisle_artan_cek" || model === "siparis_zorunlu_cek",
+  };
+}
 
 export interface BaremSatiri {
   min_puan: number;
@@ -120,6 +141,10 @@ export interface EclubStoreCekTalebiSatiri {
   talep_edilen_cek_tl: number;
   siparis_tipi: SatisSartiTipi;
   siparis_verildi_mi: boolean;
+  siparis_okundu_at?: string | null;
+  depo_sube_id?: string | null;
+  depo_adi_snapshot?: string | null;
+  depo_sube_adi_snapshot?: string | null;
   siparis_adet: number;
   siparis_mal_fazlasi: number;
   durum: CekTalepDurumu;
@@ -210,7 +235,7 @@ export function cekTutariHesapla(params: {
     };
   }
 
-  if (satis_sarti_tipi === "satis_sartli" && !siparis_verildi) {
+  if ((satis_sarti_tipi === "satis_sartli" && !siparis_verildi) || (satis_sarti_tipi === "siparissiz_cek" && siparis_verildi)) {
     return {
       kullanilan_puan: 0,
       devreden_puan: puan,

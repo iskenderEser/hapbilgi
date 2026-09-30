@@ -130,17 +130,27 @@ export async function POST(request: NextRequest) {
         return validasyonHatasi("cek_karsiligi_var_mi boolean olmalıdır.", ["cek_karsiligi_var_mi"]);
       }
       if (cek_karsiligi_var_mi) {
-        if (satis_sarti_tipi !== "satis_sartli" && satis_sarti_tipi !== "serbest_siparis") {
+        if (satis_sarti_tipi !== "satis_sartli" && satis_sarti_tipi !== "serbest_siparis" && satis_sarti_tipi !== "siparissiz_cek") {
           return validasyonHatasi("Satış şartı tipi geçersizdir.", ["satis_sarti_tipi"]);
         }
         const baremHatasi = baremTablosuDogrula(barem_tablosu);
         if (baremHatasi) return validasyonHatasi(baremHatasi, ["barem_tablosu"]);
+        if (barem_tablosu[0].min_puan <= 0) return validasyonHatasi("İlk puan sınırı sıfırdan büyük olmalıdır.", ["barem_tablosu"]);
+        if (satis_sarti_tipi === "siparissiz_cek" && barem_tablosu.some((barem: { adet: number; mal_fazlasi: number }) => barem.adet !== 0 || barem.mal_fazlasi !== 0)) {
+          return validasyonHatasi("Siparişsiz çek yayınında adet ve mal fazlası bulunamaz.", ["barem_tablosu"]);
+        }
+        if (satis_sarti_tipi !== "siparissiz_cek" && barem_tablosu.some((barem: { adet: number }) => barem.adet <= 0)) {
+          return validasyonHatasi("Sipariş sunulan yayınlarda her baremin sipariş adedi pozitif olmalıdır.", ["barem_tablosu"]);
+        }
         if (!Number.isInteger(karsilik_puan) || karsilik_puan <= 0 || !Number.isFinite(karsilik_tl) || karsilik_tl <= 0) {
           return validasyonHatasi("Puan ve TL karşılığı pozitif olmalıdır.", ["karsilik_puan", "karsilik_tl"]);
         }
-        if (satis_sarti_tipi === "serbest_siparis" && (!Number.isInteger(gizli_sart_katlama_orani) || gizli_sart_katlama_orani < 0 || gizli_sart_katlama_orani > 200)) {
-          return validasyonHatasi("Katlama oranı 0-200 arasında tam sayı olmalıdır.", ["gizli_sart_katlama_orani"]);
+        if (satis_sarti_tipi === "serbest_siparis" && (!Number.isInteger(gizli_sart_katlama_orani) || gizli_sart_katlama_orani <= 0 || gizli_sart_katlama_orani > 200)) {
+          return validasyonHatasi("Siparişle çek artış oranı 1-200 arasında tam sayı olmalıdır.", ["gizli_sart_katlama_orani"]);
         }
+        if (satis_sarti_tipi !== "serbest_siparis" && gizli_sart_katlama_orani != null) return validasyonHatasi("Bu modelde çek artış oranı bulunamaz.", ["gizli_sart_katlama_orani"]);
+      } else if (satis_sarti_tipi != null || gizli_sart_katlama_orani != null || barem_tablosu != null || karsilik_puan != null || karsilik_tl != null) {
+        return validasyonHatasi("Yalnız puan yayınında çek veya sipariş koşulu bulunamaz.", ["cek_karsiligi_var_mi"]);
       }
     }
 

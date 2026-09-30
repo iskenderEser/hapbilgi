@@ -199,8 +199,10 @@ export default function EclubStorePage() {
               ? item.barem_tablosu
               : [];
             const isSerbest = item.satis_sarti_tipi === "serbest_siparis";
+            const siparissiz = item.satis_sarti_tipi === "siparissiz_cek";
             const katlamaOrani = item.gizli_sart_katlama_orani ?? 20;
-            const yeterliPuanVarMi = toplananPuan >= (item.aktif_barem_min_puan ?? 200);
+            const minimumPuan = Math.min(...baremler.map((barem) => barem.min_puan));
+            const yeterliPuanVarMi = Number.isFinite(minimumPuan) && toplananPuan >= minimumPuan;
 
             return (
               <article
@@ -214,9 +216,13 @@ export default function EclubStorePage() {
                       <span className="rounded-md bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-700">
                         {item.firma_adi || "Firma"}
                       </span>
-                      {isSerbest ? (
+                      {siparissiz ? (
+                        <span className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-800">
+                          <Gift size={13} /> Siparişsiz Hediye Çeki
+                        </span>
+                      ) : isSerbest ? (
                         <span className="inline-flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 px-2 py-0.5 text-xs font-bold text-purple-800">
-                          <Sparkles size={13} /> Serbest Sipariş (+%{katlamaOrani} Çek Bonusu)
+                          <Sparkles size={13} /> Siparişle artan çek (+%{katlamaOrani})
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-800">
@@ -236,7 +242,7 @@ export default function EclubStorePage() {
                     {baremler.length > 0 && (
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <span className="text-[11px] font-semibold text-slate-500">
-                          Sipariş Baremleri:
+                          {siparissiz ? "Çek puan sınırları:" : "Sipariş baremleri:"}
                         </span>
                         {baremler.map((b, idx) => {
                           const aktifMi =
@@ -252,9 +258,7 @@ export default function EclubStorePage() {
                               }`}
                             >
                               {b.min_puan}–{b.max_puan} p:{" "}
-                              <strong>
-                                {b.adet} Kutu + {b.mal_fazlasi} MF
-                              </strong>
+                              {!siparissiz && <strong>{b.adet}+{b.mal_fazlasi}</strong>}
                               {aktifMi && " ✓ (Mevcut Bareminiz)"}
                             </span>
                           );
@@ -319,8 +323,12 @@ export default function EclubStorePage() {
                           </div>
                         ) : !yeterliPuanVarMi ? (
                           <div className="rounded-lg bg-amber-50 p-2 text-right text-[11px] font-bold text-amber-800">
-                            Minimum barem için 200 puan gerekir. (Kalan puanlar devredilir).
+                            Çek için en az {minimumPuan.toLocaleString("tr-TR")} puan gerekir. (Kalan puanlar devredilir).
                           </div>
+                        ) : siparissiz ? (
+                          <button type="button" onClick={() => handleTalepVer(item.yayin_id, false, item.urun_adi)} disabled={Boolean(islemLoading) || !storeAcik} className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300">
+                            {islemId === item.yayin_id ? "İşleniyor..." : `${bazCek} TL Çekimi Al`}
+                          </button>
                         ) : !isSerbest ? (
                           /* Satış Şartlı */
                           <button

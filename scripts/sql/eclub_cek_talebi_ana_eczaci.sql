@@ -142,6 +142,15 @@ BEGIN
     RETURN;
   END IF;
 
+  IF v_y.satis_sarti_tipi = 'siparissiz_cek'
+     AND p_siparis_verilsin_mi THEN
+    RETURN QUERY
+    SELECT false, NULL::uuid,
+      'Bu yayında sipariş seçeneği bulunmaz.',
+      0::numeric, 0;
+    RETURN;
+  END IF;
+
   SELECT k.firma_id
   INTO v_firma
   FROM public.v_yayin_kunye k

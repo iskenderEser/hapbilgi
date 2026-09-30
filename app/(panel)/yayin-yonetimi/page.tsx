@@ -216,12 +216,11 @@ function YayinYonetimiIcerik() {
                 karsilikPuanlar={yy.karsilikPuanlar} setKarsilikPuanlar={yy.setKarsilikPuanlar}
                 karsilikTllar={yy.karsilikTllar} setKarsilikTllar={yy.setKarsilikTllar}
                 satisFiyatlar={yy.satisFiyatlar} setSatisFiyatlar={yy.setSatisFiyatlar}
-                satisSartiTipleri={yy.satisSartiTipleri} setSatisSartiTipleri={yy.setSatisSartiTipleri}
+                kazanimModelleri={yy.kazanimModelleri} setKazanimModelleri={yy.setKazanimModelleri}
                 katlamaOranlari={yy.katlamaOranlari} setKatlamaOranlari={yy.setKatlamaOranlari}
                 baremTablolari={yy.baremTablolari} setBaremTablolari={yy.setBaremTablolari}
                 eclubKarsilikPuanlar={yy.eclubKarsilikPuanlar} setEclubKarsilikPuanlar={yy.setEclubKarsilikPuanlar}
                 eclubKarsilikTllar={yy.eclubKarsilikTllar} setEclubKarsilikTllar={yy.setEclubKarsilikTllar}
-                cekKarsiligiVarMi={yy.cekKarsiligiVarMi} setCekKarsiligiVarMi={yy.setCekKarsiligiVarMi}
                 tekrarPeriyotlari={yy.tekrarPeriyotlari} setTekrarPeriyotlari={yy.setTekrarPeriyotlari}
                 tekrarSecenekleri={yy.tekrarSecenekleri}
                 yayinGunleri={yy.yayinGunleri} setYayinGunleri={yy.setYayinGunleri}

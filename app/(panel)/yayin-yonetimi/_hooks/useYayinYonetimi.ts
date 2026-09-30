@@ -19,7 +19,7 @@ import { ECLUB_ORTAK_YAYIN_GRUBU, hedefRolleriOku, yalnizEclubHedefliMi, type Ya
 import type { Bekleyen, BekleyenHedefSayilari, Yayin } from "../_types";
 import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tclub/tur/kayit";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
-import { VARSAYILAN_BAREM_TABLOSU, type SatisSartiTipi, type BaremSatiri } from "@/lib/eclub/store/eclubStoreTipler";
+import { baremTablosuDogrula, eclubKazanimKosullari, type EclubKazanimModeli, type BaremSatiri } from "@/lib/eclub/store/eclubStoreTipler";
 
 import { getOzetOnbellek, setOzetOnbellek, type OzetVerisi } from "./ozetOnbellek";
 
@@ -66,13 +66,12 @@ export function useYayinYonetimi({ kullaniciId, aktifAnaSekme, onOzetYuklendi, h
   const [karsilikTllar, setKarsilikTllar] = useState<Record<string, number>>({});
   const [satisFiyatlar, setSatisFiyatlar] = useState<Record<string, number>>({});
 
-  // E-Club yayını: Satış Şartı Tipi, Katlama Oranı, Barem Tablosu ve Karşılık
-  const [satisSartiTipleri, setSatisSartiTipleri] = useState<Record<string, SatisSartiTipi>>({});
+  // E-Club yayını: dört kazanım hâlinden biri açıkça seçilir.
+  const [kazanimModelleri, setKazanimModelleri] = useState<Record<string, EclubKazanimModeli>>({});
   const [katlamaOranlari, setKatlamaOranlari] = useState<Record<string, number>>({});
   const [baremTablolari, setBaremTablolari] = useState<Record<string, BaremSatiri[]>>({});
   const [eclubKarsilikPuanlar, setEclubKarsilikPuanlar] = useState<Record<string, number>>({});
   const [eclubKarsilikTllar, setEclubKarsilikTllar] = useState<Record<string, number>>({});
-  const [cekKarsiligiVarMi, setCekKarsiligiVarMi] = useState<Record<string, boolean>>({});
 
   // Tekrar gönderim periyodu — soru_seti_durum_id → seçilen gün (seçilmediyse tekrar yok).
   // Seçenek listesi sistem_ayarlari'ndan gelir (tek kaynak): api/tekrar-secenekleri.
@@ -292,6 +291,19 @@ export function useYayinYonetimi({ kullaniciId, aktifAnaSekme, onOzetYuklendi, h
     } else if (!eclub && !extraPuanlar[b.soru_seti_durum_id]) {
       return false;
     }
+    if (eclub) {
+      const id = b.soru_seti_durum_id;
+      const model = kazanimModelleri[id];
+      if (!model) return false;
+      if (model !== "yalniz_puan") {
+        if (!Number.isInteger(eclubKarsilikPuanlar[id]) || eclubKarsilikPuanlar[id] <= 0 || !Number.isFinite(eclubKarsilikTllar[id]) || eclubKarsilikTllar[id] <= 0) return false;
+        const baremler = baremTablolari[id] ?? [];
+        if (baremTablosuDogrula(baremler)) return false;
+        if (baremler[0].min_puan <= 0) return false;
+        if (model !== "siparissiz_cek" && baremler.some((barem) => barem.adet <= 0)) return false;
+        if (model === "siparisle_artan_cek" && (!Number.isInteger(katlamaOranlari[id]) || katlamaOranlari[id] <= 0 || katlamaOranlari[id] > 200)) return false;
+      }
+    }
     for (let i = 0; i < b.sorular.length; i++) {
       if (!soruPuanlari[b.soru_seti_durum_id]?.[i]) return false;
     }
@@ -301,6 +313,10 @@ export function useYayinYonetimi({ kullaniciId, aktifAnaSekme, onOzetYuklendi, h
   // ─── Yayınlama ──────────────────────────────────────────────────────────
 
   const handleYayinla = async (b: Bekleyen) => {
+    if (!tumPuanlarAtandiMi(b)) {
+      hata("Yayın puanlarını ve E-Club kazanım koşullarını tamamlayın.");
+      return;
+    }
     setIslemLoading(b.soru_seti_durum_id);
 
     const vp = videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani;
@@ -340,15 +356,17 @@ export function useYayinYonetimi({ kullaniciId, aktifAnaSekme, onOzetYuklendi, h
             }
           : eclub
             ? (() => {
-                const isCekli = cekKarsiligiVarMi[b.soru_seti_durum_id] ?? true;
+                const model = kazanimModelleri[b.soru_seti_durum_id];
+                if (!model) throw new Error("E-Club kazanım modeli seçilmedi.");
+                const kosullar = eclubKazanimKosullari(model);
                 return {
                   tekrar_periyot_gun: (tekrarPeriyotlari[b.soru_seti_durum_id] && tekrarPeriyotlari[b.soru_seti_durum_id] > 0) ? tekrarPeriyotlari[b.soru_seti_durum_id] : null,
-                  cek_karsiligi_var_mi: isCekli,
-                  satis_sarti_tipi: isCekli ? (satisSartiTipleri[b.soru_seti_durum_id] ?? "satis_sartli") : null,
-                  gizli_sart_katlama_orani: isCekli && satisSartiTipleri[b.soru_seti_durum_id] === "serbest_siparis" ? (katlamaOranlari[b.soru_seti_durum_id] ?? 20) : null,
-                  barem_tablosu: isCekli ? (baremTablolari[b.soru_seti_durum_id] ?? VARSAYILAN_BAREM_TABLOSU) : null,
-                  karsilik_puan: isCekli ? (eclubKarsilikPuanlar[b.soru_seti_durum_id] ?? 1) : null,
-                  karsilik_tl: isCekli ? (eclubKarsilikTllar[b.soru_seti_durum_id] ?? 1) : null,
+                  cek_karsiligi_var_mi: kosullar.cek_karsiligi_var_mi,
+                  satis_sarti_tipi: kosullar.satis_sarti_tipi,
+                  gizli_sart_katlama_orani: model === "siparisle_artan_cek" ? katlamaOranlari[b.soru_seti_durum_id] : null,
+                  barem_tablosu: kosullar.cek_karsiligi_var_mi ? (baremTablolari[b.soru_seti_durum_id] ?? []).map((barem) => kosullar.siparis_secimi_var_mi ? barem : { ...barem, adet: 0, mal_fazlasi: 0 }) : null,
+                  karsilik_puan: kosullar.cek_karsiligi_var_mi ? eclubKarsilikPuanlar[b.soru_seti_durum_id] : null,
+                  karsilik_tl: kosullar.cek_karsiligi_var_mi ? eclubKarsilikTllar[b.soru_seti_durum_id] : null,
                 };
               })()
             : {
@@ -423,12 +441,11 @@ export function useYayinYonetimi({ kullaniciId, aktifAnaSekme, onOzetYuklendi, h
     karsilikPuanlar, setKarsilikPuanlar,
     karsilikTllar, setKarsilikTllar,
     satisFiyatlar, setSatisFiyatlar,
-    satisSartiTipleri, setSatisSartiTipleri,
+    kazanimModelleri, setKazanimModelleri,
     katlamaOranlari, setKatlamaOranlari,
     baremTablolari, setBaremTablolari,
     eclubKarsilikPuanlar, setEclubKarsilikPuanlar,
     eclubKarsilikTllar, setEclubKarsilikTllar,
-    cekKarsiligiVarMi, setCekKarsiligiVarMi,
     tekrarPeriyotlari, setTekrarPeriyotlari,
     tekrarSecenekleri,
     tekrarBilgi,
