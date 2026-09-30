@@ -18,6 +18,7 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
   const [tekrarEngelleri, setTekrarEngelleri] = useState<OneriTekrarEngeli[]>([]);
   const [gonderilenYayinIdleri, setGonderilenYayinIdleri] = useState<string[]>([]);
   const [gonderilenKisiler, setGonderilenKisiler] = useState<Record<string, string[]>>({});
+  const [gonderimGecmisi, setGonderimGecmisi] = useState<OneriGecmisKaydi[]>([]);
   const [loading, setLoading] = useState(true);
   const [yenileniyor, setYenileniyor] = useState(false);
   const [gonderLoading, setGonderLoading] = useState(false);
@@ -46,6 +47,7 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
         setLimitler(gecmisData.limitler ?? null);
         setTekrarEngelleri(gecmisData.tekrar_engelleri ?? []);
         const gecmis = (gecmisData.oneriler ?? []) as OneriGecmisKaydi[];
+        setGonderimGecmisi(gecmis);
         const benzersizYayinlar = [...new Set(gecmis.map((oneri) => oneri.yayin_id))];
         setGonderilenYayinIdleri(benzersizYayinlar);
         const kisiMap = new Map<string, Set<string>>();
@@ -97,5 +99,5 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
     }
   }, [hata, basari, veriCek]);
 
-  return { yayinlar, kisiler, limitler, tekrarEngelleri, gonderilenYayinIdleri, gonderilenKisiler, loading, yenileniyor, gonderLoading, veriCek, oneriGonder };
+  return { yayinlar, kisiler, limitler, tekrarEngelleri, gonderilenYayinIdleri, gonderilenKisiler, gonderimGecmisi, loading, yenileniyor, gonderLoading, veriCek, oneriGonder };
 }
