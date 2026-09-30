@@ -19,7 +19,13 @@ import { gecerliTurBaslangiclari } from "@/lib/tclub/tur/kayit";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-interface KisiEczaneBagSatiri { kisi_id: string; eczane_id: string; }
+interface KisiEczaneBagSatiri {
+  kisi_id: string;
+  eczane_id: string;
+  baslangic_tarihi: string | null;
+  bitis_tarihi: string | null;
+  created_at: string | null;
+}
 interface EczaneGlnSatiri { eczane_id: string; gln: string; }
 interface EczaneMasterSatiri { gln: string; eczane_adi: string; }
 interface OneriKisiKimlik { ad: string | null; soyad: string | null; rol: string | null; }
@@ -56,22 +62,21 @@ function tekilIliski<T>(deger: T | T[] | null | undefined): T | null {
   return Array.isArray(deger) ? (deger[0] ?? null) : deger;
 }
 
-// Verilen kişi_id'ler için "kisi_id → eczane_adi" haritası kurar.
-// Zincir: eclub_kisi_eczane(aktif bağ) → eclub_eczaneler(gln) → eclub_eczane_master(eczane_adi).
-// Eczacı/teknisyen aktif olarak tek eczaneye bağlıdır (tek ad döner).
-async function kisiEczaneAdiMap(
+// Gönderim anındaki kişi-eczane bağından "oneri_id → eczane_adi" haritası kurar.
+// Tarih aralığı E-Club raporundaki geçmiş üyelik kuralıyla aynıdır.
+async function oneriEczaneAdiMap(
   adminSupabase: ReturnType<typeof createAdminClient>,
-  kisiIdler: string[]
+  oneriler: OneriKayitSatiri[]
 ): Promise<Map<string, string>> {
   const map = new Map<string, string>();
-  if (kisiIdler.length === 0) return map;
+  if (oneriler.length === 0) return map;
+  const kisiIdler = [...new Set(oneriler.map((oneri) => oneri.kisi_id))];
 
-  // 1. Aktif kişi-eczane bağları
+  // Pasif bağlar da geçmiş gönderimler için gereklidir.
   const { data: baglar, error: bagError } = await adminSupabase
     .from("eclub_kisi_eczane")
-    .select("kisi_id, eczane_id")
-    .in("kisi_id", kisiIdler)
-    .eq("aktif_mi", true);
+    .select("kisi_id, eczane_id, baslangic_tarihi, bitis_tarihi, created_at")
+    .in("kisi_id", kisiIdler);
 
   if (bagError) throw new Error(`eclub_kisi_eczane SELECT — eczane adı: ${bagError.message}`);
   const bagSatirlari = (baglar ?? []) as KisiEczaneBagSatiri[];
@@ -102,11 +107,33 @@ async function kisiEczaneAdiMap(
   const glnAdiMap = new Map<string, string>();
   for (const m of (masterlar ?? []) as EczaneMasterSatiri[]) glnAdiMap.set(m.gln, m.eczane_adi);
 
-  // 4. kisi_id → eczane_adi birleştir
-  for (const b of bagSatirlari) {
-    const gln = eczaneGlnMap.get(b.eczane_id);
+  const baglarKisiyeGore = new Map<string, KisiEczaneBagSatiri[]>();
+  for (const bag of bagSatirlari) {
+    const kisiBaglari = baglarKisiyeGore.get(bag.kisi_id) ?? [];
+    kisiBaglari.push(bag);
+    baglarKisiyeGore.set(bag.kisi_id, kisiBaglari);
+  }
+
+  for (const oneri of oneriler) {
+    const gonderimZamani = new Date(oneri.created_at ?? oneri.oneri_baslangic).getTime();
+    const bag = (baglarKisiyeGore.get(oneri.kisi_id) ?? [])
+      .filter((aday) => {
+        const baslangic = aday.baslangic_tarihi ?? aday.created_at;
+        return (baslangic === null || new Date(baslangic).getTime() <= gonderimZamani)
+          && (aday.bitis_tarihi === null || gonderimZamani < new Date(aday.bitis_tarihi).getTime());
+      })
+      .sort((a, b) => {
+        const aBaslangic = a.baslangic_tarihi ?? a.created_at;
+        const bBaslangic = b.baslangic_tarihi ?? b.created_at;
+        return (bBaslangic === null ? -Infinity : new Date(bBaslangic).getTime())
+          - (aBaslangic === null ? -Infinity : new Date(aBaslangic).getTime())
+          || (b.created_at === null ? -Infinity : new Date(b.created_at).getTime())
+          - (a.created_at === null ? -Infinity : new Date(a.created_at).getTime());
+      })[0];
+    if (!bag) continue;
+    const gln = eczaneGlnMap.get(bag.eczane_id);
     const adi = gln ? glnAdiMap.get(gln) : null;
-    if (adi) map.set(b.kisi_id, adi);
+    if (adi) map.set(oneri.oneri_id, adi);
   }
 
   return map;
@@ -148,10 +175,9 @@ export async function GET(request: NextRequest) {
 
     if (error) return hataYaniti("Öneri geçmişi çekilemedi.", "eclub_oneri_kayitlari SELECT — oneren_id filtresi", error);
 
-    // Alıcı kişilerin eczane adlarını topluca çöz
+    // Her geçmiş gönderimin eczanesini gönderim anındaki üyelikten çöz.
     const oneriSatirlari = (oneriler ?? []) as OneriKayitSatiri[];
-    const kisiIdler = [...new Set(oneriSatirlari.map((o) => o.kisi_id).filter(Boolean))];
-    const eczaneAdiMap = await kisiEczaneAdiMap(adminSupabase, kisiIdler);
+    const eczaneAdiMap = await oneriEczaneAdiMap(adminSupabase, oneriSatirlari);
 
     // Yayın adlarını toplu çek (v_yayin_detay)
     const yayinIds = [...new Set(oneriSatirlari.map((o) => o.yayin_id))];
@@ -191,7 +217,7 @@ export async function GET(request: NextRequest) {
         kisi_ad: kisi?.ad ?? "-",
         kisi_soyad: kisi?.soyad ?? "-",
         kisi_rol: kisi?.rol ?? null,
-        eczane_adi: eczaneAdiMap.get(o.kisi_id) ?? "-",
+        eczane_adi: eczaneAdiMap.get(o.oneri_id) ?? "-",
         oneri_baslangic: o.oneri_baslangic,
         oneri_bitis: o.oneri_bitis,
         izlendi_mi: o.izlendi_mi ?? false,
