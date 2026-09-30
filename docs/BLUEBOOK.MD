@@ -772,12 +772,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `page.tsx` | UI / React | UTT'nin takımına özel isim verdiği, GLN ile eczane bağladığı, eczacı ve teknisyen kadrosunu yönettiği E-Club Takımım sayfası. |
 
-### 📁 app/(panel)/eclub/gonderilen-videolar/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | Kaldırılan `/eclub/gonderilen-videolar` sayfasına ait eski bağlantıları birleşik `/eclub/yayinlar` sayfasına yönlendirir. |
-
 ### 📁 app/(panel)/eclub/ligi/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
@@ -992,12 +986,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `page.tsx` | UI / React | `/eclub/store/siparislerim` rotasında E-Club Store kapsamındaki siparislerim arayüzünü sunan Next.js sayfa bileşenidir. |
-
-### 📁 app/(panel)/eclub/videolarim/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | Eski `/eclub/videolarim` bağlantılarını `/eclub/yayinlar` sayfasına yönlendirir. |
 
 ### 📁 app/(panel)/eclub/yayinlar/
 

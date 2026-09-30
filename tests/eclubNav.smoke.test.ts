@@ -31,18 +31,6 @@ test("UTT E-Club altında kararlaştırılan yönetim alanlarını doğru sırad
   assert.equal(yayinlar?.altOglar, undefined);
 });
 
-test("kaldırılan Gönderilen Yayınlar rotası birleşik sayfaya yönlenir ve ayrı rehber bırakmaz", () => {
-  const eskiRota = readFileSync("app/(panel)/eclub/gonderilen-videolar/page.tsx", "utf8");
-  const rehber = readFileSync("lib/rehber/sayfaRehberi.ts", "utf8");
-  assert.match(eskiRota, /redirect\("\/eclub\/yayinlar"\)/);
-  assert.doesNotMatch(rehber, /eclub-gonderilen-videolar/);
-});
-
-test("eski videolarım rotası E-Club Yayınları adresine yönlenir", () => {
-  const eskiRota = readFileSync("app/(panel)/eclub/videolarim/page.tsx", "utf8");
-  assert.match(eskiRota, /redirect\("\/eclub\/yayinlar"\)/);
-});
-
 test("BM, TM, üretici ve yönetici E-Club yönetim sayfalarını görür; video yönetimini görmez", () => {
   const eclub = PANEL_NAV.find((grup) => grup.baslik === "E-Club");
   const tclub = PANEL_NAV.find((grup) => grup.baslik === "T-Club");

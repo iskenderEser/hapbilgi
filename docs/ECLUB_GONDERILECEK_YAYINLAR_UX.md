@@ -12,7 +12,7 @@ Kapsüldeki sayılar seçili hedef kitleye göre hesaplanır. Gönderime Hazır 
 
 Sayfa rehberi üç kısa maddeyle yeni kart ve filtre davranışına uyarlanmıştır.
 
-Sidebar'daki **Gönderilecek Yayınlar** ve **Gönderilen Yayınlar** alt sekmeleri kaldırılmıştır. **E-Club Yayınları** doğrudan birleşik sayfayı açar; eski gönderilen yayınlar rotası da yer imlerini bozmamak için bu sayfaya yönlenir.
+Sidebar'daki **Gönderilecek Yayınlar** ve **Gönderilen Yayınlar** alt sekmeleri kaldırılmıştır. **E-Club Yayınları** doğrudan `/eclub/yayinlar` adresindeki birleşik sayfayı açar.
 
 ## Yayın rafı ve koşullar
 

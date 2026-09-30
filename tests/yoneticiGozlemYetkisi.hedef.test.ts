@@ -286,7 +286,7 @@ for (const yoneticiRolu of YONETICI_ROLLER) {
     for (const yasakli of [
       "/talepler", "/yayin-yonetimi", "/sizin-yayinlariniz", "/tum-yayinlar",
       "/challenge-club", "/store", "/store/siparislerim", "/store/adreslerim",
-      "/eclub/eczanelerim", "/eclub/yayinlar", "/eclub/gonderilen-videolar", "/eczanem/utt",
+      "/eclub/eczanelerim", "/eclub/yayinlar", "/eczanem/utt",
     ]) {
       assert.ok(!yollar.includes(yasakli), `${yoneticiRolu} yasaklı yolu görüyor: ${yasakli}`);
     }

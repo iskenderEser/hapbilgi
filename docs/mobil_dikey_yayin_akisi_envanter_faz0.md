@@ -62,7 +62,7 @@ Sistemde yayın bilgisi taşıdığı halde **yayın kataloğu olmayan**, operas
    - *Gerekçe:* Buradaki öğeler kart değil, yayın onaylama, puan/barem atama, tekrar periyodu belirleme ve yayından kaldırma işlemlerinin yapıldığı genişletilebilir işlem satırlarıdır. (Aktif Yayınlar sekmesindeki kart listesi ise madde 12 olarak kapsama alınmıştır).
 2. **E-Club Yayın Gönderimi ve Geçmişi (`/eclub/yayinlar`):**
    - *Bileşenler:* `EclubYayinGonderimKarti.tsx`, `EclubGonderimDetayKarti.tsx`.
-   - *Gerekçe:* Temsilci yayınları ve alıcıları seçerek gönderim yapar; Gönderilenler görünümünde aynı kartın detay yüzünden kişi bazlı gönderim geçmişini izler. Eski `/eclub/gonderilen-videolar` rotası bu birleşik sayfaya yönlenir.
+   - *Gerekçe:* Temsilci yayınları ve alıcıları seçerek gönderim yapar; Gönderilenler görünümünde aynı kartın detay yüzünden kişi bazlı gönderim geçmişini izler.
 3. **BM ve TM Öneri Takibi (`/oneriler` - BM ve TM görünümleri):**
    - *Bileşenler:* `BmOneriTakibi.tsx`, `TmOneriTakibi.tsx`.
    - *Gerekçe:* Bölgedeki UTT'lerin kendilerine atanan önerileri izleme durumunu denetleyen yönetim ve denetim tablosudur.
