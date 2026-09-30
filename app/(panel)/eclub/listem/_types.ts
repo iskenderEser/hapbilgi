@@ -27,6 +27,8 @@ export interface Kisi {
   eposta: string;
   telefon: string;
   auth_user_id: string | null;
+  davet_bekliyor?: boolean;
+  davet_gonderildi?: boolean;
   aktif_mi: boolean;
   created_at: string;
 }
@@ -66,15 +68,13 @@ export interface GlnSorguSonuc {
 }
 
 // Yeni kişi formu (eczane bloğundaki "kişi ekle" ile açılır). POST /kisiler gövdesi.
-// sifre: geçici auth için — yeni kişide ve Auth bağı eksik havuz kişisinde
-// zorunlu; giriş hesabı hazır havuz kişisinde backend kullanmaz.
+// Şifre üyeye gönderilen davet bağlantısından oluşturulur.
 export interface YeniKisiForm {
   rol: EclubKisiRol | "";
   ad: string;
   soyad: string;
   eposta: string;
   telefon: string;
-  sifre: string;
 }
 
 // Rol etiketleri (görüntüleme).

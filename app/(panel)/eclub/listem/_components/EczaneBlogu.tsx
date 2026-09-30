@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useState } from "react";
-import { ChevronDown, Clock3, Pencil, Plus, UserRoundX } from "lucide-react";
+import { Fragment, useRef, useState } from "react";
+import { ChevronDown, Clock3, Pencil, Plus, UserRoundX, X } from "lucide-react";
 import type { EclubGecisTalebi, Eczane, Kisi, YeniKisiForm } from "../_types";
 import { KISI_ROL_ETIKETLERI, epostaGecerliMi, telefonGecerliMi } from "../_types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -10,7 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DepoAramaliSecim, type DepoAramaliSecimHandle } from "@/components/eclub/DepoAramaliSecim";
+import { depoOzetEtiketi, type DepoKonumu } from "@/lib/eclub/depo";
 import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
+import styles from "./EczaneBlogu.module.css";
 
 interface Props {
   eczane: Eczane;
@@ -23,20 +26,45 @@ interface Props {
   onKisiPasifeAl: (kisiId: string, eczaneId: string) => Promise<boolean>;
 }
 
-const BOS_KISI: YeniKisiForm = { rol: "", ad: "", soyad: "", eposta: "", telefon: "", sifre: "" };
+const BOS_KISI: YeniKisiForm = { rol: "", ad: "", soyad: "", eposta: "", telefon: "" };
 const ROL_SIRASI: Record<Kisi["rol"], number> = { eczaci: 0, ikinci_eczaci: 1, yardimci_eczaci: 2, eczane_teknisyeni: 3 };
+const UNVAN_PIL_RENKLERI: Record<Kisi["rol"], string> = {
+  eczaci: "border-red-200 bg-red-50 text-red-700",
+  ikinci_eczaci: "border-blue-200 bg-blue-50 text-blue-700",
+  yardimci_eczaci: "border-violet-200 bg-violet-50 text-violet-700",
+  eczane_teknisyeni: "border-emerald-200 bg-emerald-50 text-emerald-700",
+};
 const KISI_GRID = { gridTemplateColumns: "minmax(180px,1.2fr) minmax(120px,.7fr) minmax(180px,1fr) minmax(110px,.65fr) minmax(170px,.8fr)" };
 
 export function EczaneBlogu({ eczane, kisiler, gecisTalepleri, islemLoading, onListedenCikar, onKisiEkle, onKisiGuncelle, onKisiPasifeAl }: Props) {
   const [acik, setAcik] = useState(false);
+  const [kayitliDepolar, setKayitliDepolar] = useState<DepoKonumu[] | null | undefined>(undefined);
+  const depoDuzenleyiciRef = useRef<DepoAramaliSecimHandle>(null);
+  const [depoSiliniyor, setDepoSiliniyor] = useState(false);
+  const [depoSilmeHatasi, setDepoSilmeHatasi] = useState("");
+  const [davetIslem, setDavetIslem] = useState<string | null>(null);
+  const [davetMesaji, setDavetMesaji] = useState("");
+  const [gonderilenDavetler, setGonderilenDavetler] = useState<string[]>([]);
   const [kisiFormAcik, setKisiFormAcik] = useState(false);
   const [yeniKisi, setYeniKisi] = useState<YeniKisiForm>(BOS_KISI);
   const [duzenlenenKisi, setDuzenlenenKisi] = useState<string | null>(null);
   const [duzenForm, setDuzenForm] = useState<Partial<Kisi>>({});
   const siraliKisiler = [...kisiler].sort((a, b) => ROL_SIRASI[a.rol] - ROL_SIRASI[b.rol] || `${a.ad} ${a.soyad}`.localeCompare(`${b.ad} ${b.soyad}`, "tr"));
+  const eczaciAdlari = siraliKisiler.filter((kisi) => kisi.rol === "eczaci").map((kisi) => `${kisi.ad} ${kisi.soyad}`.trim()).join(", ");
   const rolAdedi = (rol: Kisi["rol"]) => kisiler.filter((kisi) => kisi.rol === rol).length;
-  const yeniKisiGecerli = yeniKisi.rol !== "" && !!yeniKisi.ad.trim() && !!yeniKisi.soyad.trim() && epostaGecerliMi(yeniKisi.eposta) && telefonGecerliMi(yeniKisi.telefon) && yeniKisi.sifre.length >= 6;
+  const yeniKisiGecerli = yeniKisi.rol !== "" && !!yeniKisi.ad.trim() && !!yeniKisi.soyad.trim() && epostaGecerliMi(yeniKisi.eposta) && telefonGecerliMi(yeniKisi.telefon);
 
+  const davetiGonder = async (kisiId: string) => {
+    if (davetIslem) return;
+    setDavetIslem(kisiId); setDavetMesaji("");
+    try {
+      const r = await fetch("/eclub/listem/api/davet", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kisi_id: kisiId, eczane_id: eczane.eczane_id }) });
+      const d = await r.json();
+      if (r.ok && d.gonderildi) setGonderilenDavetler((ids) => [...ids, kisiId]);
+      setDavetMesaji(d.hata ?? d.mesaj ?? "Davet gönderilemedi.");
+    } catch { setDavetMesaji("Bağlantı hatası. Davet gönderilemedi."); }
+    finally { setDavetIslem(null); }
+  };
   const kisiKaydet = async () => {
     if (await onKisiEkle(eczane.eczane_id, yeniKisi)) { setYeniKisi(BOS_KISI); setKisiFormAcik(false); }
   };
@@ -54,45 +82,62 @@ export function EczaneBlogu({ eczane, kisiler, gecisTalepleri, islemLoading, onL
         <td>
           <button type="button" className={bmStyles.uttToggle} onClick={() => setAcik(!acik)} aria-expanded={acik}>
             <strong>{eczane.eczane_adi}</strong>
-            <small>{eczane.toplam_kisi} kayıtlı kişi</small>
             <ChevronDown size={14} className={acik ? bmStyles.chevronOpen : bmStyles.chevron} />
           </button>
         </td>
-        <td>{eczane.gln}</td>
-        <td>{eczane.eczaci_var ? "Var" : "Yok"}</td>
-        <td>{eczane.teknisyen_sayisi}</td>
-        <td className={bmStyles.net}>{eczane.toplam_kisi}</td>
-        <td>
+        <td>{eczaciAdlari ? `Eczacı ${eczaciAdlari}` : "—"}</td>
+        <td style={{ textAlign: "right" }} className="whitespace-nowrap">
           <AlertDialog>
             <AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive"><UserRoundX />Listemden çıkar</Button></AlertDialogTrigger>
-            <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Eczaneyi listenizden çıkarın mı?</AlertDialogTitle><AlertDialogDescription>{eczane.eczane_adi} E‑Club listenizden kaldırılacak.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction disabled={islemLoading} onClick={() => void onListedenCikar(eczane.eczane_id)} className="bg-destructive hover:bg-destructive/90">Evet, çıkar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+            <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Eczanenin listenizden kalıcı olarak çıkarılmasını onaylıyor musunuz?</AlertDialogTitle><AlertDialogDescription>{eczane.eczane_adi} E‑Club listenizden çıkarılacak.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction disabled={islemLoading} onClick={() => void onListedenCikar(eczane.eczane_id)} className="bg-destructive hover:bg-destructive/90">Onaylıyorum</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
           </AlertDialog>
         </td>
       </tr>
 
       {acik && (
         <tr className={bmStyles.detailRow}>
-          <td colSpan={6}>
+          <td colSpan={3}>
             <div className={bmStyles.bmDetailStack}>
-              <div className={bmStyles.uttDetail}>
-                <div className={bmStyles.detailIntro}><span>Eczane</span><strong>{eczane.eczane_adi}</strong><small>GLN {eczane.gln}</small></div>
+              <div className={`${bmStyles.uttDetail} ${styles.ozetKartlari}`} data-depo-sayisi={kayitliDepolar?.length ?? 0}>
+                <div className={bmStyles.detailIntro}><strong title={eczane.eczane_adi}>{eczane.eczane_adi}</strong><small title={`GLN ${eczane.gln}`}>GLN {eczane.gln}</small></div>
                 <div className={bmStyles.detailGain}><span>Eczacı</span><strong>{rolAdedi("eczaci")}</strong></div>
                 <div className={bmStyles.detailGain}><span>İkinci eczacı</span><strong>{rolAdedi("ikinci_eczaci")}</strong></div>
                 <div className={bmStyles.detailGain}><span>Yardımcı eczacı</span><strong>{rolAdedi("yardimci_eczaci")}</strong></div>
                 <div className={bmStyles.detailGain}><span>Eczane teknisyeni</span><strong>{rolAdedi("eczane_teknisyeni")}</strong></div>
+                {kayitliDepolar?.length ? kayitliDepolar.map((depo, index) => (
+                  <div key={depo.depo_sube_id} className={styles.depoKarti}>
+                    <span>{index === 0 ? "1.Tercih" : index === 1 ? "2.Tercih" : "3. Tercih"}</span>
+                    <button type="button" className={styles.depoSil} disabled={depoSiliniyor || kayitliDepolar.length === 1} aria-label={`${depoOzetEtiketi(depo)} tercihini kaldır`} title={kayitliDepolar.length === 1 ? "En az bir depo tercihi kalmalıdır." : "Depo tercihini kaldır"} onClick={async () => {
+                      if (!depoDuzenleyiciRef.current) return;
+                      setDepoSiliniyor(true); setDepoSilmeHatasi("");
+                      try { const hata = await depoDuzenleyiciRef.current.tercihKaldir(depo.depo_sube_id); if (hata) setDepoSilmeHatasi(hata); }
+                      finally { setDepoSiliniyor(false); }
+                    }}><X size={12} /></button>
+                    <strong title={`${depo.depo_adi}${depo.sube_adi ? ` / ${depo.sube_adi}` : ""} · ${depo.il} / ${depo.ilce} · ${depo.adres}`}>{depoOzetEtiketi(depo)}</strong>
+                  </div>
+                )) : <div className={styles.depoKarti}>
+                  <span>1.Tercih</span>
+                  <small>{kayitliDepolar === undefined ? "Yükleniyor…" : kayitliDepolar === null ? "Depo bilgisi alınamadı." : "Kayıtlı depo yok."}</small>
+                </div>}
+                <div className={styles.eklemeButonlari}>
+                  <Button type="button" variant="outline" size="sm" className={styles.eklemeButonu} disabled={kisiFormAcik} onClick={() => setKisiFormAcik(true)}><Plus />Kişi ekle</Button>
+                  <DepoAramaliSecim ref={depoDuzenleyiciRef} eczaneId={eczane.eczane_id} className={`${styles.eklemeButonu} ${styles.depoSecimListesi}`} onKayitliTercihler={(depolar) => { setKayitliDepolar(depolar); setDepoSilmeHatasi(""); }} />
+                </div>
               </div>
 
+              {davetMesaji && <p role="status" className="text-xs text-[#60758c]">{davetMesaji}</p>}
+              {depoSilmeHatasi && <p role="alert" className="text-xs text-red-700">{depoSilmeHatasi}</p>}
               {siraliKisiler.length > 0 ? (
                 <div className={bmStyles.nestedUttWrap}>
                   <div className={bmStyles.nestedUttHeader} style={KISI_GRID}><span>Kişi</span><span>Unvan</span><span>E‑posta</span><span>Telefon</span><span>İşlem</span></div>
                   {siraliKisiler.map((kisi) => (
                     <div key={kisi.kisi_id} className={bmStyles.nestedUttGroup}>
                       <div className={bmStyles.nestedUttRow} style={KISI_GRID}>
-                        <span className={bmStyles.nestedUttIdentity}><strong>{kisi.ad} {kisi.soyad}</strong><small>Kişi bilgileri</small></span>
-                        <span><Badge variant="outline">{KISI_ROL_ETIKETLERI[kisi.rol]}</Badge></span>
+                        <span className={bmStyles.nestedUttIdentity}><strong>{kisi.ad} {kisi.soyad}</strong><small>{kisi.davet_bekliyor ? ((kisi.davet_gonderildi || gonderilenDavetler.includes(kisi.kisi_id)) ? "Davet bekliyor" : "Davet gönderimi bekliyor") : "Kişi bilgileri"}</small></span>
+                        <span><Badge variant="outline" className={UNVAN_PIL_RENKLERI[kisi.rol]}>{KISI_ROL_ETIKETLERI[kisi.rol]}</Badge></span>
                         <span className="truncate">{kisi.eposta}</span>
                         <span>{kisi.telefon}</span>
-                        <span className="flex justify-end gap-1"><Button variant="outline" size="sm" onClick={() => duzenBaslat(kisi)}><Pencil />Düzenle</Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive">Pasife al</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Kişiyi pasife alın mı?</AlertDialogTitle><AlertDialogDescription>{kisi.ad} {kisi.soyad} aktif E‑Club listesinden çıkarılacak.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction disabled={islemLoading} onClick={() => void onKisiPasifeAl(kisi.kisi_id, eczane.eczane_id)} className="bg-destructive hover:bg-destructive/90">Pasife al</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></span>
+                        <span className="flex flex-wrap justify-end gap-1">{kisi.davet_bekliyor && <Button variant="outline" size="sm" disabled={!!davetIslem || islemLoading} onClick={() => void davetiGonder(kisi.kisi_id)}>{davetIslem === kisi.kisi_id ? "Gönderiliyor…" : "Daveti yeniden gönder"}</Button>}<Button variant="outline" size="sm" onClick={() => duzenBaslat(kisi)}><Pencil />Düzenle</Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive">Pasife al</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Kişiyi pasife alın mı?</AlertDialogTitle><AlertDialogDescription>{kisi.ad} {kisi.soyad} aktif E‑Club listesinden çıkarılacak.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction disabled={islemLoading} onClick={() => void onKisiPasifeAl(kisi.kisi_id, eczane.eczane_id)} className="bg-destructive hover:bg-destructive/90">Pasife al</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></span>
                       </div>
                       {duzenlenenKisi === kisi.kisi_id && (
                         <div className={bmStyles.nestedUttDetail}>
@@ -130,20 +175,19 @@ export function EczaneBlogu({ eczane, kisiler, gecisTalepleri, islemLoading, onL
                 </div>
               )}
 
-              {kisiFormAcik ? (
+              {kisiFormAcik && (
                 <div className="rounded-xl border bg-white p-4">
-                  <div className="mb-3"><h3 className="text-sm font-bold">Yeni kişi bilgileri</h3><p className="text-[11px] text-muted-foreground">Kişinin unvanını ve giriş bilgilerini tanımlayın.</p></div>
+                  <div className="mb-3"><h3 className="text-sm font-bold">Yeni kişi bilgileri</h3><p className="text-[11px] text-muted-foreground">Kişinin bilgilerini girin. Yeni üyeye şifre oluşturma daveti e-postayla gönderilir.</p></div>
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <div><Label>Unvan</Label><Select value={yeniKisi.rol} onValueChange={(rol) => setYeniKisi((form) => ({ ...form, rol: rol as YeniKisiForm["rol"] }))}><SelectTrigger className="w-full"><SelectValue placeholder="Unvan seçin" /></SelectTrigger><SelectContent><SelectItem value="eczaci">Eczacı</SelectItem><SelectItem value="ikinci_eczaci">İkinci Eczacı</SelectItem><SelectItem value="yardimci_eczaci">Yardımcı Eczacı</SelectItem><SelectItem value="eczane_teknisyeni">Eczane Teknisyeni</SelectItem></SelectContent></Select></div>
                     <div><Label>Ad</Label><Input value={yeniKisi.ad} onChange={(e) => setYeniKisi((form) => ({ ...form, ad: e.target.value }))} /></div>
                     <div><Label>Soyad</Label><Input value={yeniKisi.soyad} onChange={(e) => setYeniKisi((form) => ({ ...form, soyad: e.target.value }))} /></div>
                     <div><Label>E‑posta</Label><Input type="email" value={yeniKisi.eposta} onChange={(e) => setYeniKisi((form) => ({ ...form, eposta: e.target.value }))} /></div>
                     <div><Label>Telefon</Label><Input value={yeniKisi.telefon} onChange={(e) => setYeniKisi((form) => ({ ...form, telefon: e.target.value.replace(/\D/g, "") }))} maxLength={11} /></div>
-                    <div><Label>Geçici şifre</Label><Input type="password" value={yeniKisi.sifre} onChange={(e) => setYeniKisi((form) => ({ ...form, sifre: e.target.value }))} /><p className="mt-1 text-[10px] text-muted-foreground">Yalnız yeni giriş hesabı oluşturulursa kullanılır.</p></div>
                   </div>
                   <div className="mt-4 flex justify-end gap-2"><Button variant="outline" size="sm" onClick={() => { setKisiFormAcik(false); setYeniKisi(BOS_KISI); }}>Vazgeç</Button><Button size="sm" disabled={islemLoading || !yeniKisiGecerli} onClick={() => void kisiKaydet()}>{islemLoading ? "Kaydediliyor…" : "Kişiyi kaydet"}</Button></div>
                 </div>
-              ) : <Button variant="outline" size="sm" className="w-fit bg-white" onClick={() => setKisiFormAcik(true)}><Plus />Kişi ekle</Button>}
+              )}
             </div>
           </td>
         </tr>

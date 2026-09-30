@@ -8,18 +8,14 @@
 
 "use client";
 
+import { SifreBelirlemeFormu } from "@/components/auth/SifreBelirlemeFormu";
 import { createClient } from "@/lib/supabase/client";
 import { guvenliCikisYap } from "@/lib/auth/guvenliCikis";
 import { useEffect, useState } from "react";
 
 const BORDO = "#bc2d0d";
-const SIFRE_MIN_UZUNLUK = 6; // B-36 politikasıyla aynı (lib/admin/kullaniciDogrulama)
 
 export default function SifreYenilePage() {
-  const [sifre1, setSifre1] = useState("");
-  const [sifre2, setSifre2] = useState("");
-  const [kaydediliyor, setKaydediliyor] = useState(false);
-  const [hata, setHata] = useState("");
   const [tamamlandi, setTamamlandi] = useState(false);
   // null: oturum çözülüyor; false: bağlantı geçersiz/süresi dolmuş; true: hazır.
   const [oturumHazir, setOturumHazir] = useState<boolean | null>(null);
@@ -51,29 +47,13 @@ export default function SifreYenilePage() {
     };
   }, []);
 
-  const handleKaydet = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setHata("");
-    if (sifre1.length < SIFRE_MIN_UZUNLUK) {
-      setHata(`Şifre en az ${SIFRE_MIN_UZUNLUK} karakter olmalıdır.`);
-      return;
-    }
-    if (sifre1 !== sifre2) {
-      setHata("Şifreler eşleşmiyor.");
-      return;
-    }
-    setKaydediliyor(true);
+  const handleKaydet = async (sifre: string) => {
     const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password: sifre1 });
-    if (error) {
-      setHata("Şifre güncellenemedi. Bağlantının süresi dolmuş olabilir — giriş sayfasından yeni bağlantı isteyin.");
-      setKaydediliyor(false);
-      return;
-    }
+    const { error } = await supabase.auth.updateUser({ password: sifre });
+    if (error) throw new Error("Şifre güncellenemedi. Giriş sayfasından yeni bağlantı isteyin.");
     setTamamlandi(true);
-    setKaydediliyor(false);
-    // Kurtarma oturumu kapatılır; AuthProvider SIGNED_OUT ile /login'e yönlendirir.
-    setTimeout(() => { void guvenliCikisYap(supabase); }, 2500);
+    await guvenliCikisYap(supabase);
+    window.location.replace("/login");
   };
 
   return (
@@ -106,62 +86,7 @@ export default function SifreYenilePage() {
         )}
 
         {oturumHazir === true && !tamamlandi && (
-          <form onSubmit={handleKaydet} className="flex flex-col gap-4">
-            <div>
-              <h2 className="text-base font-bold text-gray-900 m-0 mb-1">Yeni Şifre Belirle</h2>
-              <p className="text-xs text-gray-500 m-0 leading-relaxed">
-                Hesabınız için yeni bir şifre girin (en az {SIFRE_MIN_UZUNLUK} karakter).
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Yeni şifre</label>
-              <input
-                type="password"
-                value={sifre1}
-                onChange={(e) => setSifre1(e.target.value)}
-                required
-                autoComplete="new-password"
-                placeholder="••••••••"
-                className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-900 outline-none box-border transition-shadow focus:border-[#bc2d0d] focus:ring-2 focus:ring-[#bc2d0d]/15"
-                style={{ fontFamily: "'Nunito', sans-serif" }}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Yeni şifre (tekrar)</label>
-              <input
-                type="password"
-                value={sifre2}
-                onChange={(e) => setSifre2(e.target.value)}
-                required
-                autoComplete="new-password"
-                placeholder="••••••••"
-                className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-900 outline-none box-border transition-shadow focus:border-[#bc2d0d] focus:ring-2 focus:ring-[#bc2d0d]/15"
-                style={{ fontFamily: "'Nunito', sans-serif" }}
-              />
-            </div>
-
-            {hata && (
-              <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                <p className="text-xs m-0" style={{ color: BORDO }}>{hata}</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={kaydediliyor}
-              className="w-full text-white font-bold rounded-xl py-3 text-sm border-none transition-opacity hover:opacity-90"
-              style={{
-                background: BORDO,
-                cursor: kaydediliyor ? "not-allowed" : "pointer",
-                opacity: kaydediliyor ? 0.6 : 1,
-                fontFamily: "'Nunito', sans-serif",
-              }}
-            >
-              {kaydediliyor ? "Kaydediliyor..." : "Şifreyi Güncelle"}
-            </button>
-          </form>
+          <SifreBelirlemeFormu baslik="Yeni Şifre Belirle" buton="Şifreyi Güncelle" onKaydet={handleKaydet} />
         )}
       </div>
     </div>

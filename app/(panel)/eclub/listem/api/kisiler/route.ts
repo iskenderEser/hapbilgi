@@ -8,6 +8,7 @@
 // POST → kişi ekle: havuzda varsa bağ oluştur (tek aktif GLN kontrolü), yoksa kimlik+bağ
 // PUT  → kişi güncelle (bilgi) / pasife al (bağ aktif_mi=false, soft)
 
+import { davetAltyapisiKontrol, kayitSonrasiDavetGonder } from "@/lib/eclub/uyelikDaveti";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ECLUB_TUKETICI_ROLLERI, ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
@@ -137,6 +138,15 @@ export async function GET() {
       });
     }
 
+    const authIds = sonuc.flatMap((kisi) => kisi.auth_user_id ? [kisi.auth_user_id] : []);
+    const davetler = authIds.length ? await adminSupabase.from("eclub_uyelik_davetleri")
+      .select("auth_user_id, durum, gonderildi").in("auth_user_id", authIds) : { data: [], error: null };
+    if (davetler.error) return hataYaniti("Davet durumları alınamadı.", "eclub_uyelik_davetleri SELECT", davetler.error);
+    const davetMap = new Map((davetler.data ?? []).map((d) => [d.auth_user_id, d]));
+    const davetliSonuc = sonuc.map((kisi) => {
+      const davet = davetMap.get(kisi.auth_user_id);
+      return { ...kisi, davet_bekliyor: !!davet && davet.durum !== "tamamlandi", davet_gonderildi: davet?.gonderildi ?? false };
+    });
     const { data: gecisTalepleri, error: gecisHatasi } = await adminSupabase
       .from("eczanem_eclub_gecis_talepleri")
       .select("gecis_id, eczane_id, rol, ad, soyad, eposta, telefon, durum, created_at")
@@ -146,7 +156,7 @@ export async function GET() {
       return hataYaniti("E-Club geçiş talepleri çekilemedi.", "eczanem_eclub_gecis_talepleri SELECT", gecisHatasi);
     }
 
-    return NextResponse.json({ kisiler: sonuc, gecis_talepleri: gecisTalepleri ?? [] }, { status: 200 });
+    return NextResponse.json({ kisiler: davetliSonuc, gecis_talepleri: gecisTalepleri ?? [] }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /eclub/listem/api/kisiler");
@@ -164,7 +174,7 @@ export async function POST(request: NextRequest) {
     if ("hata" in k) return k.hata;
 
     const body = await request.json();
-    const { eczane_id, rol, ad, soyad, eposta, telefon, sifre } = body;
+    const { eczane_id, rol, ad, soyad, eposta, telefon } = body;
 
     if (!eczane_id) return validasyonHatasi("Eczane seçimi zorunludur.", ["eczane_id"]);
     if (!rol || typeof rol !== "string") return validasyonHatasi("Rol zorunludur.", ["rol"]);
@@ -192,6 +202,9 @@ export async function POST(request: NextRequest) {
 
     // Eczacı ise: bu eczanede zaten aktif eczacı var mı? (tek eczacı kuralı)
     if (rolTemiz === "eczaci") {
+      const { data: depoHazir, error: depoHatasi } = await adminSupabase.rpc("eclub_eczane_depolari_hazir", { p_eczane: eczane_id });
+      if (depoHatasi) return hataYaniti("Depo tercihleri kontrol edilemedi.", "eclub_eczane_depolari_hazir RPC", depoHatasi);
+      if (!depoHazir) return validasyonHatasi("Eczacı kaydından önce eczanenin 1–3 depo tercihini tamamlayın.", ["depo_tercihleri"]);
       const { data: mevcutBaglar, error: mevcutBaglarError } = await adminSupabase
         .from("eclub_kisi_eczane")
         .select("kisi_id, eclub_kisiler ( rol )")
@@ -315,8 +328,7 @@ export async function POST(request: NextRequest) {
       // RPC'si izlenen saga olarak çalışır. RPC içindeki iki DB yazımı atomiktir;
       // başarısızlıkta Auth telafisinin sonucu provizyon günlüğüne kaydedilir.
       if (!mevcutKisi.auth_user_id) {
-        if (!sifre || typeof sifre !== "string" || sifre.length < 6)
-          return validasyonHatasi("Giriş hesabı olmayan kişi için en az 6 karakter şifre zorunludur.", ["sifre"]);
+        await davetAltyapisiKontrol(adminSupabase);
 
         const provizyon = await provizyonBaslat(adminSupabase, "eclub_kisi");
         if (!provizyon.ok || !provizyon.islemId) {
@@ -325,14 +337,15 @@ export async function POST(request: NextRequest) {
 
         const { data: authData, error: authInsertError } = await adminSupabase.auth.admin.createUser({
           email: mevcutKisi.eposta,
-          password: sifre,
+          app_metadata: { eclub_davet_bekliyor: true },
+          ban_duration: "876000h",
           user_metadata: {
             rol: mevcutKisi.rol,
             ad: mevcutKisi.ad,
             soyad: mevcutKisi.soyad,
             eclub_kisi: true,
           },
-          email_confirm: true,
+          email_confirm: false,
         });
 
         if (authInsertError || !authData.user) {
@@ -374,7 +387,8 @@ export async function POST(request: NextRequest) {
           authUserId: olusturulanAuthUserId,
           hedefKayitId: String(baglananKisiId),
         });
-        return NextResponse.json({ mesaj: "Kişi başarıyla eklendi.", kisi_id }, { status: 201 });
+        const davet = await kayitSonrasiDavetGonder(adminSupabase, olusturulanAuthUserId, request.nextUrl.origin);
+        return NextResponse.json({ ...davet, kisi_id }, { status: 201 });
       }
 
       // Mevcut kişi için yeni eczane bağı oluştur.
@@ -387,8 +401,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ mesaj: "Kişi başarıyla eklendi.", kisi_id }, { status: 201 });
     } else {
       // Havuzda yok → Auth dış kaynağı + atomik kimlik/bağ RPC'si.
-      if (!sifre || typeof sifre !== "string" || sifre.length < 6)
-        return validasyonHatasi("Yeni kişi için en az 6 karakter şifre zorunludur.", ["sifre"]);
+      await davetAltyapisiKontrol(adminSupabase);
 
       const provizyon = await provizyonBaslat(adminSupabase, "eclub_kisi");
       if (!provizyon.ok || !provizyon.islemId) {
@@ -397,9 +410,10 @@ export async function POST(request: NextRequest) {
 
       const { data: authData, error: authInsertError } = await adminSupabase.auth.admin.createUser({
         email: epostaTemiz,
-        password: sifre,
+        app_metadata: { eclub_davet_bekliyor: true },
+        ban_duration: "876000h",
         user_metadata: { rol: rolTemiz, ad: ad.trim(), soyad: soyad.trim(), eclub_kisi: true },
-        email_confirm: true,
+        email_confirm: false,
       });
 
       if (authInsertError || !authData.user) {
@@ -441,7 +455,8 @@ export async function POST(request: NextRequest) {
       kisi_id = String(yeniKisiId);
       await provizyonDurumuYaz(adminSupabase, provizyon.islemId, "tamamlandi", { authUserId, hedefKayitId: kisi_id });
 
-      return NextResponse.json({ mesaj: "Kişi başarıyla eklendi.", kisi_id }, { status: 201 });
+      const davet = await kayitSonrasiDavetGonder(adminSupabase, authUserId, request.nextUrl.origin);
+      return NextResponse.json({ ...davet, kisi_id }, { status: 201 });
     }
 
   } catch (err) {

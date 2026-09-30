@@ -160,10 +160,14 @@ export default function LoginPage() {
     }
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email: kimlik, password: sifre });
+    const { data: giris, error } = await supabase.auth.signInWithPassword({ email: kimlik, password: sifre });
     if (error) {
       setHata("E-posta veya şifre hatalı.");
       setLoading(false);
+      return;
+    }
+    if (giris.user?.app_metadata.eclub_davet_bekliyor === true) {
+      window.location.replace("/davet-bekliyor");
       return;
     }
     // F-03/B: tercih girişte yazılır; işaretsizse tarayıcı kapanınca oturum düşer.

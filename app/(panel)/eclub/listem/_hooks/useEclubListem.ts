@@ -69,7 +69,7 @@ export function useEclubListem({ hazir, hata, basari }: UseEclubListemArgs) {
   // master'da yoksa elle ekleme (ad/il/ilçe ile admin onayına gider).
   const eczaneEkle = useCallback(async (
     gln: string,
-    ekstra?: { eczane_adi?: string; il?: string; ilce?: string },
+    ekstra?: { eczane_adi?: string; il?: string; ilce?: string; konumlar?: string[] },
   ): Promise<boolean> => {
     setIslemLoading(true);
     try {
@@ -78,6 +78,7 @@ export function useEclubListem({ hazir, hata, basari }: UseEclubListemArgs) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gln: gln.trim(),
+          konumlar: ekstra?.konumlar,
           eczane_adi: ekstra?.eczane_adi?.trim(),
           il: ekstra?.il?.trim(),
           ilce: ekstra?.ilce?.trim(),
@@ -138,7 +139,6 @@ export function useEclubListem({ hazir, hata, basari }: UseEclubListemArgs) {
           soyad: form.soyad.trim(),
           eposta: form.eposta.trim(),
           telefon: form.telefon.trim(),
-          sifre: form.sifre,
         }),
       });
       const d = await res.json();

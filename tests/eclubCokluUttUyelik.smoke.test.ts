@@ -16,7 +16,7 @@ test("mutlu: aynı firmanın farklı UTT'leri tek kurumsal eczane bağında ayr�
   assert.match(migration, /INSERT INTO public\.eclub_utt_eczane[\s\S]*ef\.baglayan_utt_id/);
   assert.match(migration, /eclub_utt_eczaneye_bagla[\s\S]*pg_advisory_xact_lock/);
   assert.match(migration, /WHERE ue\.eczane_firma_id = v_eczane_firma_id[\s\S]*ue\.utt_id = p_utt_id/);
-  assert.match(eczaneRoute, /rpc\("eclub_utt_eczaneye_bagla"/);
+  assert.match(eczaneRoute, /rpc\("eclub_utt_eczaneye_depolar_ile_bagla"/);
   assert.match(eczaneRoute, /uttEczaneYetkisiVarMi[\s\S]*k\.firma_id/);
   assert.match(kisiRoute, /uttEczaneYetkisiVarMi[\s\S]*k\.firma_id/);
 });

@@ -32,6 +32,15 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
+  if (user?.app_metadata.eclub_davet_bekliyor === true && ![
+    "/login", "/sifre-olustur", "/sifre-olustur/api", "/sifre-yenile", "/davet-bekliyor",
+  ].includes(pathname)) {
+    if (pathname.startsWith("/api/") || pathname.includes("/api/")) {
+      return NextResponse.json({ hata: "Önce üyelik davetinizden şifrenizi oluşturun." }, { status: 403 });
+    }
+    return NextResponse.redirect(new URL("/davet-bekliyor", request.url));
+  }
+
   let eclubKisiErisimPromise: ReturnType<typeof eclubKisiErisimi> | null = null;
   const eclubKisiErisimOku = (istemci: SupabaseClient) => {
     if (!user) throw new Error("E-Club kişi erişimi için oturum gerekir.");

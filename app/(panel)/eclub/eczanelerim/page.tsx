@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, CheckCircle2, Edit3, Gift, LoaderCircle, Plus, Search, Trophy, Users, UserCheck } from "lucide-react";
+import { Building2, Edit3, Gift, LoaderCircle, Plus, Search, Trophy, Users, UserCheck } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import { EczaneBlogu } from "../listem/_components/EczaneBlogu";
 import { useEclubListem } from "../listem/_hooks/useEclubListem";
 import { glnGecerliMi, KISI_ROL_ETIKETLERI, type GlnSorguSonuc } from "../listem/_types";
 import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
+import { DepoTercihFormu } from "@/components/eclub/DepoTercihFormu";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 export default function EclubEczanelerimPage() {
@@ -30,6 +31,8 @@ export default function EclubEczanelerimPage() {
   } = useEclubListem({ hazir, hata, basari });
 
   const [eczaneFormAcik, setEczaneFormAcik] = useState(false);
+  const [depoTercihleri, setDepoTercihleri] = useState<string[]>([]);
+  const [depoHazir, setDepoHazir] = useState(false);
   const [yeniGln, setYeniGln] = useState("");
   const [sorguSonuc, setSorguSonuc] = useState<GlnSorguSonuc | null>(null);
   const [sorguLoading, setSorguLoading] = useState(false);
@@ -117,6 +120,8 @@ export default function EclubEczanelerimPage() {
   const formTemizle = () => {
     setEczaneFormAcik(false);
     setYeniGln("");
+    setDepoTercihleri([]);
+    setDepoHazir(false);
     setSorguSonuc(null);
     setElleAd("");
     setElleIl("");
@@ -142,7 +147,8 @@ export default function EclubEczanelerimPage() {
   };
 
   const listemeEkle = async () => {
-    const tamam = await eczaneEkle(yeniGln);
+    if (!depoHazir) return;
+    const tamam = await eczaneEkle(yeniGln, { konumlar: depoTercihleri });
     if (tamam) formTemizle();
   };
 
@@ -246,7 +252,7 @@ export default function EclubEczanelerimPage() {
           {eczaneler.length > 0 && (
             <div className={bmStyles.tableWrap}>
               <table className={bmStyles.table}>
-                <thead><tr><th>Eczane</th><th>GLN</th><th>Eczacı</th><th>Teknisyen</th><th>Toplam kişi</th><th>Yönetim</th></tr></thead>
+                <thead><tr><th>Eczane Adı</th><th>Eczacı Adı Soyadı</th><th aria-label="Yönetim" /></tr></thead>
                 <tbody>
                   {eczaneler.map((eczane) => (
                     <EczaneBlogu key={eczane.eczane_id} eczane={eczane} kisiler={kisilerByEczane.get(eczane.eczane_id) ?? []} gecisTalepleri={gecislerByEczane.get(eczane.eczane_id) ?? []} islemLoading={islemLoading} onListedenCikar={eczaneListedenCikar} onKisiEkle={kisiEkle} onKisiGuncelle={kisiGuncelle} onKisiPasifeAl={kisiPasifeAl} />
@@ -275,7 +281,8 @@ export default function EclubEczanelerimPage() {
                   <div className="flex flex-col gap-3 rounded-xl border border-[#dfe8f1] bg-[#f8fbfe] p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2"><div><span className="text-sm font-extrabold text-[#203653]">{sorguSonuc.eczane.eczane_adi}</span><p className="mt-1 text-[11px] font-semibold text-[#71859d]">{sorguSonuc.eczane.il}{sorguSonuc.eczane.ilce ? ` / ${sorguSonuc.eczane.ilce}` : ""}</p></div><Badge variant="outline" className="border-[#d9e5f0] bg-white font-mono text-[#60758d]">GLN {sorguSonuc.eczane.gln}</Badge></div>
                     {(sorguSonuc.eczaci || (sorguSonuc.diger_kisiler?.length ?? 0) > 0) ? <div className="flex flex-wrap gap-2">{sorguSonuc.eczaci && <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700">{KISI_ROL_ETIKETLERI.eczaci}: {sorguSonuc.eczaci.ad} {sorguSonuc.eczaci.soyad}</Badge>}{(sorguSonuc.diger_kisiler ?? []).map((kisi) => <Badge key={kisi.kisi_id} variant="outline" className={eclubKisiHedefRolu(kisi.rol) === "eczaci" ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}>{KISI_ROL_ETIKETLERI[kisi.rol]}: {kisi.ad} {kisi.soyad}</Badge>)}</div> : <span className="text-[11px] font-semibold text-[#8a99aa]">Bu eczanede kayıtlı kişi yok.</span>}
-                    {sorguSonuc.listede ? <span className="text-xs font-semibold text-[#7b8da5]">Bu eczane zaten listenizde.</span> : <div className="flex flex-wrap gap-2"><Button onClick={listemeEkle} disabled={islemLoading} className="bg-[#2f7fc7] font-extrabold hover:bg-[#256daf]">Listeme ekle</Button><Button variant="outline" onClick={formTemizle} className="border-[#d8e2ed] text-[#60758d]">Vazgeç</Button></div>}
+                    {!sorguSonuc.listede && <DepoTercihFormu secili={depoTercihleri} onChange={setDepoTercihleri} onHazir={setDepoHazir} />}
+                    {sorguSonuc.listede ? <span className="text-xs font-semibold text-[#7b8da5]">Bu eczane zaten listenizde.</span> : <div className="flex flex-wrap gap-2"><Button onClick={listemeEkle} disabled={islemLoading || !depoHazir} className="bg-[#2f7fc7] font-extrabold hover:bg-[#256daf]">Listeme ekle</Button><Button variant="outline" onClick={formTemizle} className="border-[#d8e2ed] text-[#60758d]">Vazgeç</Button></div>}
                   </div>
                 )}
 

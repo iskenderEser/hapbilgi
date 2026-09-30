@@ -17,6 +17,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, validasyonHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { depoTercihleriGecerli } from "@/lib/eclub/depo";
 import { uttEczaneFirmaBaglari, uttEczaneYetkisiVarMi } from "@/lib/eclub/uttEczane";
 
 function glnGecerliMi(gln: string): boolean {
@@ -190,7 +191,7 @@ export async function POST(request: NextRequest) {
     if ("hata" in k) return k.hata;
 
     const body = await request.json();
-    const { gln, eczane_adi, il, ilce } = body;
+    const { gln, eczane_adi, il, ilce, konumlar } = body;
 
     if (!gln || typeof gln !== "string") return validasyonHatasi("GLN zorunludur.", ["gln"]);
     const glnTemiz = gln.trim();
@@ -237,13 +238,15 @@ export async function POST(request: NextRequest) {
     if (master.onay_durumu !== "onayli")
       return validasyonHatasi("Bu eczane admin onayı bekliyor, henüz eklenemez.", ["gln"]);
 
-    // ── Master'da onaylı → kurumsal bağı ve UTT üyeliğini atomik kur ──
+    if (!depoTercihleriGecerli(konumlar)) return validasyonHatasi("En az 1, en fazla 3 farklı depo/şube seçin.", ["konumlar"]);
+
+    // ── Master'da onaylı → kurumsal bağ, UTT üyeliği ve depo tercihleri atomik ──
     const { data: baglamaSonucu, error: baglamaError } = await adminSupabase
-      .rpc("eclub_utt_eczaneye_bagla", {
+      .rpc("eclub_utt_eczaneye_depolar_ile_bagla", {
         p_utt_id: user.id,
         p_gln: glnTemiz,
-      })
-      .single();
+        p_konumlar: konumlar,
+      });
 
     if (baglamaError || !baglamaSonucu)
       return hataYaniti("Eczane listeye eklenemedi.", "eclub_utt_eczaneye_bagla RPC", baglamaError);

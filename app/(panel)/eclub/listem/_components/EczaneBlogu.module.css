@@ -1,0 +1,121 @@
+.ozetKartlari.ozetKartlari {
+  --depo-sayisi: 1;
+  grid-template-columns: minmax(0, 1.3fr) repeat(4, minmax(0, .65fr)) repeat(var(--depo-sayisi), minmax(0, 1.2fr)) 90px;
+}
+
+.ozetKartlari[data-depo-sayisi="2"] {
+  --depo-sayisi: 2;
+}
+
+.ozetKartlari[data-depo-sayisi="3"] {
+  --depo-sayisi: 3;
+}
+
+.ozetKartlari > div:not(.eklemeButonlari) {
+  container-type: inline-size;
+  min-width: 0;
+  height: 58px;
+  padding: 4px 8px;
+  overflow: hidden;
+  grid-column: auto;
+}
+
+.ozetKartlari.ozetKartlari > div > span {
+  font-size: clamp(7px, 9cqw, 9px);
+  line-height: 11px;
+}
+
+.ozetKartlari.ozetKartlari strong {
+  font-size: clamp(9px, 10cqw, 12px);
+  line-height: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ozetKartlari.ozetKartlari small {
+  font-size: clamp(7px, 6cqw, 8px);
+  line-height: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ozetKartlari > .eklemeButonlari {
+  display: grid;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  width: 90px;
+  height: 58px;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  align-self: center;
+  justify-self: end;
+}
+
+.eklemeButonlari .eklemeButonu {
+  height: 100%;
+  min-height: 0;
+  padding: 2px 8px;
+  gap: 4px;
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.eklemeButonlari .eklemeButonu svg {
+  width: 12px;
+  height: 12px;
+}
+
+.eklemeButonlari .depoSecimListesi {
+  justify-content: space-between;
+  color: #7c8fa4;
+  font-weight: 500;
+}
+
+.depoKarti {
+  min-width: 0;
+  position: relative;
+}
+
+.depoKarti > span {
+  padding-right: 15px;
+}
+
+.depoSil {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 4px;
+  padding: 0;
+  background: transparent;
+  color: #7c8fa4;
+  cursor: pointer;
+}
+
+.depoSil:hover:not(:disabled) {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.depoSil:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.ozetKartlari .depoKarti strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: clamp(8px, 8cqw, 11px);
+  line-height: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
