@@ -1,11 +1,25 @@
 # 📘 HapBilgi — BLUEBOOK
 ### İş Modeli, Mimari, İş Kuralları ve Teknik Envanter Anayasası
-*Son genel inceleme: 28 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026 | Ortak yayın arayüzü, mobil akış ve tanbur güncellemesi: 21 Eylül 2026 | E-Club iş modeli ve teknik kapanış güncellemesi: 28 Eylül 2026*
+*Son genel inceleme: 28 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026 | Ortak yayın arayüzü, mobil akış ve tanbur güncellemesi: 21 Eylül 2026 | E-Club iş modeli ve teknik kapanış güncellemesi: 28 Eylül 2026 | Depo tercihleri ve ödül sipariş takibi kod güncellemesi: 29 Eylül 2026 (canlı migration bekliyor)*
 
 ---
 
 ## 🏛️ Giriş ve Metodoloji
 **HapBilgi BLUEBOOK**, platformun iş modelini, kullanıcı alanlarını, rol ve yetki yapısını, üretim ve yayın akışlarını, öğrenme ve işlem kurallarını, veri mimarisini, arayüz sözleşmelerini ve dosya–tür–işlev envanterini tek kaynakta tanımlayan ana başvuru belgesidir.
+
+### 29 Eylül 2026 — E-Club depo ve ödül sipariş takibi ek sözleşmesi
+
+Bu bölüm depo/sipariş akışındaki önceki tanımları günceller. Kod tamamlanmıştır; **canlı Supabase migration'ı ve canlı uçtan uca doğrulama beklemektedir**.
+
+- Depo kataloğu `ecza_depolari` ve `ecza_depo_subeleri` tablolarındadır. Kullanıcının yükleme sonucu 585 konum, 326 unvan, 57 il ve 289 boş şube adıdır. Boş şube merkez sayılmaz. Adlandırılmış şubesi olan depoda şube seçimi zorunlu; şubesiz depoda tek konum doğrudan seçilebilir. Birden fazla adsız konum belirsizdir.
+- UTT yeni eczane kaydında 1–3 depo/şube konumu seçer; Takımım detayından düzenler. Tercihler firmadan bağımsız eczaneye aittir, ana depo sıralaması yoktur. İl/ilçe/adres salt okunurdur. Düzeltme/Ekleme Talebi varsayılan e-posta uygulamasını açar; sistem ayarı `eclub_depo_info_eposta` başlangıçta `info@mill.gen.tr` olur. Kullanıcı gönderir; buton otomatik e-posta veya DB talebi oluşturmaz.
+- `/eclub/odul-siparis-takibi` yalnız sipariş verilmiş çek taleplerini listeler. UTT/KD_UTT kendi siparişini, BM/TM mevcut hiyerarşi ve firma kapsamında salt okunur görür. Firma için E-Club ve çek modülü açık olmalıdır. GET/POST API kapsamı sunucuda doğrulanır.
+- **Okundu = depoya iletildi.** Sipariş vermede eczacıya depo formu açılmaz. Atanmış UTT ürüne göre eczanenin kayıtlı aktif tercihlerinden hedef seçer; dışarıda ilettiği siparişi Okundu işaretler. Depoya otomatik iletim entegrasyonu yoktur. Hedef, adres ve işlem zamanı snapshot olarak saklanır; sonraki tercih değişiklikleri eski siparişi değiştirmez. İptal edilmiş/siparişsiz talep okunamaz; aynı hedefle tekrar çağrı ikinci bildirim üretmez. Hedef değişimi/geri alma yoktur.
+- Sipariş ve çek onay durumları ayrıdır. BM/TM onay zinciri korunur. Siparişli çekin kod teslimi Okundu gerektirir; siparişsiz talep bu şarttan muaftır. Eski teslimatlar geri alınmaz. DB trigger'ı yeni siparişli talepte kullanılabilir tercih, teslimat geçişinde Okundu şartını doğrular.
+- Okundu işleminde ana eczacıya ürün/adet/MF, firma/UTT ve depo/şube bilgili uygulama içi bildirim ile ayrı `eclub_odul_siparis_outbox` e-posta/push işleri atomik yazılır. Push olayı `eclub_odul_siparis_okundu`; kilit ekranı içeriği geneldir, ayrıntı uygulama içi bildirim ve e-postadadır. Mevcut `/api/cron/eclub-cek-eposta` yeni işleri de tüketir. Yeni kuyruk, çek teslimat durumunu değiştirmez.
+- **Çek kodunun mevcut alıcı kuralı korunur:** e-posta ana eczacıya, push aynı eczanedeki E-Club üyesi ve HapBilgi hesabı bulunan tüm uygun çalışanlara gönderilir. Yeni Okundu olayı yalnız talebi oluşturan ana eczacıya gider. Bu ayrım yerel PostgreSQL testiyle kontrol edilmiştir.
+
+Migration: `scripts/sql/eclub_odul_siparis_takibi.sql`. Operasyon adımları: `docs/ECZA_DEPO_KATALOGU_YUKLEME.md`. Teknik plan: `docs/ECLUB_ODUL_SIPARIS_TAKIBI_TEKNIK_PLAN.md`. Doğrulama: 240 E-Club testi, 36 yerel PostgreSQL kontrolü ve TypeScript kontrolü başarılı. Canlı e-posta/push teslimatı doğrulanmış sayılmaz. Push yapılmadı.
 
 HapBilgi; firmalar tarafından sağlanan veya yayımlanması sağlanan içerikleri yetkili kullanıcı gruplarına ulaştıran, bu kapsamdaki üretim, yayın, öğrenme, ölçüm ve platform işlemlerini rol temelli olarak yürüten dijital bir platformdur. HapBilgi; firma ile çalışanı, firma ile eczane veya eczane ile Eczanem uygulaması üyesi arasındaki ticari ya da mesleki ilişkinin tarafı değildir.
 
@@ -47,6 +61,8 @@ Platform **Video** (`video`), **Podcast** (`podcast`), **Dijital Broşür** (`go
 * **Firma İçi Organizasyon Omurgası:** `firmalar` (Kök) $\rightarrow$ `takimlar` (Takım) $\rightarrow$ `bolgeler` (Saha Bölgesi) zinciri firma içi kullanıcıların kapsamını belirler; E-Club ve Eczanem kimlikleri bu ağacın doğrudan personel düğümleri değildir.
 * **3 Kimlik Düzlemi:** İç platform kullanıcıları `kullanicilar`, eczane kullanıcıları `eclub_kisiler`, Eczanem uygulaması üyeleri `eczanem_musteriler` tablosunda saklanır. E-Club'ın eczane ve firma ilişkileri `eclub_eczane_master`, `eclub_eczaneler`, `eclub_eczane_firma`, `eclub_utt_eczane` ve `eclub_kisi_eczane`; Eczanem üyeliği ise `eczanem_uyelikler` üzerinden kurulur.
 * **Ortak Giriş:** Üç kimlik düzlemi de `/login` üzerinden e-posta veya cep telefonu ve şifreyle giriş yapabilir. Başarılı girişten sonra kullanıcı, çözümlenen kimlik türü ve rolüne uygun alana yönlendirilir.
+* **E-Club Üyelik Daveti:** UTT yeni kişiye şifre vermez. Giriş hesabı bulunmayan kişi şifresiz ve girişe kapalı oluşturulur; 24 saatlik, tek kullanımlık e-posta davetinden `/sifre-olustur` ekranında şifresini iki kez girer. Başarılı kayıtta şifre, e-posta doğrulaması ve Auth erişiminin açılması aynı Auth güncellemesinde yapılır; tarayıcı davetten oturum almaz ve `/login` sayfasına gider. Hazır hesapların şifreleri korunur. UTT daveti yeniden gönderebilir; eski bağlantı geçersizleşir. Gönderim hatası kişi kaydını kaybettirmez.
+
 * **Yetkili Kimlik Çözücü (`v_auth_kimlik_admin` & `rolCozucu`):** Uygulama katmanında oturum açan kullanıcının rolü asla istemci metadata'sından değil; `lib/utils/rolCozucu.ts` aracılığıyla `v_auth_kimlik_admin` view'ından (service_role SELECT yetkili) tek kaynaktan çözülür.
 
 ### 3. Rol ve Yetki Anayasası (`lib/utils/roller.ts`)
