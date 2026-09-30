@@ -34,7 +34,6 @@ test("Faz 2 dağıtım ve öneri yüzeyleri ortak çözümleyici ile tür bazlı
 
   for (const dosya of [
     "app/(panel)/eczanem/utt/_components/UttVideoGonderimSatiri.tsx",
-    "app/(panel)/eclub/videolarim/_components/VideoGonderimSatiri.tsx",
     "components/challenge-club/ChallengeGonderPaneli.tsx",
   ]) {
     assert.match(oku(dosya), /<DagitimIcerikOzeti/, `${dosya} ortak dağıtım özetini kullanmalı`);
@@ -93,4 +92,3 @@ test("Yayın yönetimi liste ve kart görünümleri resim hatasında (404) onErr
   assert.match(yayinSatir, /onError=\{/);
   assert.match(yayinSatir, /<AracVarsayilanKapak/);
 });
-

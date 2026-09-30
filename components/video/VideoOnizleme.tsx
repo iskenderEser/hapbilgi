@@ -12,6 +12,7 @@ interface Props {
   ariaLabel?: string;
   yalnizPlayButonu?: boolean;
   onBitti?: () => void;
+  onIlerleme?: (konumSaniye: number) => void;
   bitisGecikmesiMs?: number;
 }
 
@@ -22,12 +23,14 @@ export default function VideoOnizleme({
   ariaLabel = "Videoyu oynat",
   yalnizPlayButonu = false,
   onBitti,
+  onIlerleme,
   bitisGecikmesiMs = 0,
 }: Props) {
   const embedUrl = bunnyEmbedUrl(videoUrl);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const playerRef = useRef<VideoPlayer | null>(null);
   const onBittiRef = useRef(onBitti);
+  const onIlerlemeRef = useRef(onIlerleme);
   const bittiRef = useRef(false);
   const zamanlayicilarRef = useRef<number[]>([]);
   const [bitisAsamasi, setBitisAsamasi] = useState<"yok" | "mesaj" | "kayboluyor">("yok");
@@ -40,6 +43,7 @@ export default function VideoOnizleme({
   });
 
   useEffect(() => { onBittiRef.current = onBitti; }, [onBitti]);
+  useEffect(() => { onIlerlemeRef.current = onIlerleme; }, [onIlerleme]);
 
   useEffect(() => { bittiRef.current = false; }, [embedUrl]);
 
@@ -74,6 +78,7 @@ export default function VideoOnizleme({
     player.onEnded(tamamla);
     // Bazı sağlayıcı/sürümlerde ended olayı kaçabilir; süre sonu güvenli yedektir.
     player.onTimeUpdate(({ seconds, duration }) => {
+      onIlerlemeRef.current?.(seconds);
       if (duration && duration > 0 && seconds >= duration - 0.5) tamamla();
     });
 

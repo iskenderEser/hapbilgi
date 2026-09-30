@@ -46,8 +46,12 @@ export interface YayinKartiProps {
   solUstRozet?: ReactNode;
   sagUstEkRozet?: ReactNode;
   puanYaniRozet?: ReactNode;
+  baslikSagAksiyon?: ReactNode;
+  tarihSatiriSagAksiyon?: ReactNode;
+  puanSatiriSagAksiyon?: ReactNode;
   altEkIcerik?: ReactNode;
   hoverOverlay?: ReactNode;
+  thumbnailAltBant?: ReactNode;
 
   // Görünürlük Kontrolleri (Farklı roller için eksiltme seçenekleri)
   durumGoster?: boolean;
@@ -57,6 +61,7 @@ export interface YayinKartiProps {
   tarihGoster?: boolean;
   izlenmeGoster?: boolean;
   puanGoster?: boolean;
+  extraPuanGoster?: boolean;
   talepNoGoster?: boolean;
   donguGoster?: boolean;
 
@@ -113,8 +118,12 @@ export function YayinKarti({
   solUstRozet,
   sagUstEkRozet,
   puanYaniRozet,
+  baslikSagAksiyon,
+  tarihSatiriSagAksiyon,
+  puanSatiriSagAksiyon,
   altEkIcerik,
   hoverOverlay,
+  thumbnailAltBant,
 
   durumGoster = true,
   yayinTuruGoster = true,
@@ -123,6 +132,7 @@ export function YayinKarti({
   tarihGoster = true,
   izlenmeGoster = true,
   puanGoster = true,
+  extraPuanGoster = true,
   talepNoGoster = true,
   donguGoster = true,
 
@@ -219,6 +229,8 @@ export function YayinKarti({
         {hoverOverlay}
       </div>
 
+      {thumbnailAltBant && <div className="px-1.5 pt-1">{thumbnailAltBant}</div>}
+
       {/* ─── Kart Gövdesi (p-2.5 Standart) ─── */}
       <div className="p-2.5">
         {/* Birleşik Kapsül (Durum · Döngü · İçerik Türü) */}
@@ -252,6 +264,7 @@ export function YayinKarti({
             {yayin.urun_adi}
           </h3>
 
+          {baslikSagAksiyon}
           {etkilesimGoster && (
             <div className="flex flex-shrink-0 items-center gap-1 text-xs text-gray-500 sm:text-[10px]">
               <button
@@ -304,25 +317,25 @@ export function YayinKarti({
         </div>
 
         {/* 2. Satır: Yayın Tarihi & Talep Kimliği */}
-        {(tarihGoster || talepNoGoster) && (
+        {(tarihGoster || talepNoGoster || tarihSatiriSagAksiyon) && (
           <div className="mt-1.5 flex items-center justify-between gap-1 text-xs text-gray-500 sm:text-[10px]">
             {tarihGoster ? (
               <span className="truncate">{formatTarihUzun(yayin.yayin_tarihi)}</span>
             ) : (
               <span />
             )}
-            {talepNoGoster && yayin.talep_no != null ? (
+            {tarihSatiriSagAksiyon ?? (talepNoGoster && yayin.talep_no != null ? (
               <span className="shrink-0 font-mono text-xs text-[#bc2d0d] sm:text-[10px]">
                 {talepIdGoster(yayin.firma_adi, yayin.talep_no)}
               </span>
             ) : (
               <span />
-            )}
+            ))}
           </div>
         )}
 
         {/* 3. Satır: Puan / Ek Rozet & İzlenme Sayısı */}
-        {(puanGoster || izlenmeGoster || puanYaniRozet) && (
+        {(puanGoster || izlenmeGoster || puanYaniRozet || puanSatiriSagAksiyon) && (
           <div className="mt-1.5 flex items-center justify-between gap-1">
             <div className="flex shrink-0 items-center gap-1">
               {puanGoster && yayin.video_puani != null && (
@@ -337,7 +350,7 @@ export function YayinKarti({
                   <span className="hidden sm:inline">Puan</span>
                 </span>
               )}
-              {puanGoster && !!yayin.extra_puan && yayin.extra_puan > 0 && (
+              {puanGoster && extraPuanGoster && !!yayin.extra_puan && yayin.extra_puan > 0 && (
                 <span
                   className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-extrabold text-white shadow-xs sm:px-1.5 sm:text-[9px]"
                   style={{
@@ -350,10 +363,15 @@ export function YayinKarti({
               {puanYaniRozet}
             </div>
 
-            {izlenmeGoster && (
-              <span className="shrink-0 text-xs text-gray-500 sm:text-[10px]">
-                {yayin.izlenme_sayisi ?? 0} izlenme
-              </span>
+            {(izlenmeGoster || puanSatiriSagAksiyon) && (
+              <div className="flex shrink-0 items-center gap-1">
+                {izlenmeGoster && (
+                  <span className="text-xs text-gray-500 sm:text-[10px]">
+                    {yayin.izlenme_sayisi ?? 0} izlenme
+                  </span>
+                )}
+                {puanSatiriSagAksiyon}
+              </div>
             )}
           </div>
         )}

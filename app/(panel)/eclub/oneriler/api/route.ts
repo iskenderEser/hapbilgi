@@ -15,6 +15,7 @@ import { eclubYayinKapsamindaMi } from "@/lib/eclub/oneriKapsam";
 import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { uttEczaneFirmaBaglari } from "@/lib/eclub/uttEczane";
+import { gecerliTurBaslangiclari } from "@/lib/tclub/tur/kayit";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -284,6 +285,18 @@ export async function POST(request: NextRequest) {
     if (!yayin.arac_id)
       return hataYaniti("Yayının öğrenme aracı kimliği çözülemedi.", "v_yayin_detay — arac_id yok", null, 500);
 
+    // Arayüz atlanarak doğrudan POST yapılmasını da engelle.
+    const turler = await gecerliTurBaslangiclari(adminSupabase, [yayin_id], true);
+    const { data: yonetim, error: yonetimError } = await adminSupabase.from("yayin_yonetimi")
+      .select("yayin_tarihi").eq("yayin_id", yayin_id).single();
+    if (yonetimError || !yonetim) return hataYaniti("Yayın turu doğrulanamadı.", "yayin_yonetimi SELECT", yonetimError);
+    const turBaslangici = turler[yayin_id]?.baslangic_tarihi ?? yonetim.yayin_tarihi;
+    const { data: inceleme, error: incelemeError } = await adminSupabase.from("eclub_utt_yayin_incelemeleri")
+      .select("inceleme_id").eq("utt_id", user.id).eq("yayin_id", yayin_id).eq("arac_id", yayin.arac_id)
+      .gte("tamamlandi_at", turBaslangici).limit(1).maybeSingle();
+    if (incelemeError) return hataYaniti("Gönderim öncesi inceleme doğrulanamadı.", "eclub_utt_yayin_incelemeleri SELECT", incelemeError);
+    if (!inceleme) return isKuraluHatasi("Göndermek için yayını önce tamamlayın.");
+
     // 4+5. Kişileri çek: rol, aktif kişi-eczane bağı ve UTT'nin bağımsız
     // eczane üyeliği ayrı kaynaklardan doğrulanır.
 
@@ -352,12 +365,30 @@ export async function POST(request: NextRequest) {
       adaylar.push(kid);
     }
 
+    // Aynı UTT'nin aynı yayını daha önce gönderdiği kişileri yeniden önerme.
+    let gonderilecekAdaylar = adaylar;
+    if (adaylar.length > 0) {
+      const { data: oncekiGonderimler, error: oncekiGonderimError } = await adminSupabase
+        .from("eclub_oneri_kayitlari")
+        .select("kisi_id")
+        .eq("oneren_id", user.id)
+        .eq("yayin_id", yayin_id)
+        .in("kisi_id", adaylar);
+      if (oncekiGonderimError) return hataYaniti("Önceki gönderimler doğrulanamadı.", "eclub_oneri_kayitlari SELECT — aynı yayın ve alıcı", oncekiGonderimError);
+      const dahaOnceGonderilenler = new Set((oncekiGonderimler ?? []).map((kayit) => kayit.kisi_id));
+      gonderilecekAdaylar = adaylar.filter((kid) => {
+        if (!dahaOnceGonderilenler.has(kid)) return true;
+        atlanan.push({ kisi_id: kid, sebep: "zaten_gonderildi" });
+        return false;
+      });
+    }
+
     // Atomik kayıt: yalnız aynı UTT + aynı kişi + aynı gerçek öğrenme aracının tekrarını engeller.
     const gonderilen: string[] = [];
     const now = new Date();
     const gecerlilikGun = await eclubOneriGecerlilikGun(adminSupabase);
     const bitis = oneriBitisHesapla(now, gecerlilikGun);
-    for (const kid of adaylar) {
+    for (const kid of gonderilecekAdaylar) {
       const { data: rpcSonucu, error: insertError } = await adminSupabase
         .rpc("eclub_oneri_atomik_kaydet", {
           p_yayin_id: yayin_id,

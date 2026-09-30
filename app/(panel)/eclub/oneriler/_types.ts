@@ -13,9 +13,13 @@ export interface OneriYayin extends Omit<YayindakiVideo, "hedef_roller" | "arac_
   arac_turu: OgrenmeAraciTuru;
   hedef_roller: EclubHedefRol[];
   soru_sayisi?: number | null;
+  cek_karsiligi_var_mi?: boolean | null;
+  karsilik_puan?: number | null;
+  karsilik_tl?: number | null;
   satis_sarti_tipi?: SatisSartiTipi | null;
   gizli_sart_katlama_orani?: number | null;
   barem_tablosu?: BaremSatiri[] | null;
+  gonderim_incelemesi_tamamlandi: boolean;
 }
 
 // Öneri alıcısı adayı (kisiler GET'ten türetilir).
@@ -80,5 +84,6 @@ export const ATLANMA_SEBEP_ETIKETLERI: Record<string, string> = {
   rol_uyumsuz: "Kişinin rolü öğrenme içeriğinin hedefiyle uyuşmuyor",
   giris_hesabi_yok: "Kişinin giriş hesabı henüz hazır değil",
   tekrar: "Bu kişi için belirlenen tekrar gönderim süresi henüz dolmadı",
+  zaten_gonderildi: "Bu yayın kişiye daha önce gönderildi",
   kayit_hatasi: "Kayıt sırasında hata oluştu",
 };

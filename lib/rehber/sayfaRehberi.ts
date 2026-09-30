@@ -304,8 +304,21 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   "eclub-videolarim": {
     anahtar: "eclub-videolarim",
     baslik: "Gönderilecek Yayınlar",
-    ozet: "Eczacı ve eczane teknisyenlerine gönderebileceğiniz güncel eğitim videoları havuzunu incelemenizi ve hızlıca video önermenizi sağlar.",
-    maddeler: [],
+    ozet: "Eczacı ve eczane teknisyenlerine gönderebileceğiniz güncel yayınları incelemenizi ve hızlıca yayın önermenizi sağlar.",
+    maddeler: [
+      {
+        baslik: "Hedef Kitleyi Seçin",
+        aciklama: "Üstteki kartlardan hedef kitleyi seçin. Karttaki sayı, o hedef kitle için yayındaki toplam yayın sayısıdır.",
+      },
+      {
+        baslik: "Yayını İnceleyin",
+        aciklama: "Tümü, Gönderime Hazır veya Gönderilenler seçeneğiyle rafı daraltın. Kapağa tıklayarak içeriği açın; göndereceklerinizi kartlardan işaretleyin.",
+      },
+      {
+        baslik: "Alıcıları Seçip Gönderin",
+        aciklama: "Üstteki ortak alıcı listesinden kişileri seçin. Gönder'e tıklayarak işaretlediğiniz yayınları seçtiğiniz kişilere önerin.",
+      },
+    ],
   },
 
   // ─── 17. E-CLUB GÖNDERİLEN VİDEOLAR ───────────────────────────────────────

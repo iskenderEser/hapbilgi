@@ -33,6 +33,7 @@ interface Props {
   }>;
   bitir: (izlemeId: string) => Promise<void>;
   onTamamlandi?: () => void | Promise<void>;
+  inceleme?: { sayfaIlerle: (sayfalar: number[]) => void; tamamla: (sayfalar: number[]) => void };
   hata: (mesaj: string, adim?: string, detay?: string) => void;
 }
 
@@ -86,6 +87,7 @@ export default function FlipPdfOynatici({
   baslat,
   bitir,
   onTamamlandi,
+  inceleme,
   hata,
 }: Props) {
   const alanRef = useRef<HTMLDivElement>(null);
@@ -138,9 +140,10 @@ export default function FlipPdfOynatici({
   }, [aracId, bagId]);
 
   useEffect(() => {
-    if (!belge || !izlemeId || saltGoruntuleme) return;
+    if (!belge || (!izlemeId && !inceleme) || (saltGoruntuleme && !inceleme)) return;
     const sayac = window.setInterval(() => {
       if (document.visibilityState !== "visible") return;
+      if (inceleme) inceleme.sayfaIlerle(cift && sayfa < belge.numPages ? [sayfa, sayfa + 1] : [sayfa]);
       setSayfaSureleri((onceki) => {
         const yeni = { ...onceki, [String(sayfa)]: (onceki[String(sayfa)] ?? 0) + 1 };
         if (cift && sayfa < belge.numPages) yeni[String(sayfa + 1)] = (onceki[String(sayfa + 1)] ?? 0) + 1;
@@ -148,7 +151,7 @@ export default function FlipPdfOynatici({
       });
     }, 1000);
     return () => window.clearInterval(sayac);
-  }, [belge, izlemeId, sayfa, cift, saltGoruntuleme]);
+  }, [belge, izlemeId, sayfa, cift, saltGoruntuleme, inceleme]);
 
   const ilerlemeKaydet = async (tamamla = false) => {
     if (!izlemeId) return false;
@@ -258,7 +261,7 @@ export default function FlipPdfOynatici({
           <ChevronLeft size={16} /> Önceki
         </button>
         <span className="text-[11px] font-bold text-slate-500">
-          {saltGoruntuleme ? "Salt görüntüleme" : `${okunanSayisi}/${belge.numPages} sayfa okundu`}
+          {saltGoruntuleme && !inceleme ? "Salt görüntüleme" : `${okunanSayisi}/${belge.numPages} sayfa okundu`}
         </span>
         <button
           type="button"
@@ -288,11 +291,11 @@ export default function FlipPdfOynatici({
         ))}
       </div>
 
-      {!saltGoruntuleme && <div className="flex justify-end border-t border-slate-200 bg-white p-3">
+      {(!saltGoruntuleme || inceleme) && <div className="flex justify-end border-t border-slate-200 bg-white p-3">
         <button
           type="button"
           disabled={islem || okunanSayisi < belge.numPages}
-          onClick={() => void tamamla()}
+          onClick={() => inceleme ? inceleme.tamamla(cift && sayfa < belge.numPages ? [sayfa, sayfa + 1] : [sayfa]) : void tamamla()}
           className="rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50"
         >
           Okumayı tamamla
