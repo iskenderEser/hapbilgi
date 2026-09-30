@@ -34,6 +34,12 @@ interface CekTalebi {
   durum: CekTalepDurumu;
   cek_kodu: string | null;
   created_at: string;
+  siparis_okundu_at: string | null;
+  depo_adi_snapshot: string | null;
+  depo_sube_adi_snapshot: string | null;
+  depo_il_snapshot: string | null;
+  depo_ilce_snapshot: string | null;
+  depo_adres_snapshot: string | null;
 }
 
 export default function EclubCekTaleplerimPage() {
@@ -75,12 +81,12 @@ export default function EclubCekTaleplerimPage() {
 
   useEffect(() => {
     if (authYukleniyor || !eclubKisi) return;
-    void fetch("/bildirimler/api", {
+    void Promise.all(["cek", "odul_siparis"].map((tur) => fetch("/bildirimler/api", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kayit_turu: "cek" }),
-    }).then((yanit) => {
-      if (yanit.ok) bildirimRozetleriniYenile();
+      body: JSON.stringify({ kayit_turu: tur }),
+    }))).then((yanitlar) => {
+      if (yanitlar.every((yanit) => yanit.ok)) bildirimRozetleriniYenile();
     }).catch(() => {});
   }, [authYukleniyor, eclubKisi]);
 
@@ -153,6 +159,10 @@ export default function EclubCekTaleplerimPage() {
                       <div className="rounded-xl bg-[#f5f8fb] px-3 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Çek Tutarı</small><strong className="text-xs text-emerald-700">{talep.talep_edilen_cek_tl.toLocaleString("tr-TR")} TL</strong></div>
                       <div className="col-span-2 rounded-xl bg-[#f5f8fb] px-3 py-2 sm:col-span-1"><small className="block text-[9px] font-bold text-[#8190a3]">Satış Şartı</small><strong className="text-xs text-[#40556d]">{talep.siparis_verildi_mi ? `${talep.siparis_adet} adet + ${talep.siparis_mal_fazlasi} MF` : "Siparişsiz"}</strong></div>
                     </div>
+                    {talep.siparis_verildi_mi && <div className="mt-3 rounded-xl border bg-slate-50 p-3 text-xs">
+                      <strong>{talep.siparis_okundu_at ? "Sipariş Okundu" : "Sipariş henüz okunmadı"}</strong>
+                      {talep.siparis_okundu_at && <><p>{new Date(talep.siparis_okundu_at).toLocaleString("tr-TR")}</p><p>{talep.depo_adi_snapshot}{talep.depo_sube_adi_snapshot ? ` / ${talep.depo_sube_adi_snapshot}` : ""}</p><p>{talep.depo_il_snapshot} / {talep.depo_ilce_snapshot}</p><p>{talep.depo_adres_snapshot}</p></>}
+                    </div>}
                     {CEK_KODU_GORUNUR_DURUMLARI.includes(talep.durum) && talep.cek_kodu && (
                       <div className="mt-2.5 rounded-xl border border-emerald-300 bg-emerald-50 p-3">
                         <span className="text-[11px] font-extrabold text-emerald-800">Migros Hediye Çeki Kodunuz</span>

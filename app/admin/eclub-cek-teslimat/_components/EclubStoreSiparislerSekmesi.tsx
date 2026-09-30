@@ -106,6 +106,8 @@ export default function EclubStoreSiparislerSekmesi({
                           <span style={{ fontFamily: "monospace", fontWeight: 800 }}>{talep.cek_kodu}</span>
                           <button type="button" onClick={() => void kodKopyala(talep.cek_kodu!, talep.talep_id)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#15803d" }}>{kopyalandiId === talep.talep_id ? <Check size={13} /> : <Copy size={13} />}</button>
                         </div>
+                      ) : talep.durum === "onaylandi" && talep.siparis_verildi_mi && !talep.siparis_okundu_at ? (
+                        <span style={{ color: "#92400e", fontWeight: 700 }}>Siparişin UTT tarafından Okundu yapılması bekleniyor.</span>
                       ) : talep.durum === "onaylandi" ? (
                         <div style={{ display: "flex", gap: "4px" }}>
                           <input type="text" placeholder="Çek kodu" value={kodInputs[talep.talep_id] ?? ""} onChange={(event) => setKodInputs((onceki) => ({ ...onceki, [talep.talep_id]: event.target.value }))} style={{ padding: "4px 8px", border: "1px solid #d1d5db", borderRadius: "6px", width: "140px" }} />

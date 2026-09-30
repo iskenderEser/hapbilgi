@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       .select(`
         talep_id, eczane_id, firma_id, yayin_id, talep_eden_kisi_id, toplanan_puan,
         talep_edilen_cek_tl, siparis_tipi, siparis_verildi_mi, siparis_adet,
-        siparis_mal_fazlasi, durum, utt_id, bm_id, bm_onay_tarihi,
+        siparis_mal_fazlasi, siparis_okundu_at, depo_sube_id, depo_adi_snapshot, depo_sube_adi_snapshot, durum, utt_id, bm_id, bm_onay_tarihi,
         tm_id, tm_onay_tarihi, cek_kodu,
         cek_gonderim_tarihi, devreden_puan, created_at,
         eclub_eczaneler ( gln ), firmalar ( firma_adi ),

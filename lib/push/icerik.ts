@@ -51,6 +51,11 @@ export function icerikUret(olayTuru: PushOlayTuru, aliciRol: string, baglam: Pus
       }
       return null;
 
+    case "eclub_odul_siparis_okundu":
+      if (aliciRol !== "eczaci") return null;
+      return { baslik: "HapBilgi E-Club", govde: "Ödül siparişiniz seçilen depoya okunmuştur. Ayrıntıları Çek Taleplerim ekranında görebilirsiniz.",
+        url: baglam.bagId ? `/eclub/cek-taleplerim?talep_id=${encodeURIComponent(baglam.bagId)}` : "/eclub/cek-taleplerim" };
+
     case "eclub_cek_teslim":
       if (ECLUB_TUKETICI_ROLLERI.includes(aliciRol)) {
         return {
