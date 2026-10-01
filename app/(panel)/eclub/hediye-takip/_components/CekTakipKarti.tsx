@@ -1,5 +1,5 @@
 import { CEK_TALEP_DURUM_META } from "@/lib/eclub/store/eclubStoreTipler";
-import type { CekTakipTalebi, CekTakipTeslimatKanali } from "@/lib/eclub/hediyeTakip/cekTakip";
+import type { CekTakipIslemi, CekTakipTalebi, CekTakipTeslimatKanali } from "@/lib/eclub/hediyeTakip/cekTakip";
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 
 function tarihFormatla(iso: string | null): string {
@@ -50,7 +50,37 @@ export function CekTakipDurumRozeti({ talep }: { talep: CekTakipTalebi }) {
 
 export { tarihFormatla, kosulMetni };
 
-export default function CekTakipKarti({ talep }: { talep: CekTakipTalebi }) {
+export function CekTakipIslemButonu({
+  talep,
+  islemde,
+  onIslem,
+}: {
+  talep: CekTakipTalebi;
+  islemde: boolean;
+  onIslem: (talepId: string, islem: CekTakipIslemi) => void;
+}) {
+  if (!talep.izin_verilen_islemler.includes("bm_onayina_gonder")) return <span className="text-[#9aa8b8]">—</span>;
+  return (
+    <button
+      type="button"
+      onClick={() => onIslem(talep.talep_id, "bm_onayina_gonder")}
+      disabled={islemde}
+      className="inline-flex min-h-9 items-center justify-center rounded-xl border border-[#bfdbfe] bg-[#eaf4ff] px-3 text-[11px] font-extrabold text-[#1d4ed8] transition hover:bg-[#dbeafe] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {islemde ? "Gönderiliyor..." : "BM Onayına Gönder"}
+    </button>
+  );
+}
+
+export default function CekTakipKarti({
+  talep,
+  islemde,
+  onIslem,
+}: {
+  talep: CekTakipTalebi;
+  islemde: boolean;
+  onIslem: (talepId: string, islem: CekTakipIslemi) => void;
+}) {
   return (
     <article className="rounded-2xl border border-[#dfe7f1] bg-white p-4 shadow-[0_5px_16px_rgba(31,55,90,0.035)]">
       <div className="flex items-start justify-between gap-3">
@@ -66,7 +96,7 @@ export default function CekTakipKarti({ talep }: { talep: CekTakipTalebi }) {
         <div><dt className="text-[9px] font-extrabold uppercase tracking-[0.05em] text-[#8a98aa]">Çek Tutarı</dt><dd className="mt-1 font-black text-emerald-700">{talep.cek.tutar_tl.toLocaleString("tr-TR")} TL</dd></div>
         <div className="col-span-2"><dt className="text-[9px] font-extrabold uppercase tracking-[0.05em] text-[#8a98aa]">Eczane / Üye</dt><dd className="mt-1 font-bold text-[#40556d]">{talep.eczane.eczane_adi}</dd><dd className="text-[11px] text-[#71859d]">{talep.uye.ad_soyad} · {eclubKisiRolEtiketi(talep.uye.rol)}</dd></div>
         <div><dt className="text-[9px] font-extrabold uppercase tracking-[0.05em] text-[#8a98aa]">Kullanılan Puan</dt><dd className="mt-1 font-black tabular-nums text-[#40556d]">{talep.puan.kullanilan.toLocaleString("tr-TR")}</dd></div>
-        <div><dt className="text-[9px] font-extrabold uppercase tracking-[0.05em] text-[#8a98aa]">İşlem</dt><dd className="mt-1 font-bold text-[#9aa8b8]">—</dd></div>
+        <div><dt className="text-[9px] font-extrabold uppercase tracking-[0.05em] text-[#8a98aa]">İşlem</dt><dd className="mt-1"><CekTakipIslemButonu talep={talep} islemde={islemde} onIslem={onIslem} /></dd></div>
         <div className="col-span-2"><dt className="text-[9px] font-extrabold uppercase tracking-[0.05em] text-[#8a98aa]">Teslimat</dt><dd className="mt-1"><CekTakipTeslimatOzeti talep={talep} /></dd></div>
       </dl>
     </article>

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   CekTakipFiltreleri,
+  CekTakipIslemi,
   CekTakipSayfalama,
   CekTakipTalebi,
   CekTakipTeslimatKanali,
@@ -81,6 +82,16 @@ export function cekTakipTeslimatKanaliniOzetle(
     else durum = "basarisiz";
   }
   return { durum, toplam: durumlar.length, ...sayilar };
+}
+
+export function cekTakipIzinVerilenIslemler(
+  kapsam: CekTakipKapsami,
+  talep: Pick<HamTalep, "durum" | "utt_id">,
+): CekTakipIslemi[] {
+  if (talep.durum === "beklemede" && talep.utt_id === kapsam.utt_id) {
+    return ["bm_onayina_gonder"];
+  }
+  return [];
 }
 
 export async function cekTakipTalepleriniGetir(
@@ -209,7 +220,7 @@ export async function cekTakipTalepleriniGetir(
         eposta: cekTakipTeslimatKanaliniOzetle(kanalDurumlari(talep.talep_id, "eposta")),
         push: cekTakipTeslimatKanaliniOzetle(kanalDurumlari(talep.talep_id, "push")),
       },
-      izin_verilen_islemler: [],
+      izin_verilen_islemler: cekTakipIzinVerilenIslemler(kapsam, talep),
     };
   });
 

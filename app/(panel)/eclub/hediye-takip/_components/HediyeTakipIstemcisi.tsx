@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CEK_TAKIP_SAYFA_LIMITI, type CekTakipApiYaniti } from "@/lib/eclub/hediyeTakip/cekTakip";
+import { CEK_TAKIP_SAYFA_LIMITI, type CekTakipApiYaniti, type CekTakipIslemi } from "@/lib/eclub/hediyeTakip/cekTakip";
 import CekTakipFiltreleri, {
   BOS_CEK_TAKIP_FILTRELERI,
   type CekTakipFiltreDegerleri,
@@ -21,6 +21,8 @@ export default function HediyeTakipIstemcisi() {
   const [cekVerisi, setCekVerisi] = useState<CekTakipApiYaniti | null>(null);
   const [cekFiltreleri, setCekFiltreleri] = useState<CekTakipFiltreDegerleri>({ ...BOS_CEK_TAKIP_FILTRELERI });
   const [dahaYukleniyor, setDahaYukleniyor] = useState(false);
+  const [islemdekiTalepId, setIslemdekiTalepId] = useState<string | null>(null);
+  const [yenilemeAnahtari, setYenilemeAnahtari] = useState(0);
   const istekSirasi = useRef(0);
   const aktifIstek = useRef<AbortController | null>(null);
 
@@ -54,7 +56,26 @@ export default function HediyeTakipIstemcisi() {
     };
     void yukle();
     return () => controller.abort();
-  }, [sorguOlustur]);
+  }, [sorguOlustur, yenilemeAnahtari]);
+
+  const cekTakipIslemiYap = async (talepId: string, islem: CekTakipIslemi) => {
+    if (islemdekiTalepId || islem !== "bm_onayina_gonder") return;
+    setIslemdekiTalepId(talepId);
+    try {
+      const yanit = await fetch(`/eclub/hediye-takip/api/cek-takip/${talepId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ islem }),
+      });
+      const veri = await yanit.json();
+      if (!yanit.ok) throw new Error(veri.hata ?? "Çek talebi BM onayına gönderilemedi.");
+      setYenilemeAnahtari((deger) => deger + 1);
+    } catch {
+      // İşlem hata görünümü ve yeniden deneme davranışı 11. adımda eklenecektir.
+    } finally {
+      setIslemdekiTalepId(null);
+    }
+  };
 
   const dahaFazlaYukle = async () => {
     if (!cekVerisi || dahaYukleniyor || !cekVerisi.sayfalama.sonraki_kayit_var_mi) return;
@@ -110,7 +131,9 @@ export default function HediyeTakipIstemcisi() {
             talepler={cekVerisi?.talepler ?? []}
             sonrakiKayitVarMi={cekVerisi?.sayfalama.sonraki_kayit_var_mi ?? false}
             dahaYukleniyor={dahaYukleniyor}
+            islemdekiTalepId={islemdekiTalepId}
             onDahaFazla={() => void dahaFazlaYukle()}
+            onIslem={(talepId, islem) => void cekTakipIslemiYap(talepId, islem)}
           />
         ) : (
           <section aria-label="Sipariş takip içeriği" className="min-h-56 rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]" />

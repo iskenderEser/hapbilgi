@@ -1,7 +1,8 @@
-import type { CekTakipTalebi } from "@/lib/eclub/hediyeTakip/cekTakip";
+import type { CekTakipIslemi, CekTakipTalebi } from "@/lib/eclub/hediyeTakip/cekTakip";
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import CekTakipKarti, {
   CekTakipDurumRozeti,
+  CekTakipIslemButonu,
   CekTakipTeslimatOzeti,
   kosulMetni,
   tarihFormatla,
@@ -11,12 +12,16 @@ export default function CekTakipListesi({
   talepler,
   sonrakiKayitVarMi,
   dahaYukleniyor,
+  islemdekiTalepId,
   onDahaFazla,
+  onIslem,
 }: {
   talepler: CekTakipTalebi[];
   sonrakiKayitVarMi: boolean;
   dahaYukleniyor: boolean;
+  islemdekiTalepId: string | null;
   onDahaFazla: () => void;
+  onIslem: (talepId: string, islem: CekTakipIslemi) => void;
 }) {
   const th = "px-3 py-3 text-left text-[10px] font-extrabold uppercase tracking-[0.05em] text-[#71859d]";
   const td = "px-3 py-3 align-top text-xs";
@@ -43,7 +48,7 @@ export default function CekTakipListesi({
                 <td className={`${td} text-right font-black tabular-nums text-emerald-700`}>{talep.cek.tutar_tl.toLocaleString("tr-TR")} TL</td>
                 <td className={td}><CekTakipDurumRozeti talep={talep} /></td>
                 <td className={`${td} min-w-[190px]`}><CekTakipTeslimatOzeti talep={talep} /></td>
-                <td className={`${td} font-bold text-[#9aa8b8]`}>—</td>
+                <td className={td}><CekTakipIslemButonu talep={talep} islemde={islemdekiTalepId === talep.talep_id} onIslem={onIslem} /></td>
               </tr>
             ))}
           </tbody>
@@ -51,7 +56,14 @@ export default function CekTakipListesi({
       </div>
 
       <div className="grid gap-3 bg-[#f8fafc] p-3 lg:hidden">
-        {talepler.map((talep) => <CekTakipKarti key={talep.talep_id} talep={talep} />)}
+        {talepler.map((talep) => (
+          <CekTakipKarti
+            key={talep.talep_id}
+            talep={talep}
+            islemde={islemdekiTalepId === talep.talep_id}
+            onIslem={onIslem}
+          />
+        ))}
       </div>
 
       {sonrakiKayitVarMi && (
