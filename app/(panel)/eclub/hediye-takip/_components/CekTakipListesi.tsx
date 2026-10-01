@@ -121,7 +121,7 @@ export default function CekTakipListesi({
         </table>
       </div>
 
-      <div className="grid gap-3 bg-[#f8fafc] p-3 lg:hidden">
+      <div className="grid min-w-0 grid-cols-1 gap-3 overflow-hidden bg-[#f8fafc] p-3 lg:hidden">
         {talepler.map((talep) => (
           <CekTakipKarti
             key={talep.talep_id}

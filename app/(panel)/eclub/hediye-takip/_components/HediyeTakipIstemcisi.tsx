@@ -27,6 +27,7 @@ export default function HediyeTakipIstemcisi() {
   const [yenilemeAnahtari, setYenilemeAnahtari] = useState(0);
   const istekSirasi = useRef(0);
   const aktifIstek = useRef<AbortController | null>(null);
+  const islemKilidi = useRef<string | null>(null);
 
   const sorguOlustur = useCallback((offset: number) => {
     const params = new URLSearchParams();
@@ -73,7 +74,8 @@ export default function HediyeTakipIstemcisi() {
   }, [sorguOlustur, yenilemeAnahtari]);
 
   const cekTakipIslemiYap = async (talepId: string, islem: CekTakipIslemi) => {
-    if (islemdekiTalepId || islem !== "bm_onayina_gonder") return;
+    if (islemKilidi.current || islem !== "bm_onayina_gonder") return;
+    islemKilidi.current = talepId;
     setIslemdekiTalepId(talepId);
     try {
       const yanit = await fetch(`/eclub/hediye-takip/api/cek-takip/${talepId}`, {
@@ -90,6 +92,7 @@ export default function HediyeTakipIstemcisi() {
         mesaj: error instanceof Error ? error.message : "Çek talebi BM onayına gönderilemedi.",
       });
     } finally {
+      islemKilidi.current = null;
       setIslemdekiTalepId(null);
     }
   };
@@ -127,7 +130,7 @@ export default function HediyeTakipIstemcisi() {
   const cekFiltresiVar = Object.values(cekFiltreleri).some(Boolean);
 
   return (
-    <div className="min-h-full bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-full overflow-x-hidden bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <main className="mx-auto flex max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
         <header>
           <h1 className="text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Hediye Takibi</h1>
@@ -148,6 +151,12 @@ export default function HediyeTakipIstemcisi() {
           />
         )}
 
+        <div
+          id={`hediye-takip-${takipTuru}-paneli`}
+          role="tabpanel"
+          aria-labelledby={`hediye-takip-${takipTuru}-sekmesi`}
+          className="min-w-0"
+        >
         {takipTuru === "cek" ? (
           <CekTakipListesi
             talepler={cekVerisi?.talepler ?? []}
@@ -164,6 +173,7 @@ export default function HediyeTakipIstemcisi() {
         ) : (
           <section aria-label="Sipariş takip içeriği" className="min-h-56 rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]" />
         )}
+        </div>
       </main>
     </div>
   );
