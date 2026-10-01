@@ -183,14 +183,6 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 7. E-CLUB TAKIM RAPORLARIM (SAYFA BAŞLIĞI STANDARDI) ─────────────────
-  "eclub-takim-raporlar": {
-    anahtar: "eclub-takim-raporlar",
-    baslik: "E-Club Takımları Raporları",
-    ozet: "Eczanelere gönderilen yayınların izlenme, doğru cevap ve puan dönüşümünü eczane, eczacı ve teknisyen bazında takip etmenizi sağlar. Dönem oranlarını, ekip hiyerarşisini ve hangi içeriklerin tamamlandığını grafiklerle analiz edebilirsiniz.",
-    maddeler: [],
-  },
-
   // ─── 8. YAYIN YÖNETİMİ (SAYFA BAŞLIĞI STANDARDI) ──────────────────────────
   "yayin-yonetimi": {
     anahtar: "yayin-yonetimi",

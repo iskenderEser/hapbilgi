@@ -93,5 +93,5 @@ test('BM NEDİR ortak metinleri korur, challenge kavramlarını ve erişilebilir
   }
   const sonuc = nedirSorusunuCoz('E-Club nedir?', 'bm');
   assert.equal(sonuc.durum, 'bulundu');
-  if (sonuc.durum === 'bulundu') assert.equal(sonuc.konu.aksiyon?.url, '/eclub/raporlar');
+  if (sonuc.durum === 'bulundu') assert.equal(sonuc.konu.aksiyon?.url, '/eclub/ligi');
 });

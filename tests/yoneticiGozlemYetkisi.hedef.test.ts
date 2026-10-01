@@ -292,7 +292,7 @@ for (const yoneticiRolu of YONETICI_ROLLER) {
     }
     for (const saltOkuma of [
       "/yayindaki-videolar", "/raporlar/yonetici", "/store/siparisler",
-      "/cc-ligi", "/eclub/raporlar", "/eclub/ligi",
+      "/cc-ligi", "/eclub/ligi",
     ]) {
       assert.ok(yollar.includes(saltOkuma), `${yoneticiRolu} salt okuma yolunu göremiyor: ${saltOkuma}`);
     }

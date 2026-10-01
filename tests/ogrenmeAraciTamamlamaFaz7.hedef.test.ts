@@ -81,10 +81,7 @@ test("öğrenme aracı performansı yalnız üretici Yayın Raporlarında kullan
   for (const api of digerApiYollari) {
     assert.doesNotMatch(api, /aracTuruDagilimi|arac_turu_dagilimi/);
   }
-  for (const sayfa of [
-    ...digerSayfaYollari,
-    oku("app/(panel)/eclub/raporlar/page.tsx"),
-  ]) {
+  for (const sayfa of digerSayfaYollari) {
     assert.doesNotMatch(sayfa, /OgrenmeAraciPerformansi/);
   }
 });

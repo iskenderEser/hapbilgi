@@ -19,7 +19,6 @@ test("UTT E-Club altında kararlaştırılan yönetim alanlarını doğru sırad
     [
       ["E-Club Takımım", "/eclub/eczanelerim"],
       ["E-Club Yayınları", "/eclub/yayinlar"],
-      ["E-Club Raporları", "/eclub/raporlar"],
       ["E-Club Ligi", "/eclub/ligi"],
     ],
   );
@@ -36,7 +35,7 @@ test("BM, TM, üretici ve yönetici E-Club yönetim sayfalarını görür; video
   for (const rolKucu of ["bm", "tm", "pm", "gm"]) {
     assert.deepEqual(
       eclub.oglar.filter((oge) => oge.gate({ ...uttBaglami, rolKucu })).map((oge) => oge.etiket),
-      ["E-Club Raporları", "E-Club Ligi"],
+      ["E-Club Ligi"],
     );
   }
   assert.equal(tclub.oglar.some((oge) => oge.etiket === "E-Club Ligi"), false);

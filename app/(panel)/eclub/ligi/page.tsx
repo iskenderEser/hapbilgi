@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CheckCircle2, Download, Eye, Layers, Trophy, Users } from "lucide-react";
+import { CheckCircle2, Download, Eye, Layers, Trophy, Users } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
 import type { EclubTakimLigSatiri } from "@/lib/eclub/rapor";
@@ -429,24 +428,6 @@ export default function EclubLigiPage() {
         </>
         ) : null}
 
-        {/* Takım İçi Ayrıntılara Yönlendirme Kartı */}
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#cfe2f3] bg-[#f0f7fe] p-4 text-xs">
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#237ac8] text-white">
-              <Users size={18} />
-            </span>
-            <div>
-              <strong className="block text-sm font-extrabold text-[#1e3a8a]">Takımınızın İç Karnesini İnceleyin</strong>
-              <span className="text-[#64748b]">Eczacı ve teknisyenlerinizin tek tek izlemelerini ve getirdikleri puanları Takım Raporları sayfasında görebilirsiniz.</span>
-            </div>
-          </div>
-          <Link
-            href="/eclub/raporlar"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#237ac8] px-4 py-2 text-xs font-extrabold text-white transition hover:bg-[#1d69ad]"
-          >
-            E-Club Takım Raporlarım <ArrowRight size={14} />
-          </Link>
-        </div>
       </div>
     </div>
   );

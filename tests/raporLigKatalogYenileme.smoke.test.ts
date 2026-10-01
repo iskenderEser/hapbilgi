@@ -14,7 +14,6 @@ const raporlar = [
 
 const canliYuzeyler = [
   ...raporlar,
-  oku("app/(panel)/eclub/raporlar/page.tsx"),
   oku("app/(panel)/t-club-ligi/page.tsx"),
   oku("app/(panel)/cc-ligi/page.tsx"),
   oku("app/(panel)/eclub/ligi/page.tsx"),
@@ -33,10 +32,10 @@ test("mutlu: rapor, lig ve katalog yüzeyleri ortak yenileme sözleşmesini kull
   assert.match(raporHooku, /AbortController/);
 });
 
-test("red: üçüncü paket tarayıcıyı yenilemez; aktif düzenleme ve sipariş modalını korur", () => {
+test("red: üçüncü paket tarayıcıyı yenilemez; aktif düzenleme ve çek işlemini korur", () => {
   assert.doesNotMatch(canliYuzeyler.join("\n"), /window\.location\.reload|location\.reload|router\.refresh/);
-  assert.match(oku("app/(panel)/eclub/ligi/page.tsx"), /disabled=\{takimDuzenleniyor \|\| takimKaydediliyor\}/);
-  assert.match(oku("app/(panel)/eclub/store/page.tsx"), /disabled=\{Boolean\(seciliUrun\) \|\| islemLoading\}/);
+  assert.match(oku("app/(panel)/eclub/ligi/page.tsx"), /disabled=\{yenileniyor \|\| takimDuzenleniyor \|\| takimKaydediliyor\}/);
+  assert.match(oku("app/(panel)/eclub/store/page.tsx"), /disabled=\{islemLoading\}/);
   assert.match(oku("app/(panel)/yayindaki-videolar/page.tsx"), /disabled=\{oneriModu\}/);
 });
 

@@ -142,7 +142,6 @@ export const PANEL_NAV: NavGrup[] = [
         badgeKey: "eclub_gonderilecek",
         gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu),
       },
-      { etiket: "E-Club Raporları", path: "/eclub/raporlar", gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
       { etiket: "E-Club Ligi",       path: "/eclub/ligi",         gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
     ],
   },

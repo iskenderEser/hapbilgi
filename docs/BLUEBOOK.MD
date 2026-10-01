@@ -173,7 +173,6 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 * **Sipariş Şartı ve Çek Karşılığı:** Üretici rol, Çekli Puan yayınında siparişi zorunlu veya zorunlu değil olarak belirler; puan–TL dönüşümünü ve sipariş baremlerini tanımlar. Sipariş zorunluysa çek hakkı için tanımlanan ürün siparişi verilmelidir. Sipariş zorunlu değilse eczacı sipariş vermeden çek işlemini başlatabilir; sipariş verilirse çek tutarı üretici rolün belirlediği oran kadar artırılabilir.
 * **Öneri ve Tüketim:** E-Club yayını bütün üyelere doğrudan dağıtılmaz. UTT, kendi firma ve takım kapsamındaki uygun Video, Podcast, Dijital Broşür veya Literatür aracını kişisel listesindeki bir veya birden fazla E-Club kullanıcısına gönderir. Öneri `yayin_id`, `arac_id` ve `arac_turu` kimlikleriyle saklanır. Önerinin puanlı ve sorulu geçerlilik süresi ayarlanabilir; varsayılan 7 gündür. Aynı UTT'nin aynı kişiye aynı aracı yeniden göndermesi için önceki önerinin bitişinden sonra ayarlanabilir bir süre beklenir; varsayılan 21 gündür. Süresi geçmiş öneri tüketilebilir ancak puan ve soru hakkı vermez.
 * **Puan Kuralları:** Aktif öneride uygun tamamlama ve doğru cevaplar puan kazandırır. İleri sarma, atlanan sürenin öğrenme aracı puanındaki oransal karşılığı kadar kayıp üretir; yanlış cevap kayıp üretmez. Soru kümesi izleme kimliğine sabitlenir ve tamamlamadan sonra terk edilen soru hakkı yeni oturumda yeniden açılmaz. E-Club üyeleri için Extra puan uygulanmaz.
-* **E-Club Raporları (`/eclub/raporlar`):** Eczane ve kişi düzeyinde gönderim, tamamlama, doğru ve yanlış cevap, izleme puanı, cevap puanı, Çekli Puan ve Çeksiz Puan sonuçlarını gösterir. UTT kendi takımını; BM, TM, üretici ve yönetici roller ise kendi firma–takım–bölge hiyerarşilerindeki kapsamı izler.
 * **E-Club Ligi (`/eclub/ligi`):** Firma genelindeki UTT takımlarının dönemsel yarışmasını, ilk üç takım podyumunu, genel sıralamayı ve kullanıcının kendi takımını gösterir. Çekli ve çeksiz puanların ikisi de E-Club performansı ve lig hesabına katılır.
 * **E-Club Store — Hediye Çeki:** E-Club Store'un güncel karşılığı hediye çekidir; yeni seçenekli ürün kataloğu siparişi oluşturulmaz. Eski ürün mağazasına ait tarihî sipariş kayıtları korunur. Aynı eczanedeki E-Club üyelerinin Çekli Puanları, kazanım anındaki eczane aidiyeti korunarak ilgili yayın ve dönem kapsamında eczane havuzunda birleşir; bir eczanenin puanı, çek hakkı veya çek bilgisi başka bir eczaneye aktarılmaz ve gösterilmez.
 * **Çek Dönemi ve İşlem Yetkisi:** Çekli puanlar iki aylık kazanım döneminde birikir. Hediye çeki işlemi bu dönemi takip eden ayın yalnız 1–7. günleri arasında başlatılabilir; pencere ayın 8'inde kapanır. Yeterli puan oluştuğunda işlemi yalnız ilgili eczanenin aktif `eczaci` rolündeki üyesi başlatabilir. Kanonik onay sırası `beklemede` (UTT) → `bm_onayinda` (BM) → `tm_onayinda` (TM son onayı) → `onaylandi` (admin kod girişi bekleniyor) → `teslimat_bekliyor` → `cek_kodlari_gonderildi` biçimindedir. Admin, TM son onayı bulunmayan talebe çek kodu tanımlayamaz.
@@ -184,7 +183,7 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
 * **Eczane, UTT ve Kişi Bağları:** `app/(panel)/eclub/listem/`, `lib/eclub/uttEczane.ts`, `lib/eclub/kisiErisim.ts`, `eclub_utt_eczaneye_bagla`, `eclub_utt_eczaneden_cikar`, `eclub_yeni_kisi_provizyonu`, `eclub_mevcut_kisi_provizyonu`.
 * **Öneri ve Tüketim:** `app/(panel)/eclub/oneriler/`, `app/(panel)/eclub/yayinlar/`, `app/(panel)/eclub/panel/`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `lib/eclub/oneriLimit.ts`, `lib/eclub/oneriKapsam.ts`, `lib/eclub/izlemeKurali.ts`, `lib/eclub/aktifYayinYetkisi.ts`.
-* **Lig, Rapor ve Çek Takibi:** `app/(panel)/eclub/ligi/`, `app/(panel)/eclub/raporlar/`, `app/(panel)/eclub/siparisler/`, `lib/eclub/rapor.ts`, `lib/eclub/yonetimKapsami.ts`.
+* **Lig ve Çek Takibi:** `app/(panel)/eclub/ligi/`, `app/(panel)/eclub/siparisler/`, `lib/eclub/rapor.ts`, `lib/eclub/yonetimKapsami.ts`.
 * **Hediye Çeki:** `app/(panel)/eclub/store/`, `app/admin/eclub-store/`, `lib/eclub/store/`, `scripts/sql/eclub_cek_talebi_ana_eczaci.sql`, `scripts/sql/eclub_store_tm_son_onay.sql`, `scripts/sql/eclub_cek_teslimat_outbox.sql`, `scripts/sql/eclub_cek_eposta_worker.sql`, `scripts/sql/eclub_cek_push_worker.sql`, `scripts/sql/eclub_cek_uygulama_bildirimleri.sql`.
 * **Güvenlik Kapıları:** UTT liste üyeliği, kişi–eczane bağı, firma modül bayrakları, yayın kapsamı, araç kimliği, öneri süresi ve aktif üyelik sunucuda doğrulanır. Çek oluşturma yalnız ana eczacıya; UTT, BM ve TM geçişleri rol, firma ve kayıt kapsamına; admin kod girişi admin oturumuna bağlıdır. Outbox tablosu ile worker RPC'leri `PUBLIC`, `anon` ve `authenticated` rollerine kapalı, `service_role` erişimine açıktır.
 * **Operasyon Kaydı:** Kurulum sırası, ortam değişkenleri, canlıya çıkış kapıları ve arıza yönetimi `docs/ECLUB_CEK_OPERASYON_REHBERI.md`; ertelenen gerçek dış servis testi `docs/ECLUB_CANLI_DOGRULAMA_TAKIBI.md` içinde tutulur.
@@ -909,19 +908,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `page.tsx` | UI / React | `/eclub/panel/firma/[firma_id]` rotasında E-Club kapsamındaki [firma id] arayüzünü sunan Next.js sayfa bileşenidir. |
-
-### 📁 app/(panel)/eclub/raporlar/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `eclub-report.module.css` | Stil / CSS | E-Club görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
-| `page.tsx` | UI / React | UTT'ler ve yöneticiler için E-Club takımındaki eczacı ve teknisyenlerin izleme, doğru cevap ve puan katkı karnesini sunan E-Club Takım Raporlarım sayfası. |
-
-### 📁 app/(panel)/eclub/raporlar/api/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | API / Route Handler | `/eclub/raporlar/api` uç noktasında GET isteklerini işler; E-Club için E-Club raporlar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ### 📁 app/(panel)/eclub/siparisler/
 
@@ -2251,7 +2237,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `rapor.ts` | TypeScript / Lib | E-Club lig sıralamalarını, eczane bazlı izlenme dökümlerini ve ciro etki metriklerini derleyen rapor motoru. |
 | `testGln.ts` | TypeScript / Lib | E-Club kapsamında `TEST_GLN_PREFIX`, `TEST_GLN_UZUNLUK`, `TEST_GLN_TEK_SEFER_UST_SINIR`, `TEST_TEMIZLIK_ONAYI` işlev ve sabitlerini sağlar; test Gln iş kurallarını tek modülde toplar. |
 | `uttEczane.ts` | TypeScript / Lib | E-Club kapsamında `uttEczaneFirmaBaglari`, `uttEczaneYetkisiVarMi` işlev ve sabitlerini sağlar; UTT eczane iş kurallarını tek modülde toplar. |
-| `yonetimKapsami.ts` | TypeScript / Lib | UTT, BM, TM ve yöneticilerin E-Club hiyerarşik görme yetkilerini belirleyen kapsam motoru. |
+| `yonetimKapsami.ts` | TypeScript / Lib | E-Club Ligi Excel dışa aktarımı için yetkili UTT kapsamını, takım, BM ve bölge adlarıyla belirler. |
 
 ### 📁 lib/eclub/store/
 
@@ -2612,7 +2598,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `EclubKisiSayfa.tsx` | UI / React | E-Club kişi sayfa, E-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `EclubYonetimHiyerarsisi.tsx` | UI / React | E-Club yönetim Hiyerarsisi, E-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
 ### 📁 components/grafik/
 

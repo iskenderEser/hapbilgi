@@ -12,7 +12,7 @@ export function yonLinkleri(rol: string, konu: YonKonusu, cc = false, eclub = fa
   if (konu === 'cclub' || konu === 'cclub_ligi') return cc && CCLIGI_GORENLERLER.includes(rol)
     ? [...(konu === 'cclub' && rol === 'bm' ? [{ etiket: 'Challenge Club', url: TANIM_SAYFALARI['challenge'].url }] : []), { etiket: 'C-Club Ligi', url: TANIM_SAYFALARI['cclub_ligi'].url }] : [];
   if (konu === 'eclub' || konu === 'eclub_ligi') return eclub && ECLUB_YONETIM_ROLLERI.includes(rol)
-    ? [...(konu === 'eclub' ? [{ etiket: 'E-Club Takım Raporları', url: '/eclub/raporlar' }] : []), { etiket: 'E-Club Ligi', url: '/eclub/ligi' }] : [];
+    ? [{ etiket: 'E-Club Ligi', url: '/eclub/ligi' }] : [];
   if (YONETICI_ROLLER.includes(rol) && ['talepler','yayinlar','kendi_uretim','firma_uretim'].includes(konu)) return [{ etiket: 'Yayın Raporları', url: '/raporlar/yayin-raporlari' }];
   if (uretici && ['talepler','yayinlar','kendi_uretim','firma_uretim'].includes(konu)) {
     if (konu === 'talepler') return [{ etiket: 'Talep Takip ve Yeni Talep', url: TANIM_SAYFALARI['talepler'].url }];

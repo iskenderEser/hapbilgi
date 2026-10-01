@@ -165,7 +165,7 @@ test('TM 11 UTT ve 10 BM ölçütünü dört zamanda hedef bağlamıyla korur', 
   assert.deepEqual(tmChallenge?.aksiyon, { etiket: 'C-Club Ligi', url: '/cc-ligi' });
 
   const tmEclub = tmKatalog.find((k) => k.id === 'eclub');
-  assert.deepEqual(tmEclub?.aksiyon, { etiket: 'E-Club Takım Raporları', url: '/eclub/raporlar' });
+  assert.deepEqual(tmEclub?.aksiyon, { etiket: 'E-Club Ligi', url: '/eclub/ligi' });
 });
 
 test('TM çok bölgeli, E-Club kazanımlı, kayıplı, sıfır puanlı ve kapsam dışı kullanıcı senaryolarında eski ve yeni hesaplama birebir eşleşir ve RPC çağrısı azalır', async () => {
@@ -467,5 +467,4 @@ test('TM RPC sonucunda kullanici_id eksikse VERI_EKSIK hatası verir, kapsam dı
   const sonuc = await tmKapsamPuaniniOku(dbKapsamDisi, kapsam, sorgu);
   assert.equal(sonuc.puan, 250, 'Kapsam dışı kullanıcının puanı (9999) toplama dahil edilmemeli, sadece u1(100) + u2(150) = 250 toplanmalı');
 });
-
 
