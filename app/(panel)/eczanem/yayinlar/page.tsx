@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Building2, CheckCircle2, ChevronLeft, CircleAlert, Film, Send, Sparkles, UsersRound } from "lucide-react";
+import { CheckCircle2, ChevronLeft, CircleAlert, Film, Send, Sparkles, UsersRound } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import {
   AlertDialog,
@@ -15,11 +15,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import OgrenmeAraciOnizleme from "@/components/ogrenme-araci/OgrenmeAraciOnizleme";
+import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
+import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
+import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
+import { YayinKarti } from "@/components/yayin/YayinKarti";
 import { UttEczanemGonderimSatiri } from "./_components/UttEczanemGonderimSatiri";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type { UttEczanemGonderim, UttEczanemOnayHedefi, UttEczanemVeri, UttEczanemYayin } from "./_types";
+
+type GonderimFiltresi = "tumu" | "gonderilebilir" | "gonderilen";
 
 function OzetKarti({ ikon: Icon, etiket, deger, detay, renk, zemin }: {
   ikon: typeof Film;
@@ -52,6 +59,9 @@ export default function EczanemYayinlariPage() {
   const [gonderilenHedef, setGonderilenHedef] = useState<string | null>(null);
   const [onayHedefi, setOnayHedefi] = useState<UttEczanemOnayHedefi | null>(null);
   const [aktifVideo, setAktifVideo] = useState<UttEczanemYayin | null>(null);
+  const [gonderimFiltresi, setGonderimFiltresi] = useState<GonderimFiltresi>("tumu");
+  const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
+  const [yonetilenYayinId, setYonetilenYayinId] = useState<string | null>(null);
 
   const veriCek = useCallback(async (ilk = false) => {
     if (!ilk) setYenileniyor(true);
@@ -89,6 +99,67 @@ export default function EczanemYayinlariPage() {
   const gonderilecekVideoSayisi = yayinlar.filter((yayin) => hazirEczaneler.some(
     (eczane) => !gonderimMap.has(`${yayin.yayin_id}::${eczane.eczane_id}`),
   )).length;
+  const gonderilebilirYayinlar = yayinlar.filter((yayin) => hazirEczaneler.some(
+    (eczane) => !gonderimMap.has(`${yayin.yayin_id}::${eczane.eczane_id}`),
+  ));
+  const gonderilenYayinlar = yayinlar.filter((yayin) => eczaneler.some(
+    (eczane) => gonderimMap.has(`${yayin.yayin_id}::${eczane.eczane_id}`),
+  ));
+  const durumFiltreliYayinlar = gonderimFiltresi === "gonderilebilir"
+    ? gonderilebilirYayinlar
+    : gonderimFiltresi === "gonderilen"
+      ? gonderilenYayinlar
+      : yayinlar;
+  const gorunenYayinlar = [...(aktifYayinTuru === "tumu"
+    ? durumFiltreliYayinlar
+    : durumFiltreliYayinlar.filter((yayin) => yayin.arac_turu === aktifYayinTuru))]
+    .sort((a, b) => new Date(b.yayin_tarihi ?? 0).getTime() - new Date(a.yayin_tarihi ?? 0).getTime());
+  const yonetilenYayin = yayinlar.find((yayin) => yayin.yayin_id === yonetilenYayinId) ?? null;
+
+  const yayinKarti = (yayin: UttEczanemYayin) => {
+    const gonderilenSayisi = eczaneler.filter((eczane) => gonderimMap.has(`${yayin.yayin_id}::${eczane.eczane_id}`)).length;
+    const gonderilenHazirSayisi = hazirEczaneler.filter((eczane) => gonderimMap.has(`${yayin.yayin_id}::${eczane.eczane_id}`)).length;
+    const bekleyenSayisi = hazirEczaneler.length - gonderilenHazirSayisi;
+    const secili = yonetilenYayinId === yayin.yayin_id;
+
+    return (
+      <YayinKarti
+        key={yayin.yayin_id}
+        yayin={yayin}
+        onClick={() => setAktifVideo(yayin)}
+        ariaLabel={`${yayin.urun_adi} öğrenme içeriğini önizle`}
+        className={`h-full ${secili ? "border-[#237ac8] ring-2 ring-[#237ac8]/20" : ""}`}
+        durumGoster={false}
+        etkilesimGoster={false}
+        tarihGoster
+        izlenmeGoster={false}
+        puanGoster={false}
+        extraPuanGoster={false}
+        talepNoGoster={false}
+        donguGoster={false}
+        tarihSatiriSagAksiyon={(
+          <span className="inline-flex shrink-0 rounded-md border border-[#dce7f2] bg-[#f2f7fc] px-1.5 py-0.5 text-[10px] font-normal leading-tight text-[#405976] sm:text-[9px]">
+            {gonderimFiltresi === "gonderilen" ? gonderilenSayisi : bekleyenSayisi}/{gonderimFiltresi === "gonderilen" ? eczaneler.length : hazirEczaneler.length} {gonderimFiltresi === "gonderilen" ? "Gönderilen" : "Gönderilecek"}
+          </span>
+        )}
+        altEkIcerik={(
+          <div className="mt-2 border-t border-[#e8eef5] pt-2">
+            <button
+              type="button"
+              aria-pressed={secili}
+              onClick={(event) => {
+                event.stopPropagation();
+                setYonetilenYayinId(secili ? null : yayin.yayin_id);
+              }}
+              className={`h-8 w-full rounded-lg border text-[11px] font-extrabold transition-colors ${secili ? "border-[#237ac8] bg-[#edf6fd] text-[#1d69ad]" : "border-[#d5e0eb] bg-white text-[#405976] hover:bg-[#f5f9fc]"}`}
+            >
+              {secili ? "Eczane yönetimini kapat" : "Eczaneleri yönet"}
+            </button>
+          </div>
+        )}
+      />
+    );
+  };
 
   const gonder = async () => {
     if (!onayHedefi) return;
@@ -176,20 +247,56 @@ export default function EczanemYayinlariPage() {
               <OzetKarti ikon={UsersRound} etiket="Eşik Altındaki Eczane" deger={esikAltiSayisi} detay="Üyelik gelişimi gereken" renk="#b7791f" zemin="#fff7e6" />
             </section>
 
-            <section className="overflow-visible rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e5ecf4] px-4 py-3.5">
-                <div>
-                  <h2 className="text-base font-extrabold text-[#203653]">Eczanelere Gönderilecek Öğrenme İçerikleri</h2>
-                  <p className="mt-0.5 text-[11px] font-semibold text-[#7b8da5]">{yayinlar.length} yayın gösteriliyor</p>
-                </div>
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#7b8da5]"><Building2 className="size-3.5" /> {eczaneler.length} bağlı eczane</span>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <PeriyotButonlari<GonderimFiltresi>
+                secenekler={[
+                  { key: "tumu", label: `Tümü ${yayinlar.length}` },
+                  { key: "gonderilebilir", label: `Gönderime Hazır ${gonderilebilirYayinlar.length}` },
+                  { key: "gonderilen", label: `Gönderilenler ${gonderilenYayinlar.length}` },
+                ]}
+                deger={gonderimFiltresi}
+                onDegistir={(filtre) => { setGonderimFiltresi(filtre); setYonetilenYayinId(null); }}
+                ariaLabel="Gönderim durumu"
+                className="h-10 w-fit flex-none [&>button]:h-[30px] [&>button]:py-0 md:[&>button]:px-2 md:[&>button]:text-[10px] lg:[&>button]:px-3 lg:[&>button]:text-[11px]"
+              />
+              <UttYayinTuruToggle
+                yayinlar={durumFiltreliYayinlar}
+                deger={aktifYayinTuru}
+                onDegistir={(tur) => { setAktifYayinTuru(tur); setYonetilenYayinId(null); }}
+                className="w-fit flex-none"
+              />
+            </div>
+
+            <section>
+              <div className="mb-3">
+                <h2 className="text-base font-extrabold text-[#203653]">Eczanelere Gönderilecek Öğrenme İçerikleri</h2>
+                <p className="mt-0.5 text-[11px] font-semibold text-[#7b8da5]">{gorunenYayinlar.length} yayın gösteriliyor</p>
               </div>
-              {yayinlar.length === 0 ? (
-                <div className="px-4 py-14 text-center text-sm font-semibold text-[#8090a4]">Dağıtıma hazır Eczanem öğrenme içeriği bulunmuyor.</div>
-              ) : yayinlar.map((yayin) => (
+              {gorunenYayinlar.length === 0 ? (
+                <div className="rounded-2xl border border-[#dfe7f1] bg-white px-4 py-14 text-center text-sm font-semibold text-[#8090a4]">
+                  {aktifYayinTuru !== "tumu" ? "Seçilen yayın türünde bu listede yayın bulunmuyor." : gonderimFiltresi === "gonderilebilir" ? "Şu anda gönderime hazır yayın bulunmuyor." : gonderimFiltresi === "gonderilen" ? "Henüz eczaneye gönderilmiş yayın bulunmuyor." : "Dağıtıma hazır Eczanem öğrenme içeriği bulunmuyor."}
+                </div>
+              ) : (
+                <MobilYayinAkisi
+                  kayitlar={gorunenYayinlar}
+                  kayitAnahtari={(yayin) => yayin.yayin_id}
+                  renderKart={yayinKarti}
+                  sayacGoster={false}
+                  sifirlamaAnahtari={`${gonderimFiltresi}-${aktifYayinTuru}`}
+                  masaustuIcerik={(
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                      {gorunenYayinlar.map((yayin) => <div key={yayin.yayin_id} className="min-w-0">{yayinKarti(yayin)}</div>)}
+                    </div>
+                  )}
+                />
+              )}
+            </section>
+
+            {yonetilenYayin && (
+              <section aria-label={`${yonetilenYayin.urun_adi} eczane gönderim yönetimi`} className="overflow-visible rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
                 <UttEczanemGonderimSatiri
-                  key={yayin.yayin_id}
-                  yayin={yayin}
+                  key={yonetilenYayin.yayin_id}
+                  yayin={yonetilenYayin}
                   eczaneler={eczaneler}
                   esik={esik}
                   gonderimMap={gonderimMap}
@@ -197,8 +304,8 @@ export default function EczanemYayinlariPage() {
                   onVideoAc={setAktifVideo}
                   onGonder={(hedefYayin, hedefEczane) => setOnayHedefi({ yayin: hedefYayin, eczane: hedefEczane })}
                 />
-              ))}
-            </section>
+              </section>
+            )}
           </>
         )}
       </div>

@@ -27,6 +27,14 @@ test("mutlu: UTT yüzeyi panel kabuğunda, shadcn deseninde ve atomik gönderiml
   assert.match(page, /AlertDialog/);
   assert.match(page, /<OgrenmeAraciOnizleme/);
   assert.match(page, /onBitti=\{\(\) => setAktifVideo\(null\)\}/);
+  assert.match(page, /<PeriyotButonlari<GonderimFiltresi>/);
+  assert.match(page, /<UttYayinTuruToggle/);
+  assert.match(page, /<YayinKarti/);
+  assert.match(page, /<MobilYayinAkisi/);
+  assert.match(page, /grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5/);
+  assert.match(page, /sifirlamaAnahtari=\{`\$\{gonderimFiltresi\}-\$\{aktifYayinTuru\}`\}/);
+  assert.match(page, /Eczaneleri yönet/);
+  assert.doesNotMatch(page, /UttGonderimIncelemesi/);
   assert.match(ortakOnizleme, /bitisGecikmesiMs=\{1500\}/);
   assert.doesNotMatch(page, /UttEczanemDokum/);
   assert.match(videoSatiri, /Collapsible/);
