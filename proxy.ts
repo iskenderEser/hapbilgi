@@ -269,6 +269,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/eclub/store")
     || pathname.startsWith("/eclub/cek-taleplerim")
     || pathname.startsWith("/eclub/api/cek-talepleri")
+    || pathname.startsWith("/eclub/hediye-takip")
   ) {
     const storeApiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
 
