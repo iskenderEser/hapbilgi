@@ -1,7 +1,7 @@
-import { CheckCircle2, Clock3, Gift, PackageCheck, Send, ShoppingBag, Truck } from "lucide-react";
+import { CheckCircle2, Clock3, Gift, ShoppingBag, Truck, XCircle } from "lucide-react";
 import type { CekTakipStatlari } from "@/lib/eclub/hediyeTakip/cekTakip";
-import type { HediyeTakipTuru } from "./HediyeTakipToggle";
 import type { SiparisTakipStatlari } from "@/lib/eclub/hediyeTakip/siparisTakip";
+import type { HediyeTakipTuru } from "./HediyeTakipToggle";
 
 const CEK_STATLARI = [
   { etiket: "Toplam Talep", detay: "Tüm çek talepleri", ikon: Gift, renk: "#237ac8", zemin: "#edf6fd" },
@@ -12,9 +12,9 @@ const CEK_STATLARI = [
 
 const SIPARIS_STATLARI = [
   { etiket: "Sipariş Verilen", detay: "Takibe alınan siparişler", ikon: ShoppingBag, renk: "#237ac8", zemin: "#edf6fd" },
-  { etiket: "İşlem Bekleyen", detay: "UTT işlemi bekleyenler", ikon: Clock3, renk: "#a66215", zemin: "#fff6e8" },
-  { etiket: "Depoya İletilen", detay: "Hedef depoya aktarılanlar", ikon: Send, renk: "#5367c7", zemin: "#f0f1ff" },
-  { etiket: "Tamamlanan", detay: "Süreci tamamlananlar", ikon: PackageCheck, renk: "#16865f", zemin: "#ebf8f2" },
+  { etiket: "UTT İncelemesi Bekliyor", detay: "Henüz UTT onayı olmayanlar", ikon: Clock3, renk: "#a66215", zemin: "#fff6e8" },
+  { etiket: "UTT Onayladı", detay: "UTT tarafından incelenip onaylananlar", ikon: CheckCircle2, renk: "#16865f", zemin: "#ebf8f2" },
+  { etiket: "Çek Talebi İptal", detay: "Çek talebi iptal edilen kayıtlar", ikon: XCircle, renk: "#b45353", zemin: "#fff1f1" },
 ] as const;
 
 export default function TakipStatKartlari({
@@ -30,7 +30,7 @@ export default function TakipStatKartlari({
   const degerler = takipTuru === "cek" && cekStatlari
     ? [cekStatlari.toplam, cekStatlari.onay_surecinde, cekStatlari.teslimat_surecinde, cekStatlari.tamamlanan]
     : takipTuru === "siparis" && siparisStatlari
-      ? [siparisStatlari.toplam, siparisStatlari.onay_bekliyor, siparisStatlari.depo_surecinde, siparisStatlari.tamamlandi]
+      ? [siparisStatlari.toplam, siparisStatlari.inceleme_bekliyor, siparisStatlari.utt_onayladi, siparisStatlari.talep_iptal]
       : null;
 
   return (

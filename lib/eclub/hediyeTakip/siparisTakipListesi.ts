@@ -1,55 +1,149 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { konumEtiketi, type DepoKonumu } from "@/lib/eclub/depo";
+import { konumEtiketi } from "@/lib/eclub/depo";
+import { depoKataloguGetir } from "@/lib/eclub/depoSunucu";
+import { trGunEkle } from "@/lib/zaman/kontrol";
 import { cekTakipTalepKapsami, type CekTakipKapsami } from "./cekTakipErisim";
-import { siparisTakipDurumunuCoz, siparisTakipStatlariniHesapla, type SiparisTakipFiltreleri, type SiparisTakipTalebi, type SiparisTakipApiYaniti } from "./siparisTakip";
+import { siparisTakipDurumu, siparisTakipStatlariniHesapla, type SiparisTakipApiYaniti, type SiparisTakipFiltreleri, type SiparisTakipTalebi } from "./siparisTakip";
 
-export async function siparisTakipVerisiniGetir(admin: SupabaseClient, kapsam: CekTakipKapsami, filtreler: SiparisTakipFiltreleri): Promise<SiparisTakipApiYaniti> {
-  let query = admin.from("eclub_store_cek_talepleri").select("talep_id, eczane_id, yayin_id, talep_eden_kisi_id, utt_id, siparis_adet, siparis_mal_fazlasi, siparis_verildi_mi, durum, created_at").match(cekTakipTalepKapsami(kapsam)).eq("siparis_verildi_mi", true);
-  if (filtreler.eczane_id) query = query.eq("eczane_id", filtreler.eczane_id);
-  if (filtreler.baslangic) query = query.gte("created_at", `${filtreler.baslangic}T00:00:00+03:00`);
-  if (filtreler.bitis) query = query.lt("created_at", `${filtreler.bitis}T23:59:59.999+03:00`);
-  const { data, error } = await query.order("created_at", { ascending: false }).order("talep_id", { ascending: true });
-  if (error) throw new Error(`Sipariş Takip talepleri alınamadı: ${error.message}`);
-  const ham = (data ?? []) as Array<Record<string, unknown>>;
-  const urunIds = [...new Set(ham.map((row) => row.yayin_id as string))];
-  const eczaneIds = [...new Set(ham.map((row) => row.eczane_id as string))];
-  const kisiIds = [...new Set(ham.map((row) => row.talep_eden_kisi_id as string))];
-  const [eczaneler, kisiler, yayinlar, tercihler, katalog] = await Promise.all([
-    admin.from("eclub_eczaneler").select("eczane_id, gln").in("eczane_id", eczaneIds),
-    admin.from("eclub_kisiler").select("kisi_id, ad, soyad, rol").in("kisi_id", kisiIds),
-    admin.from("v_yayin_kunye").select("yayin_id, urun_id").in("yayin_id", urunIds),
-    admin.from("eclub_eczane_depo_tercihleri").select("eczane_id, depo_sube_id").in("eczane_id", eczaneIds),
-    admin.from("ecza_depo_subeleri").select("depo_sube_id, depo_id, depo_adi, sube_adi, il, ilce, adres, aktif_mi").eq("aktif_mi", true),
+interface HamSiparis {
+  talep_id: string;
+  created_at: string;
+  donem_kodu: string;
+  eczane_id: string;
+  yayin_id: string;
+  talep_eden_kisi_id: string;
+  siparis_tipi: SiparisTakipTalebi["siparis"]["tipi"];
+  siparis_adet: number;
+  siparis_mal_fazlasi: number;
+  toplanan_puan: number;
+  talep_edilen_cek_tl: number;
+  durum: string;
+  eclub_eczaneler: { gln: string | null } | Array<{ gln: string | null }> | null;
+  eclub_kisiler: { ad: string | null; soyad: string | null; rol: string } | Array<{ ad: string | null; soyad: string | null; rol: string }> | null;
+  v_yayin_kunye: { urun_id: string | null } | Array<{ urun_id: string | null }> | null;
+}
+
+function tekil<T>(deger: T | T[] | null): T | null {
+  return Array.isArray(deger) ? deger[0] ?? null : deger;
+}
+
+function trGunBaslangici(gun: string): string {
+  return new Date(`${gun}T00:00:00+03:00`).toISOString();
+}
+
+export async function siparisTakipVerisiniGetir(
+  admin: SupabaseClient,
+  kapsam: CekTakipKapsami,
+  filtreler: SiparisTakipFiltreleri,
+): Promise<SiparisTakipApiYaniti> {
+  const ham: HamSiparis[] = [];
+  for (let baslangic = 0; ; baslangic += 500) {
+    let sorgu = admin.from("eclub_store_cek_talepleri")
+      .select(`talep_id, created_at, donem_kodu, eczane_id, yayin_id, talep_eden_kisi_id,
+        siparis_tipi, siparis_adet, siparis_mal_fazlasi, toplanan_puan, talep_edilen_cek_tl, durum,
+        eclub_eczaneler ( gln ), eclub_kisiler ( ad, soyad, rol ), v_yayin_kunye ( urun_id )`)
+      .match(cekTakipTalepKapsami(kapsam))
+      .eq("siparis_verildi_mi", true)
+      .neq("siparis_tipi", "siparissiz_cek");
+    if (filtreler.eczane_id) sorgu = sorgu.eq("eczane_id", filtreler.eczane_id);
+    if (filtreler.baslangic) sorgu = sorgu.gte("created_at", trGunBaslangici(filtreler.baslangic));
+    if (filtreler.bitis) sorgu = sorgu.lt("created_at", trGunBaslangici(trGunEkle(filtreler.bitis, 1)));
+    const { data, error } = await sorgu.order("created_at", { ascending: false }).order("talep_id", { ascending: true }).range(baslangic, baslangic + 499);
+    if (error) throw new Error(`Siparişler alınamadı: ${error.message}`);
+    const parca = (data ?? []) as unknown as HamSiparis[];
+    ham.push(...parca);
+    if (parca.length < 500) break;
+  }
+
+  const onaylar = new Map<string, { tarih: string; depoIds: string[] }>();
+  for (let baslangic = 0; ; baslangic += 500) {
+    const { data, error } = await admin.from("eclub_siparis_utt_onaylari")
+      .select("talep_id, onay_tarihi, depo_tercihleri_snapshot")
+      .eq("utt_id", kapsam.utt_id)
+      .order("onay_tarihi", { ascending: false })
+      .range(baslangic, baslangic + 499);
+    if (error) throw new Error(`UTT sipariş onayları alınamadı: ${error.message}`);
+    for (const kayit of data ?? []) onaylar.set(kayit.talep_id, {
+      tarih: kayit.onay_tarihi,
+      depoIds: Array.isArray(kayit.depo_tercihleri_snapshot)
+        ? kayit.depo_tercihleri_snapshot.flatMap((tercih: { depo_sube_id?: unknown }) => typeof tercih.depo_sube_id === "string" ? [tercih.depo_sube_id] : [])
+        : [],
+    });
+    if ((data ?? []).length < 500) break;
+  }
+
+  const tumUrunIds = [...new Set(ham.flatMap((kayit) => {
+    const id = tekil(kayit.v_yayin_kunye)?.urun_id;
+    return id ? [id] : [];
+  }))];
+  const tumGlnler = [...new Set(ham.flatMap((kayit) => {
+    const gln = tekil(kayit.eclub_eczaneler)?.gln;
+    return gln ? [gln] : [];
+  }))];
+  const eczaneIds = [...new Set(ham.map((kayit) => kayit.eczane_id))];
+  const [urunSonucu, eczaneSonucu, tercihSonucu, depoKatalogu] = await Promise.all([
+    tumUrunIds.length ? admin.from("urunler").select("urun_id, urun_adi").in("urun_id", tumUrunIds) : Promise.resolve({ data: [], error: null }),
+    tumGlnler.length ? admin.from("eclub_eczane_master").select("gln, eczane_adi").in("gln", tumGlnler) : Promise.resolve({ data: [], error: null }),
+    eczaneIds.length ? admin.from("eclub_eczane_depo_tercihleri").select("eczane_id, depo_sube_id").in("eczane_id", eczaneIds) : Promise.resolve({ data: [], error: null }),
+    depoKataloguGetir(admin),
   ]);
-  for (const result of [eczaneler, kisiler, yayinlar, tercihler, katalog]) if (result.error) throw new Error(result.error.message);
-  const glns = (eczaneler.data ?? []).map((row) => row.gln).filter(Boolean);
-  const urunIdsGercek = (yayinlar.data ?? []).map((row) => row.urun_id).filter(Boolean);
-  const [master, urunler] = await Promise.all([
-    admin.from("eclub_eczane_master").select("gln, eczane_adi").in("gln", glns),
-    admin.from("urunler").select("urun_id, urun_adi").in("urun_id", urunIdsGercek),
-  ]);
-  if (master.error || urunler.error) throw new Error(master.error?.message ?? urunler.error?.message);
-  const katalogRows = (katalog.data ?? []) as DepoKonumu[];
-  const rows: SiparisTakipTalebi[] = ham.map((row) => {
-    const eczaneId = row.eczane_id as string;
-    const gln = eczaneler.data?.find((item) => item.eczane_id === eczaneId)?.gln;
-    const yayin = yayinlar.data?.find((item) => item.yayin_id === row.yayin_id);
-    const kisi = kisiler.data?.find((item) => item.kisi_id === row.talep_eden_kisi_id);
-    const durum = siparisTakipDurumunuCoz(String(row.durum));
-    const tercihIds = (tercihler.data ?? []).filter((item) => item.eczane_id === eczaneId).map((item) => item.depo_sube_id);
-    const depoTercihleri = katalogRows.filter((item) => tercihIds.includes(item.depo_sube_id)).map((item) => ({ depo_sube_id: item.depo_sube_id, etiket: konumEtiketi(item) }));
+  if (urunSonucu.error || eczaneSonucu.error || tercihSonucu.error) {
+    throw new Error(urunSonucu.error?.message ?? eczaneSonucu.error?.message ?? tercihSonucu.error?.message);
+  }
+  const urunAdlari = new Map((urunSonucu.data ?? []).map((urun) => [urun.urun_id, urun.urun_adi]));
+  const eczaneAdlari = new Map((eczaneSonucu.data ?? []).map((eczane) => [eczane.gln, eczane.eczane_adi]));
+  const depoAdlari = new Map(depoKatalogu.map((depo) => [depo.depo_sube_id, konumEtiketi(depo)]));
+  const tercihler = new Map<string, string[]>();
+  for (const tercih of tercihSonucu.data ?? []) {
+    const liste = tercihler.get(tercih.eczane_id) ?? [];
+    liste.push(depoAdlari.get(tercih.depo_sube_id) ?? "Depo / şube adı bulunamadı");
+    tercihler.set(tercih.eczane_id, liste);
+  }
+
+  const filtreli = ham.filter((kayit) => !filtreler.urun_id || tekil(kayit.v_yayin_kunye)?.urun_id === filtreler.urun_id);
+  const durumlu = filtreli.map((kayit) => ({ kayit, durum: siparisTakipDurumu(kayit.durum, onaylar.get(kayit.talep_id)?.tarih ?? null) }));
+  const sonuclar = durumlu.filter(({ durum }) => !filtreler.durum || durum === filtreler.durum);
+  const sayfali = sonuclar.slice(filtreler.offset, filtreler.offset + filtreler.limit);
+  const talepler: SiparisTakipTalebi[] = sayfali.map(({ kayit, durum }) => {
+    const gln = tekil(kayit.eclub_eczaneler)?.gln ?? null;
+    const kisi = tekil(kayit.eclub_kisiler);
+    const urunId = tekil(kayit.v_yayin_kunye)?.urun_id ?? kayit.yayin_id;
     return {
-      talep_id: row.talep_id as string, created_at: row.created_at as string,
-      eczane: { eczane_id: eczaneId, eczane_adi: master.data?.find((item) => item.gln === gln)?.eczane_adi ?? "Eczane" },
-      uye: { ad_soyad: `${kisi?.ad ?? ""} ${kisi?.soyad ?? ""}`.trim() || "Üye", rol: (kisi?.rol ?? "eczaci") as SiparisTakipTalebi["uye"]["rol"] },
-      urun: { urun_id: yayin?.urun_id ?? row.yayin_id as string, urun_adi: urunler.data?.find((item) => item.urun_id === yayin?.urun_id)?.urun_adi ?? "Ürün" },
-      utt_adi: row.utt_id === kapsam.utt_id ? "Siz" : "—", siparis: { adet: Number(row.siparis_adet ?? 0), mal_fazlasi: Number(row.siparis_mal_fazlasi ?? 0) }, durum, depo_tercihleri: depoTercihleri,
-      izin_verilen_islemler: ["depo_tercihlerini_kontrol_et"],
+      talep_id: kayit.talep_id,
+      created_at: kayit.created_at,
+      donem_kodu: kayit.donem_kodu,
+      eczane: { eczane_id: kayit.eczane_id, eczane_adi: (gln ? eczaneAdlari.get(gln) : null) ?? "Eczane", gln },
+      uye: { ad_soyad: `${kisi?.ad ?? ""} ${kisi?.soyad ?? ""}`.trim() || "Üye", rol: kisi?.rol ?? "eczaci" },
+      urun: { yayin_id: kayit.yayin_id, urun_id: urunId, urun_adi: urunAdlari.get(urunId) ?? "Ürün" },
+      siparis: {
+        tipi: kayit.siparis_tipi,
+        adet: Number(kayit.siparis_adet ?? 0),
+        mal_fazlasi: Number(kayit.siparis_mal_fazlasi ?? 0),
+        kullanilan_puan: Number(kayit.toplanan_puan ?? 0),
+        cek_tutari_tl: Number(kayit.talep_edilen_cek_tl ?? 0),
+      },
+      depo_tercihleri: onaylar.has(kayit.talep_id)
+        ? (onaylar.get(kayit.talep_id)?.depoIds ?? []).map((id) => depoAdlari.get(id) ?? "Depo / şube adı bulunamadı")
+        : tercihler.get(kayit.eczane_id) ?? [],
+      depo_tercihleri_onay_anlik_mi: onaylar.has(kayit.talep_id),
+      durum,
+      utt_onay_tarihi: onaylar.get(kayit.talep_id)?.tarih ?? null,
+      onaylanabilir_mi: durum === "inceleme_bekliyor",
     };
-  }).filter((row) => (!filtreler.urun_id || row.urun.urun_id === filtreler.urun_id) && (!filtreler.durum || row.durum === filtreler.durum));
-  const page = rows.slice(filtreler.offset, filtreler.offset + filtreler.limit);
-  const statlar = siparisTakipStatlariniHesapla(rows.map((row) => row.durum));
-  const eczaneSecenekleri = [...new Map(rows.map((row) => [row.eczane.eczane_id, { id: row.eczane.eczane_id, etiket: row.eczane.eczane_adi }])).values()];
-  const urunSecenekleri = [...new Map(rows.map((row) => [row.urun.urun_id, { id: row.urun.urun_id, etiket: row.urun.urun_adi }])).values()];
-  return { statlar, filtre_secenekleri: { eczaneler: eczaneSecenekleri, urunler: urunSecenekleri }, talepler: page, sayfalama: { toplam: rows.length, offset: filtreler.offset, limit: filtreler.limit, sonraki_kayit_var_mi: filtreler.offset + page.length < rows.length } };
+  });
+  const eczaneler = [...new Map(ham.map((kayit) => {
+    const gln = tekil(kayit.eclub_eczaneler)?.gln ?? null;
+    return [kayit.eczane_id, { id: kayit.eczane_id, etiket: (gln ? eczaneAdlari.get(gln) : null) ?? "Eczane" }];
+  })).values()].sort((a, b) => a.etiket.localeCompare(b.etiket, "tr"));
+  const urunler = [...new Map(ham.map((kayit) => {
+    const id = tekil(kayit.v_yayin_kunye)?.urun_id ?? kayit.yayin_id;
+    return [id, { id, etiket: urunAdlari.get(id) ?? "Ürün" }];
+  })).values()].sort((a, b) => a.etiket.localeCompare(b.etiket, "tr"));
+  return {
+    // Durum filtresi listeyi daraltır; stat kartları diğer filtrelerdeki tüm aşamaları gösterir.
+    statlar: siparisTakipStatlariniHesapla(durumlu.map(({ durum }) => durum)),
+    filtre_secenekleri: { eczaneler, urunler },
+    talepler,
+    sayfalama: { toplam: sonuclar.length, offset: filtreler.offset, limit: filtreler.limit, sonraki_kayit_var_mi: filtreler.offset + talepler.length < sonuclar.length },
+  };
 }

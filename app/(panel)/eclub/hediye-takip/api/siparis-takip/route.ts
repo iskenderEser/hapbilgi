@@ -7,14 +7,20 @@ import { hataYaniti, rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } fr
 
 export async function GET(request: NextRequest) {
   try {
-    const client = await createClient();
-    const { data: { user }, error } = await client.auth.getUser();
-    if (error || !user) return yetkiHatasi();
+    const supabase = await createClient();
+    const { data: { user }, error: authHatasi } = await supabase.auth.getUser();
+    if (authHatasi || !user) return yetkiHatasi();
     const admin = createAdminClient();
     const erisim = await cekTakipKapsaminiCoz(admin, user.id);
-    if (!erisim.ok) return erisim.kod === "veri_hatasi" ? hataYaniti(erisim.mesaj, "Sipariş Takip kapsamı", erisim.detay) : rolHatasi(erisim.mesaj);
+    if (!erisim.ok) {
+      if (erisim.kod === "veri_hatasi") return hataYaniti(erisim.mesaj, "Sipariş Takip kapsamı", erisim.detay);
+      return rolHatasi(erisim.mesaj);
+    }
     const filtre = siparisTakipFiltreleriniParseEt(request.nextUrl.searchParams);
     if (!filtre.ok) return validasyonHatasi(filtre.hata, filtre.alanlar);
-    return NextResponse.json(await siparisTakipVerisiniGetir(admin, erisim.kapsam, filtre.filtreler));
-  } catch (error) { return sunucuHatasi(error, "GET /eclub/hediye-takip/api/siparis-takip"); }
+    const veri = await siparisTakipVerisiniGetir(admin, erisim.kapsam, filtre.filtreler);
+    return NextResponse.json(veri, { status: 200 });
+  } catch (error) {
+    return sunucuHatasi(error, "GET /eclub/hediye-takip/api/siparis-takip");
+  }
 }

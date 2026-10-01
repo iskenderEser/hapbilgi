@@ -160,22 +160,22 @@ export default function HediyeTakipIstemcisi() {
           aria-labelledby={`hediye-takip-${takipTuru}-sekmesi`}
           className="min-w-0"
         >
-        {takipTuru === "cek" ? (
-          <CekTakipListesi
-            talepler={cekVerisi?.talepler ?? []}
-            yukleniyor={cekYukleniyor}
-            hata={cekHatasi}
-            filtreVar={cekFiltresiVar}
-            sonrakiKayitVarMi={cekVerisi?.sayfalama.sonraki_kayit_var_mi ?? false}
-            dahaYukleniyor={dahaYukleniyor}
-            islemdekiTalepId={islemdekiTalepId}
-            onDahaFazla={() => void dahaFazlaYukle()}
-            onIslem={(talepId, islem) => void cekTakipIslemiYap(talepId, islem)}
-            onYenidenDene={() => setYenilemeAnahtari((deger) => deger + 1)}
-          />
-        ) : (
-          <SiparisTakipIstemcisi onStatlar={setSiparisStatlari} />
-        )}
+          {takipTuru === "cek" ? (
+            <CekTakipListesi
+              talepler={cekVerisi?.talepler ?? []}
+              yukleniyor={cekYukleniyor}
+              hata={cekHatasi}
+              filtreVar={cekFiltresiVar}
+              sonrakiKayitVarMi={cekVerisi?.sayfalama.sonraki_kayit_var_mi ?? false}
+              dahaYukleniyor={dahaYukleniyor}
+              islemdekiTalepId={islemdekiTalepId}
+              onDahaFazla={() => void dahaFazlaYukle()}
+              onIslem={(talepId, islem) => void cekTakipIslemiYap(talepId, islem)}
+              onYenidenDene={() => setYenilemeAnahtari((deger) => deger + 1)}
+            />
+          ) : (
+            <SiparisTakipIstemcisi onStatlar={setSiparisStatlari} />
+          )}
         </div>
       </main>
     </div>
