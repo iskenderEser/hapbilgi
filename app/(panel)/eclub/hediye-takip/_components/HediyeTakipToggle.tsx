@@ -3,8 +3,8 @@ import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
 export type HediyeTakipTuru = "cek" | "siparis";
 
 const TAKIP_SECENEKLERI = [
-  { key: "cek", label: "Çek Takip" },
-  { key: "siparis", label: "Sipariş Takip" },
+  { key: "cek", label: "Çek Takibi" },
+  { key: "siparis", label: "Sipariş Takibi" },
 ] as const;
 
 export default function HediyeTakipToggle({
@@ -20,7 +20,7 @@ export default function HediyeTakipToggle({
       deger={deger}
       onDegistir={onDegistir}
       ariaLabel="Hediye takip türü"
-      className="h-11 [&>button]:h-[34px] [&>button]:min-w-[116px] [&>button]:py-0"
+      className="h-11 w-fit !flex-none [&>button]:h-[34px] [&>button]:min-w-[116px] [&>button]:py-0"
     />
   );
 }

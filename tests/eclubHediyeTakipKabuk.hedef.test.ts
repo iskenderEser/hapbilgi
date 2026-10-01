@@ -20,9 +20,13 @@ test("Hediye Takip kabuğu başlık, stat kartları, toggle ve içerik sırasın
 });
 
 test("geleneksel kapsül Çek Takip ve Sipariş Takip arasında geçiş sağlar", () => {
-  assert.match(toggle, /key: "cek", label: "Çek Takip"/);
-  assert.match(toggle, /key: "siparis", label: "Sipariş Takip"/);
+  assert.match(istemci, />Hediye Takibi</);
+  assert.match(toggle, /key: "cek", label: "Çek Takibi"/);
+  assert.match(toggle, /key: "siparis", label: "Sipariş Takibi"/);
   assert.match(toggle, /PeriyotButonlari<HediyeTakipTuru>/);
+  assert.match(toggle, /w-fit !flex-none/);
+  assert.match(istemci, /className="flex justify-start"/);
+  assert.doesNotMatch(istemci, /justify-center/);
 });
 
 test("stat kartları seçilen takip türüne göre ayrı başlıklar taşır", () => {
