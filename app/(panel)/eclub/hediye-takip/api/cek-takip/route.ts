@@ -3,6 +3,7 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { cekTakipKapsaminiCoz } from "@/lib/eclub/hediyeTakip/cekTakipErisim";
 import { cekTakipFiltreleriniParseEt } from "@/lib/eclub/hediyeTakip/cekTakipFiltreleri";
 import { cekTakipFiltreSecenekleriniGetir } from "@/lib/eclub/hediyeTakip/cekTakipFiltreSecenekleri";
+import { cekTakipTalepleriniGetir } from "@/lib/eclub/hediyeTakip/cekTakipListesi";
 import { cekTakipStatlariniGetir } from "@/lib/eclub/hediyeTakip/cekTakipStatlari";
 import { hataYaniti, rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 
@@ -24,21 +25,17 @@ export async function GET(request: NextRequest) {
     const filtreSonucu = cekTakipFiltreleriniParseEt(request.nextUrl.searchParams);
     if (!filtreSonucu.ok) return validasyonHatasi(filtreSonucu.hata, filtreSonucu.alanlar);
 
-    const [statlar, filtre_secenekleri] = await Promise.all([
+    const [statlar, filtre_secenekleri, liste] = await Promise.all([
       cekTakipStatlariniGetir(adminSupabase, erisim.kapsam),
       cekTakipFiltreSecenekleriniGetir(adminSupabase, erisim.kapsam),
+      cekTakipTalepleriniGetir(adminSupabase, erisim.kapsam, filtreSonucu.filtreler),
     ]);
 
     return NextResponse.json({
       statlar,
       filtre_secenekleri,
-      talepler: [],
-      sayfalama: {
-        toplam: 0,
-        offset: filtreSonucu.filtreler.offset,
-        limit: filtreSonucu.filtreler.limit,
-        sonraki_kayit_var_mi: false,
-      },
+      talepler: liste.talepler,
+      sayfalama: liste.sayfalama,
     }, { status: 200 });
   } catch (error) {
     return sunucuHatasi(error, "GET /eclub/hediye-takip/api/cek-takip");

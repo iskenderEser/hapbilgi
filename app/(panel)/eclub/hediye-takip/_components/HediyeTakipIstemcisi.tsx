@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { CekTakipApiYaniti } from "@/lib/eclub/hediyeTakip/cekTakip";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CEK_TAKIP_SAYFA_LIMITI, type CekTakipApiYaniti } from "@/lib/eclub/hediyeTakip/cekTakip";
 import CekTakipFiltreleri, {
   BOS_CEK_TAKIP_FILTRELERI,
   type CekTakipFiltreDegerleri,
 } from "./CekTakipFiltreleri";
+import CekTakipListesi from "./CekTakipListesi";
 import HediyeTakipToggle, { type HediyeTakipTuru } from "./HediyeTakipToggle";
 import TakipStatKartlari from "./TakipStatKartlari";
 
@@ -19,23 +20,68 @@ export default function HediyeTakipIstemcisi() {
   const [takipTuru, setTakipTuru] = useState<HediyeTakipTuru>("cek");
   const [cekVerisi, setCekVerisi] = useState<CekTakipApiYaniti | null>(null);
   const [cekFiltreleri, setCekFiltreleri] = useState<CekTakipFiltreDegerleri>({ ...BOS_CEK_TAKIP_FILTRELERI });
+  const [dahaYukleniyor, setDahaYukleniyor] = useState(false);
+  const istekSirasi = useRef(0);
+  const aktifIstek = useRef<AbortController | null>(null);
+
+  const sorguOlustur = useCallback((offset: number) => {
+    const params = new URLSearchParams();
+    Object.entries(cekFiltreleri).forEach(([alan, deger]) => {
+      if (deger) params.set(alan, deger);
+    });
+    params.set("offset", String(offset));
+    params.set("limit", String(CEK_TAKIP_SAYFA_LIMITI));
+    return params.toString();
+  }, [cekFiltreleri]);
 
   useEffect(() => {
     const controller = new AbortController();
+    aktifIstek.current?.abort();
+    aktifIstek.current = controller;
+    const sira = ++istekSirasi.current;
+    setDahaYukleniyor(false);
     const yukle = async () => {
       try {
-        const yanit = await fetch("/eclub/hediye-takip/api/cek-takip", { signal: controller.signal });
+        const yanit = await fetch(`/eclub/hediye-takip/api/cek-takip?${sorguOlustur(0)}`, { signal: controller.signal });
         const veri = await yanit.json();
         if (!yanit.ok) throw new Error(veri.hata ?? "Çek Takibi verileri alınamadı.");
+        if (sira !== istekSirasi.current) return;
         setCekVerisi(veri as CekTakipApiYaniti);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setCekVerisi(null);
+        if (sira === istekSirasi.current) setCekVerisi(null);
       }
     };
     void yukle();
     return () => controller.abort();
-  }, []);
+  }, [sorguOlustur]);
+
+  const dahaFazlaYukle = async () => {
+    if (!cekVerisi || dahaYukleniyor || !cekVerisi.sayfalama.sonraki_kayit_var_mi) return;
+    const controller = new AbortController();
+    aktifIstek.current?.abort();
+    aktifIstek.current = controller;
+    const sira = ++istekSirasi.current;
+    setDahaYukleniyor(true);
+    try {
+      const yanit = await fetch(`/eclub/hediye-takip/api/cek-takip?${sorguOlustur(cekVerisi.talepler.length)}`, { signal: controller.signal });
+      const veri = await yanit.json();
+      if (!yanit.ok) throw new Error(veri.hata ?? "Daha fazla çek talebi alınamadı.");
+      if (sira !== istekSirasi.current) return;
+      const sonraki = veri as CekTakipApiYaniti;
+      setCekVerisi((onceki) => onceki ? {
+        ...sonraki,
+        filtre_secenekleri: onceki.filtre_secenekleri,
+        talepler: [...onceki.talepler, ...sonraki.talepler],
+      } : sonraki);
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        // Hata ve yeniden deneme görünümü 11. adımın kapsamındadır.
+      }
+    } finally {
+      if (sira === istekSirasi.current) setDahaYukleniyor(false);
+    }
+  };
 
   return (
     <div className="min-h-full bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -59,7 +105,16 @@ export default function HediyeTakipIstemcisi() {
           />
         )}
 
-        <section aria-label={`${takipTuru === "cek" ? "Çek" : "Sipariş"} takip içeriği`} className="min-h-56 rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]" />
+        {takipTuru === "cek" ? (
+          <CekTakipListesi
+            talepler={cekVerisi?.talepler ?? []}
+            sonrakiKayitVarMi={cekVerisi?.sayfalama.sonraki_kayit_var_mi ?? false}
+            dahaYukleniyor={dahaYukleniyor}
+            onDahaFazla={() => void dahaFazlaYukle()}
+          />
+        ) : (
+          <section aria-label="Sipariş takip içeriği" className="min-h-56 rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]" />
+        )}
       </main>
     </div>
   );
