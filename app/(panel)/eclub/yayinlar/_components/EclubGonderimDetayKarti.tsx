@@ -137,7 +137,7 @@ export function EclubGonderimDetayKarti({ yayinId, urunAdi, aracTuru, kayitlar, 
         aria-controls={panelId}
         aria-label={acik ? `${urunAdi} yayın kartına dön` : `${urunAdi} gönderim detaylarını göster`}
         title={acik ? "Yayın kartına dön" : "Gönderim detaylarını göster"}
-        className={`absolute bottom-0 left-2 right-[-6px] z-[5] flex h-7 translate-y-1/4 items-end justify-center rounded-b-xl border border-t-0 px-3 pb-0.5 text-[9px] font-extrabold shadow-sm transition-[background-color,color] duration-200 motion-reduce:transition-none ${acik ? "border-[#d6e0ea] bg-white text-[#526a86] hover:bg-[#f1f5f9]" : "border-[#9fc5e4] bg-[#dcecf8] text-[#24618f] hover:bg-[#cfe5f5]"}`}
+        className={`absolute bottom-0 left-2 right-[-6px] z-[5] flex h-7 translate-y-1/4 items-end justify-center rounded-b-xl border border-t-0 px-3 pb-1 text-[9px] font-extrabold shadow-sm transition-[background-color,color] duration-200 motion-reduce:transition-none ${acik ? "border-[#d6e0ea] bg-white text-[#526a86] hover:bg-[#f1f5f9]" : "border-[#9fc5e4] bg-[#dcecf8] text-[#24618f] hover:bg-[#cfe5f5]"}`}
       >
         {acik ? "Yayın kartına dön" : "Gönderim detayları"}
       </button>
