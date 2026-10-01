@@ -12,6 +12,10 @@ Her yeni çalışma oturumunun başında `docs/hukuki/KVKK_YURTDISI_VERI_AKTARIM
 
 E-Club'da puan karşılığı çekler eczacıya e-posta ile gönderilir; ayrıca çek bilgisi, E-Club üyesi olan ve ilgili eczanede çalışan herkesin HapBilgi hesabına push notification olarak gönderilir. Bu davranışı ilgili her geliştirme ve incelemede tekrar irdele; mevcut uygulamanın bu iş kuralını gerçekten sağladığını kod ve veri akışı üzerinden doğrulamadan doğru kabul etme.
 
+## Hediye Takibi uçtan uca test hatırlatması
+
+Her yeni çalışma oturumunda `docs/ECLUB_CANLI_DOGRULAMA_TAKIBI.md` dosyasındaki **Hediye Takibi uçtan uca testi** bölümünü kontrol et. Durum `TAMAMLANDI` değilse kullanıcıya oturumda bir kez “Hediye Takibi uçtan uca testleri hâlâ bekliyor.” hatırlatmasını yap. Kullanıcı canlı testi şimdilik park etti: açık talimat almadan iki aylık dönem sınırını değiştirme, test için sahte sipariş oluşturma veya fiziksel testi başlatma. Hedef test tamamlanmadan durumu `TAMAMLANDI` yapma. Bu hatırlatma kullanıcının asıl talebini engellemez.
+
 ## Üçüncü zorunlu kural: Video Mimarisi ve Öğrenme Araçları Ayrımı
 
 **Videoları ASLA diğer öğrenme araçları (PDF, Görsel, Podcast) ile aynı ortak yükleme/doğrulama paketine veya ara durum tablolarına sokma.**
@@ -27,5 +31,4 @@ E-Club'da puan karşılığı çekler eczacıya e-posta ile gönderilir; ayrıca
 1. **DB Saklama Kuralı (GUID)**: `ogrenme_araclari.dosya_yolu`, `videolar.video_url` veya `talepler.hazir_video_url` alanlarında tam URL (`https://player.mediadelivery.net/...`) DEĞİL, yalnızca 36 karakterlik ham Bunny GUID (`fcae5775-cf9b-4283-9ec8-deb1f3b62b7c`) saklanır.
 2. **Kütüphane ve Ortam Bağımsızlığı**: Bunny kütüphane numarası (`LIBRARY_ID: 707975`) ortam değişkenindedir. Veritabanına tam link yazmak veriyi ortama bağımlı kılar ve ileride token authentication/domain restriction geçişlerini imkansızlaştırır.
 3. **Dinamik Çözümleme**: İstemci veya oynatıcı iframe'ine verilecek tam oynatma adresi (`https://player.mediadelivery.net/embed/{LIBRARY_ID}/{GUID}`) her zaman API / sunucu katmanında çalışma anında dinamik olarak çözümlenerek üretilir; DB'ye statik olarak yazılmaz.
-
 
