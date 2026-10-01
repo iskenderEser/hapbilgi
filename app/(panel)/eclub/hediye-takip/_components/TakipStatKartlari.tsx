@@ -1,4 +1,5 @@
 import { CheckCircle2, Clock3, Gift, PackageCheck, Send, ShoppingBag, Truck } from "lucide-react";
+import type { CekTakipStatlari } from "@/lib/eclub/hediyeTakip/cekTakip";
 import type { HediyeTakipTuru } from "./HediyeTakipToggle";
 
 const CEK_STATLARI = [
@@ -15,12 +16,21 @@ const SIPARIS_STATLARI = [
   { etiket: "Tamamlanan", detay: "Süreci tamamlananlar", ikon: PackageCheck, renk: "#16865f", zemin: "#ebf8f2" },
 ] as const;
 
-export default function TakipStatKartlari({ takipTuru }: { takipTuru: HediyeTakipTuru }) {
+export default function TakipStatKartlari({
+  takipTuru,
+  cekStatlari,
+}: {
+  takipTuru: HediyeTakipTuru;
+  cekStatlari?: CekTakipStatlari;
+}) {
   const statlar = takipTuru === "cek" ? CEK_STATLARI : SIPARIS_STATLARI;
+  const degerler = takipTuru === "cek" && cekStatlari
+    ? [cekStatlari.toplam, cekStatlari.onay_surecinde, cekStatlari.teslimat_surecinde, cekStatlari.tamamlanan]
+    : null;
 
   return (
     <section aria-label={`${takipTuru === "cek" ? "Çek" : "Sipariş"} takip özeti`} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {statlar.map(({ etiket, detay, ikon: Icon, renk, zemin }) => (
+      {statlar.map(({ etiket, detay, ikon: Icon, renk, zemin }, index) => (
         <article
           key={etiket}
           className="flex min-w-0 items-start justify-between gap-3 rounded-2xl border border-[#dfe7f1] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)]"
@@ -28,7 +38,7 @@ export default function TakipStatKartlari({ takipTuru }: { takipTuru: HediyeTaki
         >
           <div className="min-w-0">
             <span className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#7d8fa5]">{etiket}</span>
-            <strong className="mt-1 block text-2xl font-black tracking-tight text-[#1e3450]">—</strong>
+            <strong className="mt-1 block text-2xl font-black tracking-tight text-[#1e3450]">{degerler ? degerler[index].toLocaleString("tr-TR") : "—"}</strong>
             <span className="mt-1 hidden truncate text-xs font-semibold text-[#8292a7] sm:block">{detay}</span>
           </div>
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl" style={{ color: renk, backgroundColor: zemin }}>
