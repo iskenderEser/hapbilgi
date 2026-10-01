@@ -126,6 +126,18 @@ export interface CekTakipTalebi {
   izin_verilen_islemler: CekTakipIslemi[];
 }
 
+export function cekTakipTeslimatiTamamlandiMi(
+  talep: Pick<CekTakipTalebi, "durum" | "cek" | "teslimat">,
+): boolean {
+  return talep.durum === "cek_kodlari_gonderildi"
+    && Boolean(talep.cek.kod?.trim())
+    && Boolean(talep.cek.gonderim_tarihi)
+    && talep.teslimat.eposta.toplam === 1
+    && talep.teslimat.eposta.tamamlanan === 1
+    && talep.teslimat.push.toplam > 0
+    && talep.teslimat.push.tamamlanan === talep.teslimat.push.toplam;
+}
+
 export interface CekTakipSayfalama {
   toplam: number;
   offset: number;

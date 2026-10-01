@@ -1,5 +1,10 @@
-import { CEK_TALEP_DURUM_META } from "@/lib/eclub/store/eclubStoreTipler";
-import type { CekTakipIslemi, CekTakipTalebi, CekTakipTeslimatKanali } from "@/lib/eclub/hediyeTakip/cekTakip";
+import { CEK_KODU_GORUNUR_DURUMLARI, CEK_TALEP_DURUM_META } from "@/lib/eclub/store/eclubStoreTipler";
+import {
+  cekTakipTeslimatiTamamlandiMi,
+  type CekTakipIslemi,
+  type CekTakipTalebi,
+  type CekTakipTeslimatKanali,
+} from "@/lib/eclub/hediyeTakip/cekTakip";
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 
 function tarihFormatla(iso: string | null): string {
@@ -29,12 +34,17 @@ const TESLIMAT_ETIKETLERI: Record<CekTakipTeslimatKanali["durum"], string> = {
 };
 
 export function CekTakipTeslimatOzeti({ talep }: { talep: CekTakipTalebi }) {
+  const cekKoduGorunur = CEK_KODU_GORUNUR_DURUMLARI.includes(talep.durum) && Boolean(talep.cek.kod);
+  const tamamlandi = cekTakipTeslimatiTamamlandiMi(talep);
   return (
     <div className="space-y-1 text-[11px] font-bold text-[#60758d]">
-      <div>E-posta: {TESLIMAT_ETIKETLERI[talep.teslimat.eposta.durum]}</div>
-      <div>Push: {TESLIMAT_ETIKETLERI[talep.teslimat.push.durum]}{talep.teslimat.push.toplam > 0 ? ` (${talep.teslimat.push.tamamlanan}/${talep.teslimat.push.toplam})` : ""}</div>
-      <div>Gönderim: {tarihFormatla(talep.cek.gonderim_tarihi)}</div>
-      {talep.cek.kod && <div className="break-all font-mono text-emerald-800">Kod: {talep.cek.kod}</div>}
+      <div>Ana eczacı e-postası: {TESLIMAT_ETIKETLERI[talep.teslimat.eposta.durum]}{talep.teslimat.eposta.toplam > 0 ? ` (${talep.teslimat.eposta.tamamlanan}/${talep.teslimat.eposta.toplam})` : ""}</div>
+      <div>Aktif E-Club hesapları push: {TESLIMAT_ETIKETLERI[talep.teslimat.push.durum]}{talep.teslimat.push.toplam > 0 ? ` (${talep.teslimat.push.tamamlanan}/${talep.teslimat.push.toplam})` : ""}</div>
+      <div>Gönderim tarihi: {tarihFormatla(talep.cek.gonderim_tarihi)}</div>
+      {cekKoduGorunur && <div className="break-all font-mono text-emerald-800">Çek kodu: {talep.cek.kod}</div>}
+      <div className={tamamlandi ? "text-emerald-700" : "text-[#71859d]"}>
+        {tamamlandi ? "Tüm gerekli teslimatlar tamamlandı" : "Teslimat süreci tamamlanmadı"}
+      </div>
     </div>
   );
 }
