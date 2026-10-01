@@ -5,9 +5,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 
-const pagePath = "app/(panel)/eczanem/utt/page.tsx";
+const pagePath = "app/(panel)/eczanem/yayinlar/page.tsx";
 const page = readFileSync(pagePath, "utf8");
-const videoSatiri = readFileSync("app/(panel)/eczanem/utt/_components/UttVideoGonderimSatiri.tsx", "utf8");
+const videoSatiri = readFileSync("app/(panel)/eczanem/yayinlar/_components/UttEczanemGonderimSatiri.tsx", "utf8");
 const dagitimOzeti = readFileSync("components/ogrenme-araci/DagitimIcerikOzeti.tsx", "utf8");
 const videoOnizleme = readFileSync("components/video/VideoOnizleme.tsx", "utf8");
 const ortakOnizleme = readFileSync("components/ogrenme-araci/OgrenmeAraciOnizleme.tsx", "utf8");
@@ -16,12 +16,13 @@ const videoEtkilesimKatmani = readFileSync("components/video/useVideoEtkilesimKa
 const dokum = readFileSync("app/(panel)/eczanem/utt/_components/UttEczanemDokum.tsx", "utf8");
 const mutabakatPage = readFileSync("app/(panel)/eczanem/utt/mutabakat/page.tsx", "utf8");
 const nav = readFileSync("components/panel/panelNav.config.ts", "utf8");
-const route = readFileSync("app/eczanem/utt/api/route.ts", "utf8");
+const route = readFileSync("app/eczanem/yayinlar/api/route.ts", "utf8");
 const gonderim = readFileSync("lib/eczanem/gonderim.ts", "utf8");
 const sql = readFileSync("scripts/sql/eczanem_utt_gonderim_atomik.sql", "utf8");
 
 test("mutlu: UTT yüzeyi panel kabuğunda, shadcn deseninde ve atomik gönderimle çalışır", () => {
-  assert.equal(existsSync("app/eczanem/utt/page.tsx"), false);
+  assert.equal(existsSync("app/(panel)/eczanem/utt/page.tsx"), false);
+  assert.equal(existsSync("app/eczanem/utt/api/route.ts"), false);
   assert.match(page, /components\/ui\/(?:card|table|badge|button)/);
   assert.match(page, /AlertDialog/);
   assert.match(page, /<OgrenmeAraciOnizleme/);
@@ -47,7 +48,7 @@ test("mutlu: UTT yüzeyi panel kabuğunda, shadcn deseninde ve atomik gönderiml
   assert.match(videoSatiri, /gonderim\.created_at/);
   assert.match(dokum, /AbortController/);
   assert.match(mutabakatPage, /<UttEczanemDokum hata=\{hata\}/);
-  assert.match(nav, /Video Dağıtımı[\s\S]*?\/eczanem\/utt[\s\S]*?Mutabakat Dökümü[\s\S]*?\/eczanem\/utt\/mutabakat/);
+  assert.match(nav, /Eczanem Yayınları[\s\S]*?\/eczanem\/yayinlar[\s\S]*?Mutabakat Dökümü[\s\S]*?\/eczanem\/utt\/mutabakat/);
   assert.match(route, /uttEczanemVerisi\(adminSupabase, user\.id, firmaId, erisim\.takimId/);
   assert.match(gonderim, /rpc\("eczanem_utt_eczaneye_gonder"/);
   assert.match(gonderim, /yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu/);

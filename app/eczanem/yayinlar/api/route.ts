@@ -1,4 +1,4 @@
-// app/eczanem/utt/api/route.ts
+// app/eczanem/yayinlar/api/route.ts
 // UTT Eczanem dağıtım ucu (İP-§5.1–5.3): GET ekran verisi (yayınlar +
 // eczaneler + eşik + gönderim durumu), POST tek (yayın→eczane) gönderim.
 // İş mantığı lib/eczanem/gonderim.ts'te; burada auth + rol + orkestrasyon.
@@ -31,7 +31,7 @@ export async function GET() {
     const veri = await uttEczanemVerisi(adminSupabase, user.id, firmaId, erisim.takimId ?? null);
     return NextResponse.json(veri, { status: 200 });
   } catch (err) {
-    return sunucuHatasi(err, "GET /eczanem/utt/api");
+    return sunucuHatasi(err, "GET /eczanem/yayinlar/api");
   }
 }
 
@@ -61,6 +61,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, mesaj: "Öğrenme içeriği eczaneye gönderildi." }, { status: 201 });
   } catch (err) {
-    return sunucuHatasi(err, "POST /eczanem/utt/api");
+    return sunucuHatasi(err, "POST /eczanem/yayinlar/api");
   }
 }

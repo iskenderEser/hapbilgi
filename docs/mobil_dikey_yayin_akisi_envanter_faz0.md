@@ -66,8 +66,8 @@ Sistemde yayın bilgisi taşıdığı halde **yayın kataloğu olmayan**, operas
 3. **BM ve TM Öneri Takibi (`/oneriler` - BM ve TM görünümleri):**
    - *Bileşenler:* `BmOneriTakibi.tsx`, `TmOneriTakibi.tsx`.
    - *Gerekçe:* Bölgedeki UTT'lerin kendilerine atanan önerileri izleme durumunu denetleyen yönetim ve denetim tablosudur.
-4. **Eczanem Temsilci Dağıtım Yönetimi (`/eczanem/utt`):**
-   - *Bileşenler:* `UttVideoGonderimSatiri.tsx`, `DagitimIcerikOzeti.tsx`.
+4. **Eczanem Yayınları (`/eczanem/yayinlar`):**
+   - *Bileşenler:* `UttEczanemGonderimSatiri.tsx`, `DagitimIcerikOzeti.tsx`.
    - *Gerekçe:* UTT'nin kendi bölgesindeki eczanelere içerik dağıtım eşiklerini, gönderim oranlarını ve hazır eczane durumunu yönettiği katlanabilir dağıtım satırlarıdır.
 5. **Eczanem Eczane Müşteri Dağıtım Paneli (`/eczanem/eczane/dagitim`):**
    - *Bileşenler:* `EczanemVideoGonderimSatiri.tsx`.

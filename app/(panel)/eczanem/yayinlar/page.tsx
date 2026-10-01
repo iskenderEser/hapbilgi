@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import OgrenmeAraciOnizleme from "@/components/ogrenme-araci/OgrenmeAraciOnizleme";
-import { UttVideoGonderimSatiri } from "./_components/UttVideoGonderimSatiri";
+import { UttEczanemGonderimSatiri } from "./_components/UttEczanemGonderimSatiri";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type { UttEczanemGonderim, UttEczanemOnayHedefi, UttEczanemVeri, UttEczanemYayin } from "./_types";
 
@@ -43,7 +43,7 @@ function OzetKarti({ ikon: Icon, etiket, deger, detay, renk, zemin }: {
   );
 }
 
-export default function UttEczanemPage() {
+export default function EczanemYayinlariPage() {
   const { mesajlar, hata, basari } = useHataMesaji();
   const [veri, setVeri] = useState<UttEczanemVeri | null>(null);
   const [ilkYukleme, setIlkYukleme] = useState(true);
@@ -57,7 +57,7 @@ export default function UttEczanemPage() {
     if (!ilk) setYenileniyor(true);
     setVeriHatasi(null);
     try {
-      const res = await fetch("/eczanem/utt/api", { cache: "no-store" });
+      const res = await fetch("/eczanem/yayinlar/api", { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
         const mesaj = data.hata ?? data.error ?? "Eczanem verileri yüklenemedi.";
@@ -97,7 +97,7 @@ export default function UttEczanemPage() {
     setGonderilenHedef(hedefAnahtari);
     setOnayHedefi(null);
     try {
-      const res = await fetch("/eczanem/utt/api", {
+      const res = await fetch("/eczanem/yayinlar/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ yayin_id: yayin.yayin_id, eczane_id: eczane.eczane_id }),
@@ -151,8 +151,8 @@ export default function UttEczanemPage() {
           <div>
             <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]"><Sparkles className="size-3.5" /> Eczanem öğrenme içeriği gönderimi</p>
             <div className="inline-flex items-center">
-              <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Öğrenme İçeriği Dağıtımı</h1>
-              <SayfaRehberi anahtar="eczanem-utt-dagitim" className="ml-1.5 -translate-y-1.5" />
+              <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Eczanem Yayınları</h1>
+              <SayfaRehberi anahtar="eczanem-yayinlar" className="ml-1.5 -translate-y-1.5" />
             </div>
             <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Eczanem hedefli öğrenme içeriklerini inceleyin ve üyelik eşiğini tamamlayan eczanelerinize gönderin.</p>
           </div>
@@ -187,7 +187,7 @@ export default function UttEczanemPage() {
               {yayinlar.length === 0 ? (
                 <div className="px-4 py-14 text-center text-sm font-semibold text-[#8090a4]">Dağıtıma hazır Eczanem öğrenme içeriği bulunmuyor.</div>
               ) : yayinlar.map((yayin) => (
-                <UttVideoGonderimSatiri
+                <UttEczanemGonderimSatiri
                   key={yayin.yayin_id}
                   yayin={yayin}
                   eczaneler={eczaneler}

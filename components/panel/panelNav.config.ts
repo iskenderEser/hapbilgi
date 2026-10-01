@@ -150,7 +150,7 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "Eczanem",
     oglar: [
-      { etiket: "Video Dağıtımı",    path: "/eczanem/utt",        tamEslesme: true, gate: (c) => c.eczanemAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Eczanem Yayınları", path: "/eczanem/yayinlar",   tamEslesme: true, gate: (c) => c.eczanemAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Mutabakat Dökümü",  path: "/eczanem/utt/mutabakat",                gate: (c) => c.eczanemAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Eczanem Raporları", path: "/raporlar/eczanem",                     gate: (c) => c.eczanemAcik && ECZANEM_RAPOR_GOREN_ROLLER.includes(c.rolKucu) },
     ],

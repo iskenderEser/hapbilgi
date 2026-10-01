@@ -29,7 +29,7 @@ const tarihYaz = (deger: string | null, saat = false) => {
   }).format(new Date(deger));
 };
 
-export function UttVideoGonderimSatiri({ yayin, eczaneler, esik, gonderimMap, gonderilenHedef, onVideoAc, onGonder }: Props) {
+export function UttEczanemGonderimSatiri({ yayin, eczaneler, esik, gonderimMap, gonderilenHedef, onVideoAc, onGonder }: Props) {
   const hazirEczaneler = eczaneler.filter((eczane) => eczane.esik_uygun);
   const gonderilenEczaneler = eczaneler.filter((eczane) => gonderimMap.has(`${yayin.yayin_id}::${eczane.eczane_id}`));
   const bekleyenHazir = hazirEczaneler.filter((eczane) => !gonderimMap.has(`${yayin.yayin_id}::${eczane.eczane_id}`));

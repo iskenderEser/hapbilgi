@@ -6,7 +6,7 @@ const oku = (yol: string) => readFileSync(yol, "utf8");
 
 const ortak = oku("components/ui/yenile-butonu.tsx");
 const sayfalar = [
-  oku("app/(panel)/eczanem/utt/page.tsx"),
+  oku("app/(panel)/eczanem/yayinlar/page.tsx"),
   oku("app/(panel)/eclub/yayinlar/page.tsx"),
   oku("app/(panel)/eclub/eczanelerim/page.tsx"),
   oku("app/(panel)/eczanem/eczane/dagitim/page.tsx"),

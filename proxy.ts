@@ -418,7 +418,7 @@ export async function proxy(request: NextRequest) {
     if (!girissizYol) {
       const apiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
       const eczaneDali = pathname.startsWith("/eczanem/eczane");
-      const uttDali = pathname.startsWith("/eczanem/utt");
+      const uttDali = pathname.startsWith("/eczanem/utt") || pathname.startsWith("/eczanem/yayinlar");
       // Eczacı ve UTT dalları iç uygulama oturumuyla (/login) girilir; müşteri
       // dalının kendi giriş ekranı vardır (/eczanem/giris).
       const icUygulamaDali = eczaneDali || uttDali;

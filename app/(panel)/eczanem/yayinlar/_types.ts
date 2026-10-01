@@ -1,5 +1,7 @@
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
+// Eczanem Yayınları UTT dağıtım yüzeyinin istemci sözleşmeleri.
+
 export interface UttEczanemYayin {
   yayin_id: string;
   urun_adi: string;

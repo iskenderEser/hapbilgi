@@ -216,7 +216,7 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
 * **Üye Yüzeyi ve Kimlik:** `app/login/`, `app/eczanem/`, `app/eczanem/api/giris/sifre/route.ts`, `lib/eczanem/oturum.ts`, `lib/eczanem/telefon.ts`, `lib/eczanem/aktifUyelik.ts`, `lib/eczanem/erisim.ts`.
-* **Dağıtım ve Öğrenme:** `app/(panel)/eczanem/utt/`, `app/(panel)/eczanem/eczane/`, `app/eczanem/api/izleme/`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `lib/eczanem/gonderim.ts`, `components/ogrenme-araci/`.
+* **Dağıtım ve Öğrenme:** `app/(panel)/eczanem/yayinlar/`, `app/(panel)/eczanem/eczane/`, `app/eczanem/api/izleme/`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `lib/eczanem/gonderim.ts`, `components/ogrenme-araci/`.
 * **Puan, Tarife ve İşlem:** `app/eczanem/api/puanlar/`, `app/eczanem/api/siparis/`, `lib/eczanem/kasa.ts`, `lib/eczanem/tarife.ts`, `lib/eczanem/dokum.ts`.
 * **Geçiş ve Silme:** `app/eczanem/api/eclub-gecisi/route.ts`, `app/eczanem/api/hesabimi-sil/route.ts`, `lib/eczanem/silme.ts`, `eczanem_eclub_gecis_karar_ver`, `eczanem_musteri_kendini_tam_sil`.
 * **Güvenlik Kapıları:** Üye kimliği, eczane üyeliği, firma modül bayrağı, UTT liste bağı, yayın kapsamı, araç kimliği, aktif üye eşiği, tarife ve sipariş sahipliği sunucuda yeniden doğrulanır. Dağıtım, tamamlama, cevap, üyelik ve sipariş kararları korumalı RPC'lerden geçer.
@@ -1051,25 +1051,30 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `page.tsx` | UI / React | Müşterinin kasada talep ettiği barkodlu OTC indirimlerinin eczacı tarafından onaylandığı sipariş kuyruğu. |
 
-### 📁 app/(panel)/eczanem/utt/
+### 📁 app/(panel)/eczanem/yayinlar/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `_types.ts` | TypeScript / Lib | Eczanem alanında kullanılan `UttEczanemYayin`, `UttEczanemEczane`, `UttEczanemGonderim`, `UttEczanemVeri` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
-| `page.tsx` | UI / React | UTT'nin portföyündeki uygun eczanelere OTC tüketici videoları dağıttığı temsilci operasyon sayfası. |
+| `page.tsx` | UI / React | `/eczanem/yayinlar` rotasında UTT'nin portföyündeki uygun eczanelere Eczanem öğrenme içeriklerini dağıttığı temsilci operasyon sayfası. |
 
-### 📁 app/(panel)/eczanem/utt/_components/
+### 📁 app/(panel)/eczanem/yayinlar/_components/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `UttEczanemDokum.tsx` | UI / React | UTT Eczanem döküm, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `UttVideoGonderimSatiri.tsx` | UI / React | UTT video gönderim Satiri, Eczanem listesindeki bir utt video gönderim kaydını durumu ve izinli eylemleriyle gösterir. |
+| `UttEczanemGonderimSatiri.tsx` | UI / React | Eczanem Yayınları listesindeki bir öğrenme içeriğinin eczane bazlı gönderim durumunu ve izinli eylemlerini gösterir. |
 
 ### 📁 app/(panel)/eczanem/utt/mutabakat/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `page.tsx` | UI / React | `/eczanem/utt/mutabakat` rotasında Eczanem kapsamındaki mutabakat arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/eczanem/utt/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `UttEczanemDokum.tsx` | UI / React | UTT Eczanem döküm, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
 ### 📁 app/(panel)/hapbilgi-nedir/
 
@@ -2097,11 +2102,11 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `page.tsx` | UI / React | Müşterinin kazandığı puanları gördüğü ve anlaşmalı eczane kasasında indirim barkodu oluşturduğu kasa cüzdan sayfası. |
 
-### 📁 app/eczanem/utt/api/
+### 📁 app/eczanem/yayinlar/api/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | API / Route Handler | `/eczanem/utt/api` uç noktasında GET, POST isteklerini işler; Eczanem için Eczanem UTT sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+| `route.ts` | API / Route Handler | `/eczanem/yayinlar/api` uç noktasında GET, POST isteklerini işler; Eczanem Yayınları sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ### 📁 app/eczanem/utt/api/dokum/
 

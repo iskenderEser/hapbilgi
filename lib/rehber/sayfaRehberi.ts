@@ -313,11 +313,11 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     ],
   },
 
-  // ─── 17. ECZANEM VİDEO DAĞITIMI (UTT) ─────────────────────────────────────
-  "eczanem-utt-dagitim": {
-    anahtar: "eczanem-utt-dagitim",
-    baslik: "Video Dağıtımı",
-    ozet: "Eczanelerin müşterilerine iletmesi için gönderilecek videoları seçmenizi ve eczane bazlı video dağıtım planını yönetmenizi sağlar.",
+  // ─── 17. ECZANEM YAYINLARI (UTT) ──────────────────────────────────────────
+  "eczanem-yayinlar": {
+    anahtar: "eczanem-yayinlar",
+    baslik: "Eczanem Yayınları",
+    ozet: "Eczanelerin Eczanem uygulaması üyelerine iletmesi için gönderilecek öğrenme içeriklerini seçmenizi ve eczane bazlı dağıtımı yönetmenizi sağlar.",
     maddeler: [],
   },
 

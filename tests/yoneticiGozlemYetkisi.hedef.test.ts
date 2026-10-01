@@ -32,7 +32,7 @@ const eczaneEkle = oku("app/(panel)/eclub/listem/api/eczaneler/route.ts");
 const challenge = oku("app/(panel)/challenge-club/api/route.ts");
 const challengeSayfasi = oku("app/(panel)/challenge-club/page.tsx");
 const eclubGonder = oku("app/(panel)/eclub/oneriler/api/route.ts");
-const eczanemGonder = oku("app/eczanem/utt/api/route.ts");
+const eczanemGonder = oku("app/eczanem/yayinlar/api/route.ts");
 const talep = oku("app/(panel)/talepler/api/route.ts");
 const yayinYonetimiSayfasi = oku("app/(panel)/yayin-yonetimi/page.tsx");
 const yayinAc = oku("app/(panel)/yayin-yonetimi/api/yayinlar/route.ts");
@@ -286,7 +286,7 @@ for (const yoneticiRolu of YONETICI_ROLLER) {
     for (const yasakli of [
       "/talepler", "/yayin-yonetimi", "/sizin-yayinlariniz", "/tum-yayinlar",
       "/challenge-club", "/store", "/store/siparislerim", "/store/adreslerim",
-      "/eclub/eczanelerim", "/eclub/yayinlar", "/eczanem/utt",
+      "/eclub/eczanelerim", "/eclub/yayinlar", "/eczanem/yayinlar",
     ]) {
       assert.ok(!yollar.includes(yasakli), `${yoneticiRolu} yasaklı yolu görüyor: ${yasakli}`);
     }
