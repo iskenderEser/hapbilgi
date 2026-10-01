@@ -1,25 +1,21 @@
 # 📘 HapBilgi — BLUEBOOK
 ### İş Modeli, Mimari, İş Kuralları ve Teknik Envanter Anayasası
-*Son genel inceleme: 28 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026 | Ortak yayın arayüzü, mobil akış ve tanbur güncellemesi: 21 Eylül 2026 | E-Club iş modeli ve teknik kapanış güncellemesi: 28 Eylül 2026 | Depo tercihleri ve ödül sipariş takibi kod güncellemesi: 29 Eylül 2026 (canlı migration bekliyor)*
+*Son genel inceleme: 28 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026 | Ortak yayın arayüzü, mobil akış ve tanbur güncellemesi: 21 Eylül 2026 | E-Club iş modeli ve teknik kapanış güncellemesi: 28 Eylül 2026 | Depo tercihleri kod güncellemesi: 29 Eylül 2026 (canlı migration bekliyor)*
 
 ---
 
 ## 🏛️ Giriş ve Metodoloji
 **HapBilgi BLUEBOOK**, platformun iş modelini, kullanıcı alanlarını, rol ve yetki yapısını, üretim ve yayın akışlarını, öğrenme ve işlem kurallarını, veri mimarisini, arayüz sözleşmelerini ve dosya–tür–işlev envanterini tek kaynakta tanımlayan ana başvuru belgesidir.
 
-### 29 Eylül 2026 — E-Club depo ve ödül sipariş takibi ek sözleşmesi
+### 29 Eylül 2026 — E-Club depo tercihleri ek sözleşmesi
 
-Bu bölüm depo/sipariş akışındaki önceki tanımları günceller. Kod tamamlanmıştır; **canlı Supabase migration'ı ve canlı uçtan uca doğrulama beklemektedir**.
+Bu bölüm depo tercihlerindeki önceki tanımları günceller. Kod tamamlanmıştır; **canlı Supabase migration'ı beklemektedir**.
 
 - Depo kataloğu `ecza_depolari` ve `ecza_depo_subeleri` tablolarındadır. Kullanıcının yükleme sonucu 585 konum, 326 unvan, 57 il ve 289 boş şube adıdır. Boş şube merkez sayılmaz. Adlandırılmış şubesi olan depoda şube seçimi zorunlu; şubesiz depoda tek konum doğrudan seçilebilir. Birden fazla adsız konum belirsizdir.
 - UTT yeni eczane kaydında 1–3 depo/şube konumu seçer; Takımım detayından düzenler. Tercihler firmadan bağımsız eczaneye aittir, ana depo sıralaması yoktur. İl/ilçe/adres salt okunurdur. Düzeltme/Ekleme Talebi varsayılan e-posta uygulamasını açar; sistem ayarı `eclub_depo_info_eposta` başlangıçta `info@mill.gen.tr` olur. Kullanıcı gönderir; buton otomatik e-posta veya DB talebi oluşturmaz.
-- `/eclub/odul-siparis-takibi` yalnız sipariş verilmiş çek taleplerini listeler. UTT/KD_UTT kendi siparişini, BM/TM mevcut hiyerarşi ve firma kapsamında salt okunur görür. Firma için E-Club ve çek modülü açık olmalıdır. GET/POST API kapsamı sunucuda doğrulanır.
-- **Okundu = depoya iletildi.** Sipariş vermede eczacıya depo formu açılmaz. Atanmış UTT ürüne göre eczanenin kayıtlı aktif tercihlerinden hedef seçer; dışarıda ilettiği siparişi Okundu işaretler. Depoya otomatik iletim entegrasyonu yoktur. Hedef, adres ve işlem zamanı snapshot olarak saklanır; sonraki tercih değişiklikleri eski siparişi değiştirmez. İptal edilmiş/siparişsiz talep okunamaz; aynı hedefle tekrar çağrı ikinci bildirim üretmez. Hedef değişimi/geri alma yoktur.
-- Sipariş ve çek onay durumları ayrıdır. BM/TM onay zinciri korunur. Siparişli çekin kod teslimi Okundu gerektirir; siparişsiz talep bu şarttan muaftır. Eski teslimatlar geri alınmaz. DB trigger'ı yeni siparişli talepte kullanılabilir tercih, teslimat geçişinde Okundu şartını doğrular.
-- Okundu işleminde ana eczacıya ürün/adet/MF, firma/UTT ve depo/şube bilgili uygulama içi bildirim ile ayrı `eclub_odul_siparis_outbox` e-posta/push işleri atomik yazılır. Push olayı `eclub_odul_siparis_okundu`; kilit ekranı içeriği geneldir, ayrıntı uygulama içi bildirim ve e-postadadır. Mevcut `/api/cron/eclub-cek-eposta` yeni işleri de tüketir. Yeni kuyruk, çek teslimat durumunu değiştirmez.
-- **Çek kodunun mevcut alıcı kuralı korunur:** e-posta ana eczacıya, push aynı eczanedeki E-Club üyesi ve HapBilgi hesabı bulunan tüm uygun çalışanlara gönderilir. Yeni Okundu olayı yalnız talebi oluşturan ana eczacıya gider. Bu ayrım yerel PostgreSQL testiyle kontrol edilmiştir.
+- Siparişli çek talebi oluşturulurken eczanenin kullanılabilir depo tercihi bulunması zorunludur; siparişsiz çek talepleri bu koşuldan etkilenmez.
 
-Migration: `scripts/sql/eclub_odul_siparis_takibi.sql`. Operasyon adımları: `docs/ECZA_DEPO_KATALOGU_YUKLEME.md`. Teknik plan: `docs/ECLUB_ODUL_SIPARIS_TAKIBI_TEKNIK_PLAN.md`. Doğrulama: 240 E-Club testi, 36 yerel PostgreSQL kontrolü ve TypeScript kontrolü başarılı. Canlı e-posta/push teslimatı doğrulanmış sayılmaz. Push yapılmadı.
+Migration: `scripts/sql/eclub_depo_tercihleri.sql`. Operasyon adımları: `docs/ECZA_DEPO_KATALOGU_YUKLEME.md`.
 
 HapBilgi; firmalar tarafından sağlanan veya yayımlanması sağlanan içerikleri yetkili kullanıcı gruplarına ulaştıran, bu kapsamdaki üretim, yayın, öğrenme, ölçüm ve platform işlemlerini rol temelli olarak yürüten dijital bir platformdur. HapBilgi; firma ile çalışanı, firma ile eczane veya eczane ile Eczanem uygulaması üyesi arasındaki ticari ya da mesleki ilişkinin tarafı değildir.
 
@@ -974,12 +970,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `route.ts` | API / Route Handler | `/eclub/store/api/siparis` uç noktasında GET, POST, PATCH isteklerini işler; E-Club Store için Store sipariş sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
-
-### 📁 app/(panel)/eclub/store/rapor/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | `/eclub/store/rapor` rotasında E-Club Store kapsamındaki rapor arayüzünü sunan Next.js sayfa bileşenidir. |
 
 ### 📁 app/(panel)/eclub/store/siparislerim/
 
@@ -2271,7 +2261,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `eclubStoreSiparis.ts` | TypeScript / Lib | Çok-firmalı E-Club puan birleştirme algoritmasını işleten ve kademeli firma puanı düşümünü yöneten sipariş motoru. |
 | `eclubStoreStorage.ts` | TypeScript / Lib | E-Club Store kapsamında `eclubStoreGorselYukle`, `eclubStoreGorselSil` işlev ve sabitlerini sağlar; E-Club Store Storage iş kurallarını tek modülde toplar. |
 | `eclubStoreTipler.ts` | TypeScript / Lib | E-Club Store kapsamında `EclubStoreKategori`, `EclubStoreUrun`, `EclubStoreAdres` veri sözleşmelerini sağlar; E-Club Store Tipler iş kurallarını tek modülde toplar. |
-| `ekipSiparis.ts` | TypeScript / Lib | E-Club Store kapsamında `ECLUB_SIPARIS_DURUMLARI`, `ECLUB_SIPARIS_DURUM_ETIKETLERI`, `ECLUB_SIPARIS_DURUM_RENKLERI` işlev ve sabitlerini ve `EclubSiparisDurum`, `EclubSiparisAdresSnapshot`, `EclubEkipSiparisSatiri` veri sözleşmelerini sağlar; ekip sipariş iş kurallarını tek modülde toplar. |
 
 ### 📁 lib/eczanem/
 

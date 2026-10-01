@@ -1,6 +1,6 @@
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { NextRequest, NextResponse } from "next/server";
-import { odulSiparisOturumu } from "@/lib/eclub/odulSiparisErisim";
+import { depoOturumu } from "@/lib/eclub/depoErisim";
 import { depoKataloguGetir } from "@/lib/eclub/depoSunucu";
 import { depoTercihleriGecerli, uuidMu } from "@/lib/eclub/depo";
 import { uttEczaneYetkisiVarMi } from "@/lib/eclub/uttEczane";
@@ -8,7 +8,7 @@ import { rolHatasi, sunucuHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib
 
 export async function GET(request: NextRequest) {
   try {
-    const o = await odulSiparisOturumu(false);
+    const o = await depoOturumu();
     if (o.yanit) return o.yanit;
     const eczaneId = request.nextUrl.searchParams.get("eczane_id");
     if (eczaneId && !uuidMu(eczaneId)) return validasyonHatasi("Geçersiz eczane.", ["eczane_id"]);
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const o = await odulSiparisOturumu(false);
+    const o = await depoOturumu();
     if (o.yanit) return o.yanit;
     if (!TUKETICI_ROLLER.includes(o.kisi.rol ?? "")) return rolHatasi("Yalnız UTT depo tercihlerini değiştirebilir.");
     const body = await request.json();

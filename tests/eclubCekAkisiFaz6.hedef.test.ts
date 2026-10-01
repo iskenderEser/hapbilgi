@@ -11,7 +11,6 @@ const outboxSql = oku("scripts/sql/eclub_cek_teslimat_outbox.sql");
 const epostaSql = oku("scripts/sql/eclub_cek_eposta_worker.sql");
 const pushSql = oku("scripts/sql/eclub_cek_push_worker.sql");
 const bildirimSql = oku("scripts/sql/eclub_cek_uygulama_bildirimleri.sql");
-const ekipApi = oku("app/(panel)/eclub/cek-onay-takip/api/route.ts");
 const adminApi = oku("app/admin/eclub-cek-teslimat/api/cek-talepleri/route.ts");
 const cronApi = oku("app/api/cron/eclub-cek-eposta/route.ts");
 
@@ -27,11 +26,6 @@ test("Faz 6 seed'i e-posta ve tüm aktif çalışan teslimat hedeflerini sabitle
 test("çek talebi ana eczacıdan UTT, BM, TM ve admin teslimatına sıralı ilerler", () => {
   assert.match(talepSql, /SELECT lower\(btrim\(k\.rol\)\)[\s\S]*?IF v_rol <> 'eczaci'/);
   assert.match(talepSql, /'beklemede'/);
-
-  assert.match(ekipApi, /action === "bm_onayina_gonder"[\s\S]*?\["utt", "kd_utt"\]/);
-  assert.match(ekipApi, /action === "bm_onayla"[\s\S]*?rol !== "bm"/);
-  assert.match(ekipApi, /action === "tm_onayla"[\s\S]*?rol !== "tm"/);
-  assert.match(ekipApi, /t\.firma_id !== kullanici\.firma_id/);
 
   assert.match(tmSql, /SET durum = 'tm_onayinda'/);
   assert.match(tmSql, /SET durum = 'onaylandi'/);

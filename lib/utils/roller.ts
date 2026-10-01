@@ -145,8 +145,6 @@ export const ECLUB_GOREN_ROLLER = [
   ...TUKETICI_ROLLER,  // utt, kd_utt
 ];
 
-export const ODUL_SIPARIS_ROLLERI = [...TUKETICI_ROLLER, ...YONLENDIRICI_ROLLER];
-
 // ECLUB_YONETIM_ROLLERI: E-Club rapor, lig ve sipariş görünümünü izleyen iç roller.
 // UTT kendi dış müşteri ekibini; BM kendi UTT'lerini; TM kendi BM→UTT hattını;
 // üretici/yönetici roller ise yetkili takım/firma hiyerarşisini görür.

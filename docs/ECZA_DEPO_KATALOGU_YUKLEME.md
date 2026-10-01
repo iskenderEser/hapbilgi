@@ -35,20 +35,16 @@ UUID'ler ilk yükleme için üretilmiş uygulama kimlikleridir; resmi ruhsat kim
 
 Excel'i doğrudan yeni tablo olarak yüklemek yerine hazırlanmış SQL önerilir: iki tablo arasındaki FK'ler, nullable şube adları, kimlikler ve UTF-8 metinler tek işlemle korunur. Supabase küçük veri kümeleri için CSV yüklemeyi de destekler: https://supabase.com/docs/guides/database/import-data
 
-RLS açık; anon/authenticated doğrudan erişimi kapalıdır. Uygulama katalogları E-Club yetkisi denetlenen sunucu API'sinden service-role ile okur. Kayıt ve sipariş entegrasyonu için aşağıdaki ek migration gerekir.
+RLS açık; anon/authenticated doğrudan erişimi kapalıdır. Uygulama katalogları E-Club yetkisi denetlenen sunucu API'sinden service-role ile okur. Eczane depo tercihleri için aşağıdaki ek migration gerekir.
 
 ## Yapılan doğrulama ve sınır
 
-Yerelde tüm kaynak satırlar okundu; zorunlu alan, sıra, mükerrer, depo/şube UUID tekilliği ve FK eşleştirmesi kontrol edildi. Kullanıcının Supabase yükleme sonucu `585 / 326 / 57 / 289` olarak alınmıştır. Katalog SQL'i ve yeni sipariş migration'ı ayrıca yerel PostgreSQL ortamında yürütülmüştür. Bu kontrol canlı Supabase şemasına bağlantı veya canlı bildirim teslimatı doğrulaması değildir.
+Yerelde tüm kaynak satırlar okundu; zorunlu alan, sıra, mükerrer, depo/şube UUID tekilliği ve FK eşleştirmesi kontrol edildi. Kullanıcının Supabase yükleme sonucu `585 / 326 / 57 / 289` olarak alınmıştır. Bu kontrol canlı Supabase şemasına bağlantı doğrulaması değildir.
 
-## Ödül sipariş takibini devreye alma
+## Eczane depo tercihlerini devreye alma
 
-1. Katalog yüklemesi tamamlandıktan sonra `scripts/sql/eclub_odul_siparis_takibi.sql` dosyasının **tamamını** aynı Supabase projesinin SQL Editor'ında çalıştırın. Tek transaction içinde tercihler, sipariş alanları, RPC'ler, bildirim kuyruğu ve teslimat kapısı kurulur. Script tekrar uygulanabilir; mevcut puan hesaplama RPC'lerini değiştirmez.
+1. Katalog yüklemesi tamamlandıktan sonra `scripts/sql/eclub_depo_tercihleri.sql` dosyasının **tamamını** aynı Supabase projesinin SQL Editor'ında çalıştırın. Tek transaction içinde tercih tabloları, RPC'ler ve kayıt kapıları kurulur. Script tekrar uygulanabilir; mevcut puan hesaplama RPC'lerini değiştirmez.
 2. `sistem_ayarlari.eclub_depo_info_eposta` değeri ilk kurulumda `info@mill.gen.tr` olur; mevcut değer varsa korunur.
 3. UTT, mevcut eczanelerin Takımım detayındaki bar üzerinde **Depo ekle** aramalı listesinden 1–3 tercih kaydeder. En az üç karakterle kısa/resmi ad, şube, il veya ilçe aranır. Seçim otomatik kaydedilince ayrı tercih stat kartı oluşur; hatada kart eklenmez. Üç kayıtta liste gizlenir; karttaki × ile kaldırılınca yeniden görünür. Son tercih kaldırılamaz. Yeni kayıt formunda 1–3 seçim zorunluluğu korunur. Eski tercihsiz eczaneler silinmez; tercihleri tamamlanana kadar yeni siparişli talep ve yeni ana eczacı kaydı engellenir. Siparişsiz talep etkilenmez.
-4. UTT **Ödül Sipariş Takibi** ekranında kayıtlı tercihlerden hedef seçer ve dışarıda depoya ilettiği siparişi **Okundu** işaretler. BM/TM kapsamlarında görüntüler. Siparişli çeklerin yeni kod teslimi Okundu olmadan ilerlemez; daha önce teslim edilmiş çekler geri alınmaz.
-5. Mevcut korumalı `/api/cron/eclub-cek-eposta` endpoint'i iki yeni bildirim kuyruğunu da tüketir. Zamanlayıcının bu endpoint'i `CRON_SECRET` ile düzenli çağırdığını doğrulayın; yeni cron adresi gerekmez. E-posta için mevcut `RESEND_API_KEY` ve `ECLUB_CEK_EMAIL_FROM`, push için mevcut VAPID ayarları kullanılır.
-6. Kontrollü bir siparişte UTT/BM/TM kapsamını, hedef/adres kaydını, ana eczacının uygulama içi bildirimi/e-postası/push'unu ve siparişli/siparişsiz çek teslimini canlı doğrulayın. Yeni sipariş olayı ana eczacıya gider; mevcut çek kodu teslimatı e-posta ana eczacıya, push uygun tüm E-Club çalışanlarına gider.
-7. Kuyrukta `eclub_odul_siparis_outbox.durum`, `son_hata_kodu`, `deneme_sayisi` izlenebilir; takip ekranı kanal durumlarını gösterir. En fazla 5 deneme, 120 saniyelik lease ve token ile eski çalışanın sonucu yazmasını engelleme uygulanır. Kalıcı hata halinde kök neden giderilmeden başarılı teslimat varsayılmaz.
 
-Canlı yeni migration, zamanlayıcı ve gerçek e-posta/push teslimatı bu geliştirme oturumunda uygulanıp doğrulanmadı. Kodun yayına alınmasından önce migration tamamlanmalıdır. Push yapılmadı.
+Canlı yeni migration bu geliştirme oturumunda uygulanıp doğrulanmadı. Kodun yayına alınmasından önce migration tamamlanmalıdır.

@@ -5,7 +5,7 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, validasyonHatasi } from "@/lib/u
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
 import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER, hedefRolleriOku } from "@/lib/utils/roller";
 
-const GECERLI_KAYIT_TURLERI = ["talep", "senaryo", "video", "soru_seti", "yayin", "oneri", "challenge", "cek", "odul_siparis"];
+const GECERLI_KAYIT_TURLERI = ["talep", "senaryo", "video", "soru_seti", "yayin", "oneri", "challenge", "cek"];
 
 export async function GET() {
   try {
@@ -65,7 +65,6 @@ export async function GET() {
       sayilar[b.kayit_turu] = (sayilar[b.kayit_turu] ?? 0) + 1;
     }
     sayilar.yayin = yayinBekleyenSayisi;
-    sayilar.cek = (sayilar.cek ?? 0) + (sayilar.odul_siparis ?? 0);
 
     const { data: kullanici, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
@@ -144,7 +143,7 @@ export async function PUT(request: NextRequest) {
       return validasyonHatasi("gorev_id geçerli bir UUID olmalıdır.", ["gorev_id"]);
     }
 
-    if (kayit_turu === "cek" || kayit_turu === "odul_siparis") {
+    if (kayit_turu === "cek") {
       const { data: kisi, error: kisiError } = await adminSupabase.from("eclub_kisiler").select("kisi_id").eq("auth_user_id", user.id).maybeSingle();
       if (kisiError || !kisi) return hataYaniti("E-Club kişisi bulunamadı.", "eclub_kisiler SELECT — bildirim", kisiError, 404);
       let eclubQuery = adminSupabase.from("eclub_bildirimler").update({ goruldu_mu: true }).eq("alici_kisi_id", kisi.kisi_id).eq("goruldu_mu", false).eq("kayit_turu", kayit_turu);

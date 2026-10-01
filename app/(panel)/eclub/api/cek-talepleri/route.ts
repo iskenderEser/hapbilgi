@@ -52,7 +52,6 @@ export async function GET(request: NextRequest) {
         toplanan_puan, talep_edilen_cek_tl, siparis_tipi,
         siparis_verildi_mi, siparis_adet, siparis_mal_fazlasi,
         durum, cek_kodu, cek_gonderim_tarihi, devreden_puan, created_at,
-        siparis_okundu_at, depo_adi_snapshot, depo_sube_adi_snapshot, depo_il_snapshot, depo_ilce_snapshot, depo_adres_snapshot,
         v_yayin_kunye ( urun_id ),
         firmalar ( firma_adi )
       `)
@@ -99,12 +98,6 @@ export async function GET(request: NextRequest) {
         cek_gonderim_tarihi: talep.cek_gonderim_tarihi,
         devreden_puan: talep.devreden_puan ?? 0,
         created_at: talep.created_at,
-        siparis_okundu_at: talep.siparis_okundu_at,
-        depo_adi_snapshot: talep.depo_adi_snapshot,
-        depo_sube_adi_snapshot: talep.depo_sube_adi_snapshot,
-        depo_il_snapshot: talep.depo_il_snapshot,
-        depo_ilce_snapshot: talep.depo_ilce_snapshot,
-        depo_adres_snapshot: talep.depo_adres_snapshot,
       };
     });
 

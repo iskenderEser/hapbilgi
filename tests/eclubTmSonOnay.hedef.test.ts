@@ -1,18 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { ECLUB_SIPARIS_DURUMLARI, ECLUB_SIPARIS_DURUM_ETIKETLERI } from "@/lib/eclub/store/ekipSiparis";
+import { CEK_TALEP_DURUMLARI, CEK_TALEP_DURUM_META } from "@/lib/eclub/store/eclubStoreTipler";
 
 const oku = (yol: string) => readFileSync(yol, "utf8");
 const sql = oku("scripts/sql/eclub_store_tm_son_onay.sql");
-const api = oku("app/(panel)/eclub/cek-onay-takip/api/route.ts");
-const sayfa = oku("app/(panel)/eclub/cek-onay-takip/page.tsx");
 const adminApi = oku("app/admin/eclub-cek-teslimat/api/cek-talepleri/route.ts");
 
 test("TM onayı kanonik talep durumlarına eklendi", () => {
-  assert.ok(ECLUB_SIPARIS_DURUMLARI.includes("tm_onayinda"));
-  assert.equal(ECLUB_SIPARIS_DURUM_ETIKETLERI.tm_onayinda, "TM Onayında");
-  assert.equal(ECLUB_SIPARIS_DURUM_ETIKETLERI.onaylandi, "TM Onayladı / Kod Bekliyor");
+  assert.ok(CEK_TALEP_DURUMLARI.includes("tm_onayinda"));
+  assert.equal(CEK_TALEP_DURUM_META.tm_onayinda.etiket, "TM Onayında");
+  assert.equal(CEK_TALEP_DURUM_META.onaylandi.etiket, "TM Onayladı / Kod Bekliyor");
 });
 
 test("Faz 2C SQL şema alanlarını transaction içinde ekler", () => {
@@ -37,17 +35,6 @@ test("yalnız atanmış TM son onayla Admin aşamasını açar", () => {
   assert.match(sql, /t\.tm_id IS DISTINCT FROM p_tm_id OR t\.durum <> 'tm_onayinda'/);
   assert.match(sql, /SET durum = 'onaylandi',[\s\S]*?tm_onay_tarihi = now\(\)/);
   assert.match(sql, /Talep TM tarafından onaylanmış değil\./);
-});
-
-test("firma API ve tablo ekranı TM rolüne yalnız kendi son onay aksiyonunu verir", () => {
-  assert.match(api, /if \(action === "tm_onayla"\)/);
-  assert.match(api, /if \(rol !== "tm"\)/);
-  assert.match(api, /t\.tm_id !== kullanici\.kullanici_id \|\| t\.durum !== "tm_onayinda"/);
-  assert.match(api, /adminSupabase\.rpc\("eclub_store_tm_onayla"/);
-  assert.match(sayfa, /const isTm = kullaniciRol === "tm"/);
-  assert.match(sayfa, /isTm && s\.durum === "tm_onayinda"/);
-  assert.match(sayfa, /topluOnayCalistir\("tm_onayla"\)/);
-  assert.match(sayfa, /Son Onayı Ver/);
 });
 
 test("Admin yalnız TM onayından geçen talepleri görür ve işler", () => {

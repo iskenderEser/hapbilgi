@@ -909,75 +909,6 @@
         }
       }
     },
-    "eclub_odul_siparis_outbox": {
-      "tur": "BASE TABLE",
-      "kolonlar": {
-        "outbox_id": {
-          "tip": "uuid",
-          "nullable": false
-        },
-        "talep_id": {
-          "tip": "uuid",
-          "nullable": false
-        },
-        "eczane_id": {
-          "tip": "uuid",
-          "nullable": false
-        },
-        "alici_kisi_id": {
-          "tip": "uuid",
-          "nullable": false
-        },
-        "kanal": {
-          "tip": "text",
-          "nullable": false
-        },
-        "alici_eposta": {
-          "tip": "text",
-          "nullable": true
-        },
-        "mesaj": {
-          "tip": "text",
-          "nullable": false
-        },
-        "durum": {
-          "tip": "text",
-          "nullable": false
-        },
-        "deneme_sayisi": {
-          "tip": "integer",
-          "nullable": false
-        },
-        "max_deneme": {
-          "tip": "integer",
-          "nullable": false
-        },
-        "sonraki_deneme_at": {
-          "tip": "timestamp with time zone",
-          "nullable": false
-        },
-        "lease_bitis": {
-          "tip": "timestamp with time zone",
-          "nullable": true
-        },
-        "claim_token": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "son_hata_kodu": {
-          "tip": "text",
-          "nullable": true
-        },
-        "tamamlanma_at": {
-          "tip": "timestamp with time zone",
-          "nullable": true
-        },
-        "created_at": {
-          "tip": "timestamp with time zone",
-          "nullable": false
-        }
-      }
-    },
     "eclub_oneri_kayip_kayitlari": {
       "tur": "BASE TABLE",
       "kolonlar": {
@@ -1255,38 +1186,6 @@
         },
         "tm_onay_tarihi": {
           "tip": "timestamp with time zone",
-          "nullable": true
-        },
-        "depo_sube_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "depo_adi_snapshot": {
-          "tip": "text",
-          "nullable": true
-        },
-        "depo_sube_adi_snapshot": {
-          "tip": "text",
-          "nullable": true
-        },
-        "depo_il_snapshot": {
-          "tip": "text",
-          "nullable": true
-        },
-        "depo_ilce_snapshot": {
-          "tip": "text",
-          "nullable": true
-        },
-        "depo_adres_snapshot": {
-          "tip": "text",
-          "nullable": true
-        },
-        "siparis_okundu_at": {
-          "tip": "timestamp with time zone",
-          "nullable": true
-        },
-        "siparis_okuyan_utt_id": {
-          "tip": "uuid",
           "nullable": true
         }
       }
@@ -5688,18 +5587,6 @@
       "argumanlar": "p_kisi_id uuid, p_auth_user_id uuid, p_eczane_id uuid",
       "donus": "uuid"
     },
-    "eclub_odul_siparis_isi_al": {
-      "argumanlar": "p_kanal text",
-      "donus": "jsonb"
-    },
-    "eclub_odul_siparis_isi_bitir": {
-      "argumanlar": "p_outbox_id uuid, p_token uuid, p_hata text",
-      "donus": "boolean"
-    },
-    "eclub_odul_siparis_oku": {
-      "argumanlar": "p_utt_id uuid, p_talep_id uuid, p_konum uuid",
-      "donus": "jsonb"
-    },
     "eclub_oneri_atomik_kaydet": {
       "argumanlar": "p_yayin_id uuid, p_oneren_id uuid, p_kisi_id uuid, p_arac_id uuid, p_oneri_baslangic timestamp with time zone, p_oneri_bitis timestamp with time zone",
       "donus": "TABLE(oneri_id uuid, kaydedildi boolean, sebep text, yeniden_gonderilebilir_at timestamp with time zone)"
@@ -6748,23 +6635,6 @@
         "hedef_kolon": "kisi_id"
       }
     ],
-    "eclub_odul_siparis_outbox": [
-      {
-        "kaynak_kolon": "eczane_id",
-        "hedef_tablo": "eclub_eczaneler",
-        "hedef_kolon": "eczane_id"
-      },
-      {
-        "kaynak_kolon": "alici_kisi_id",
-        "hedef_tablo": "eclub_kisiler",
-        "hedef_kolon": "kisi_id"
-      },
-      {
-        "kaynak_kolon": "talep_id",
-        "hedef_tablo": "eclub_store_cek_talepleri",
-        "hedef_kolon": "talep_id"
-      }
-    ],
     "eclub_oneri_kayip_kayitlari": [
       {
         "kaynak_kolon": "oneri_id",
@@ -6835,22 +6705,12 @@
         "hedef_kolon": "kisi_id"
       },
       {
-        "kaynak_kolon": "depo_sube_id",
-        "hedef_tablo": "ecza_depo_subeleri",
-        "hedef_kolon": "depo_sube_id"
-      },
-      {
         "kaynak_kolon": "firma_id",
         "hedef_tablo": "firmalar",
         "hedef_kolon": "firma_id"
       },
       {
         "kaynak_kolon": "bm_id",
-        "hedef_tablo": "kullanicilar",
-        "hedef_kolon": "kullanici_id"
-      },
-      {
-        "kaynak_kolon": "siparis_okuyan_utt_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },

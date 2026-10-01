@@ -1,13 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { ECLUB_SIPARIS_DURUMLARI } from "@/lib/eclub/store/ekipSiparis";
+import { CEK_TALEP_DURUMLARI } from "@/lib/eclub/store/eclubStoreTipler";
 
 const oku = (yol: string) => readFileSync(yol, "utf8");
 const sql = oku("scripts/sql/eclub_cek_teslimat_outbox.sql");
 const adminApi = oku("app/admin/eclub-cek-teslimat/api/cek-talepleri/route.ts");
-const firmaApi = oku("app/(panel)/eclub/cek-onay-takip/api/route.ts");
-const firmaTablosu = oku("app/(panel)/eclub/cek-onay-takip/page.tsx");
 
 test("outbox şeması e-posta ve push işlerini ortak sözleşmede tutar", () => {
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.eclub_cek_teslimat_outbox/);
@@ -52,11 +50,6 @@ test("Faz 3A gönderim yapmaz ve admin isteğinde worker çağırmaz", () => {
   assert.match(adminApi, /e-posta ve push teslimat kuyruğuna alındı/);
 });
 
-test("aynı firma rolü tablosu e-posta ve push durumlarını gösterir", () => {
-  assert.ok(ECLUB_SIPARIS_DURUMLARI.includes("teslimat_bekliyor"));
-  assert.match(firmaApi, /from\("eclub_cek_teslimat_outbox"\)/);
-  assert.match(firmaApi, /eposta_teslimat_durumu/);
-  assert.match(firmaApi, /push_teslimat_durumu/);
-  assert.match(firmaTablosu, />E-posta</);
-  assert.match(firmaTablosu, />Push</);
+test("kanonik çek durumları teslimat bekleme aşamasını içerir", () => {
+  assert.ok(CEK_TALEP_DURUMLARI.includes("teslimat_bekliyor"));
 });

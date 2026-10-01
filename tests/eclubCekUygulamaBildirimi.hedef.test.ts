@@ -39,9 +39,8 @@ test("çek bildirimi oturum içinde gösterilir ve Çek Taleplerim rozetine yans
   assert.match(panelNav, /Çek Taleplerim[\s\S]*?badgeKey: "cek"/);
 });
 
-test("Çek Taleplerim açılınca çek ve ödül sipariş bildirimleri görüldü yapılır", () => {
-  assert.match(ceklerim, /\["cek", "odul_siparis"\]\.map/);
-  assert.match(ceklerim, /fetch\("\/bildirimler\/api"[\s\S]*?method: "PUT"[\s\S]*?kayit_turu: tur/);
+test("Çek Taleplerim açılınca çek bildirimleri görüldü yapılır", () => {
+  assert.match(ceklerim, /fetch\("\/bildirimler\/api"[\s\S]*?method: "PUT"[\s\S]*?kayit_turu: "cek"/);
   assert.match(ceklerim, /bildirimRozetleriniYenile\(\)/);
   assert.match(ceklerim, /CEK_KODU_GORUNUR_DURUMLARI[\s\S]*?CEK_KODU_GORUNUR_DURUMLARI\.includes\(talep\.durum\)[\s\S]*?talep\.cek_kodu/);
 });

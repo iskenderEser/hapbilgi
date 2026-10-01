@@ -141,10 +141,6 @@ export interface EclubStoreCekTalebiSatiri {
   talep_edilen_cek_tl: number;
   siparis_tipi: SatisSartiTipi;
   siparis_verildi_mi: boolean;
-  siparis_okundu_at?: string | null;
-  depo_sube_id?: string | null;
-  depo_adi_snapshot?: string | null;
-  depo_sube_adi_snapshot?: string | null;
   siparis_adet: number;
   siparis_mal_fazlasi: number;
   durum: CekTalepDurumu;

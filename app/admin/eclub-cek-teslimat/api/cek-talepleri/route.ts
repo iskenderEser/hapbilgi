@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       .select(`
         talep_id, eczane_id, firma_id, yayin_id, talep_eden_kisi_id, toplanan_puan,
         talep_edilen_cek_tl, siparis_tipi, siparis_verildi_mi, siparis_adet,
-        siparis_mal_fazlasi, siparis_okundu_at, depo_sube_id, depo_adi_snapshot, depo_sube_adi_snapshot, durum, utt_id, bm_id, bm_onay_tarihi,
+        siparis_mal_fazlasi, durum, utt_id, bm_id, bm_onay_tarihi,
         tm_id, tm_onay_tarihi, cek_kodu,
         cek_gonderim_tarihi, devreden_puan, created_at,
         eclub_eczaneler ( gln ), firmalar ( firma_adi ),
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
     if (error) return hataYaniti("Çek talepleri alınamadı.", "eclub_store_cek_talepleri SELECT", error);
 
-    const glnler = [...new Set((data ?? []).flatMap((talep: any) => {
+    const glnler = [...new Set((data ?? []).flatMap((talep) => {
       const eczane = Array.isArray(talep.eclub_eczaneler) ? talep.eclub_eczaneler[0] : talep.eclub_eczaneler;
       return eczane?.gln ? [eczane.gln as string] : [];
     }))];
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       for (const master of masterlar ?? []) eczaneAdlari.set(master.gln, master.eczane_adi);
     }
 
-    const talepler = (data ?? []).map((talep: any) => {
+    const talepler = (data ?? []).map((talep) => {
       const eczane = Array.isArray(talep.eclub_eczaneler) ? talep.eclub_eczaneler[0] : talep.eclub_eczaneler;
       const firma = Array.isArray(talep.firmalar) ? talep.firmalar[0] : talep.firmalar;
       const kisi = Array.isArray(talep.eclub_kisiler) ? talep.eclub_kisiler[0] : talep.eclub_kisiler;
