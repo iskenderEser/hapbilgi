@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Edit3, LoaderCircle, Plus, Search, Trophy, Users, UserCheck } from "lucide-react";
+import { Building2, Edit3, Gift, LoaderCircle, Plus, Search, Trophy, Users, UserCheck } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { Badge } from "@/components/ui/badge";
@@ -206,6 +206,14 @@ export default function EclubEczanelerimPage() {
             <p className="mt-1 max-w-3xl text-xs leading-5 text-[#6b7f9b]">E‑Club takımınızı oluşturun; eczaneleri bağlayarak eczacı ve teknisyen kadronuzu yönetin.</p>
           </div>
           <div className="flex flex-col items-stretch gap-2">
+            <Button
+              type="button"
+              onClick={() => router.push("/eclub/hediye-takip")}
+              className="h-9 gap-2 border border-[#bfdbfe] bg-[#eaf4ff] px-3 text-xs font-extrabold text-[#1d4ed8] shadow-none hover:bg-[#dbeafe]"
+            >
+              <Gift className="size-4" />
+              Hediye Takip
+            </Button>
             <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} disabled={eczaneFormAcik || islemLoading || takimDuzenleniyor} />
           </div>
         </header>
