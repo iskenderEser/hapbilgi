@@ -6,7 +6,7 @@ import CekTakipFiltreleri, {
   BOS_CEK_TAKIP_FILTRELERI,
   type CekTakipFiltreDegerleri,
 } from "./CekTakipFiltreleri";
-import CekTakipListesi from "./CekTakipListesi";
+import CekTakipListesi, { type CekTakipListeHatasi } from "./CekTakipListesi";
 import HediyeTakipToggle, { type HediyeTakipTuru } from "./HediyeTakipToggle";
 import TakipStatKartlari from "./TakipStatKartlari";
 
@@ -21,6 +21,8 @@ export default function HediyeTakipIstemcisi() {
   const [cekVerisi, setCekVerisi] = useState<CekTakipApiYaniti | null>(null);
   const [cekFiltreleri, setCekFiltreleri] = useState<CekTakipFiltreDegerleri>({ ...BOS_CEK_TAKIP_FILTRELERI });
   const [dahaYukleniyor, setDahaYukleniyor] = useState(false);
+  const [cekYukleniyor, setCekYukleniyor] = useState(true);
+  const [cekHatasi, setCekHatasi] = useState<CekTakipListeHatasi | null>(null);
   const [islemdekiTalepId, setIslemdekiTalepId] = useState<string | null>(null);
   const [yenilemeAnahtari, setYenilemeAnahtari] = useState(0);
   const istekSirasi = useRef(0);
@@ -42,16 +44,28 @@ export default function HediyeTakipIstemcisi() {
     aktifIstek.current = controller;
     const sira = ++istekSirasi.current;
     setDahaYukleniyor(false);
+    setCekYukleniyor(true);
+    setCekHatasi(null);
     const yukle = async () => {
       try {
         const yanit = await fetch(`/eclub/hediye-takip/api/cek-takip?${sorguOlustur(0)}`, { signal: controller.signal });
         const veri = await yanit.json();
-        if (!yanit.ok) throw new Error(veri.hata ?? "Çek Takibi verileri alınamadı.");
         if (sira !== istekSirasi.current) return;
+        if (!yanit.ok) {
+          setCekHatasi({
+            tur: yanit.status === 401 || yanit.status === 403 ? "yetkisiz" : "api",
+            mesaj: veri.hata ?? "Çek Takibi verileri alınamadı.",
+          });
+          return;
+        }
         setCekVerisi(veri as CekTakipApiYaniti);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        if (sira === istekSirasi.current) setCekVerisi(null);
+        if (sira === istekSirasi.current) {
+          setCekHatasi({ tur: "api", mesaj: "Çek Takibi verileri alınamadı. Lütfen yeniden deneyin." });
+        }
+      } finally {
+        if (sira === istekSirasi.current) setCekYukleniyor(false);
       }
     };
     void yukle();
@@ -70,8 +84,11 @@ export default function HediyeTakipIstemcisi() {
       const veri = await yanit.json();
       if (!yanit.ok) throw new Error(veri.hata ?? "Çek talebi BM onayına gönderilemedi.");
       setYenilemeAnahtari((deger) => deger + 1);
-    } catch {
-      // İşlem hata görünümü ve yeniden deneme davranışı 11. adımda eklenecektir.
+    } catch (error) {
+      setCekHatasi({
+        tur: "api",
+        mesaj: error instanceof Error ? error.message : "Çek talebi BM onayına gönderilemedi.",
+      });
     } finally {
       setIslemdekiTalepId(null);
     }
@@ -97,12 +114,17 @@ export default function HediyeTakipIstemcisi() {
       } : sonraki);
     } catch (error) {
       if (!(error instanceof DOMException && error.name === "AbortError")) {
-        // Hata ve yeniden deneme görünümü 11. adımın kapsamındadır.
+        setCekHatasi({
+          tur: "api",
+          mesaj: error instanceof Error ? error.message : "Daha fazla çek talebi alınamadı.",
+        });
       }
     } finally {
       if (sira === istekSirasi.current) setDahaYukleniyor(false);
     }
   };
+
+  const cekFiltresiVar = Object.values(cekFiltreleri).some(Boolean);
 
   return (
     <div className="min-h-full bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -129,11 +151,15 @@ export default function HediyeTakipIstemcisi() {
         {takipTuru === "cek" ? (
           <CekTakipListesi
             talepler={cekVerisi?.talepler ?? []}
+            yukleniyor={cekYukleniyor}
+            hata={cekHatasi}
+            filtreVar={cekFiltresiVar}
             sonrakiKayitVarMi={cekVerisi?.sayfalama.sonraki_kayit_var_mi ?? false}
             dahaYukleniyor={dahaYukleniyor}
             islemdekiTalepId={islemdekiTalepId}
             onDahaFazla={() => void dahaFazlaYukle()}
             onIslem={(talepId, islem) => void cekTakipIslemiYap(talepId, islem)}
+            onYenidenDene={() => setYenilemeAnahtari((deger) => deger + 1)}
           />
         ) : (
           <section aria-label="Sipariş takip içeriği" className="min-h-56 rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]" />

@@ -92,7 +92,7 @@ export default function CekTakipKarti({
   onIslem: (talepId: string, islem: CekTakipIslemi) => void;
 }) {
   return (
-    <article className="rounded-2xl border border-[#dfe7f1] bg-white p-4 shadow-[0_5px_16px_rgba(31,55,90,0.035)]">
+    <article aria-busy={islemde} className={`rounded-2xl border border-[#dfe7f1] bg-white p-4 shadow-[0_5px_16px_rgba(31,55,90,0.035)] ${islemde ? "opacity-70" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-sm font-extrabold text-[#203653]">{talep.urun.urun_adi}</h3>
