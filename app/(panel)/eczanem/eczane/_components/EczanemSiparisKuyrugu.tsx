@@ -44,7 +44,7 @@ interface VeriHatasi { mesaj: string; adim?: string; detay?: string; }
 
 const BOS_VERI: SiparisVerisi = { bekleyen: [], gecmis: [], ozet: { bekleyen: 0, bugun_onaylanan: 0, gecmis: 0 }, sayfalama: { bekleyen: { sayfa: 1, toplam: 0, toplam_sayfa: 1 }, gecmis: { sayfa: 1, toplam: 0, toplam_sayfa: 1 } } };
 
-const tarihSaatYaz = (deger: string | null) => deger ? new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(deger)) : "—";
+const tarihSaatYaz = (deger: string | null) => deger ? new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(deger)) : "—";
 const paraYaz = (deger: number) => new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(deger);
 
 export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {

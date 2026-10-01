@@ -191,14 +191,14 @@ const IU_RENK: Record<DurumKodu, { top: DurumTopu; renk: DurumRenk }> = {
   sistem_hatasi:    { top: "sistem",           renk: HATA },
 };
 
-/** "2026-07-28T..." → "28 Tem" (planlı yayının açılacağı gün). */
+/** "2026-07-28T..." → "28.07.2026" (planlı yayının açılacağı gün). */
 export function kisaTarih(tarih: string): string {
-  return new Date(tarih).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+  return new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 /**
  * Üretici rolünün göreceği mesaj. Planlı yayında tarih metne eklenir
- * ("Planlandı · 28 Tem") — üreticinin bilmesi gereken tek ek bilgi odur.
+ * ("Planlandı · 28.07.2026") — üreticinin bilmesi gereken tek ek bilgi odur.
  */
 export function ureticiDurumMesaji(
   kod: DurumKodu,

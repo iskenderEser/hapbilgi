@@ -26,7 +26,7 @@ export default function VideoBolumu({ videolar, onVideoSec, baslik = "Videolar" 
   if (videolar.length === 0) return null;
 
   const formatTarih = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   const masaustuIcerik = (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">

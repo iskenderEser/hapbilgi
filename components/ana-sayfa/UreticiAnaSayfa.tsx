@@ -104,7 +104,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   }, [user.id]);
 
   const formatTarih = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
+    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   // Yayın Listesi üretimi biten kayıtları gösterir. Canlı/planlanan/durdurulan/bekleyen
   // yayınlar ilgili durum ve hedef grubu parametresiyle Yayın Yönetimi'ne yönlendirilir.
@@ -129,7 +129,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   };
 
   const bugunTarih = () =>
-    new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
+    new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   // durumRenk kaldırıldı (25.07): metin ve renk artık tek sözlükten okunur —
   // lib/utils/durum/mesaj.ts. Aynı durum her ekranda aynı yazar, aynı renkte çıkar.

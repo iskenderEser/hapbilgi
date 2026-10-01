@@ -84,8 +84,9 @@ export function formatKisaKalanSure(ms: number): string {
 
 export function formatDonemKapanis(pencere: KapanisPenceresi): string {
   const tarihMetni = pencere.bitisDahil.toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
     timeZone: TR_SAAT_DILIMI,
   });
   return `${tarihMetni} 23:59’a kadar`;
@@ -93,8 +94,9 @@ export function formatDonemKapanis(pencere: KapanisPenceresi): string {
 
 export function formatDonemAcilis(pencere: AcilisPenceresi): string {
   const tarihMetni = pencere.baslangic.toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
     timeZone: TR_SAAT_DILIMI,
   });
   return `${tarihMetni} 00:00`;

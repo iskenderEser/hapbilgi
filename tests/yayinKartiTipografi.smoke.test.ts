@@ -66,6 +66,15 @@ test("YayinKarti: tarih ve talep numarası mobilde 12px (text-xs), masaüstünde
   assert.match(html, /text-xs text-\[#bc2d0d\] sm:text-\[10px\]/);
 });
 
+test("YayinKarti: uzun ve kısa ay adlarında tarih gg.aa.yyyy görünür", () => {
+  const agustos = renderToStaticMarkup(createElement(YayinKarti, { yayin: ornekYayinUret({ yayin_tarihi: "2026-08-19" }) }));
+  const eylul = renderToStaticMarkup(createElement(YayinKarti, { yayin: ornekYayinUret({ yayin_tarihi: "2026-09-30" }) }));
+
+  assert.match(agustos, /19\.08\.2026/);
+  assert.match(eylul, /30\.09\.2026/);
+  assert.doesNotMatch(agustos, /Ağustos/);
+});
+
 test("YayinKarti: puan ve ekstra puan rozetleri mobilde 12px (text-xs, px-2), masaüstünde 9px (sm:text-[9px], sm:px-1.5) uygulanır", () => {
   const yayin = ornekYayinUret();
   const html = renderToStaticMarkup(createElement(YayinKarti, { yayin }));

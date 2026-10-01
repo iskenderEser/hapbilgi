@@ -296,7 +296,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategoriBilgisi, temel
   };
 
   const bugunTarih = () =>
-    new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
+    new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   if (loading) {
     if (kategoriBilgisi) return <UttKategoriIskeleti />;

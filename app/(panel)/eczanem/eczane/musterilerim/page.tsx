@@ -44,7 +44,7 @@ function adYaz(ad: string): string {
 }
 
 function tarihYaz(tarih: string): string {
-  return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(tarih));
+  return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(tarih));
 }
 
 export default function EczanemMusterilerimPage() {

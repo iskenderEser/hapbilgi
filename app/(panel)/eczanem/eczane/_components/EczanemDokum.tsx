@@ -13,7 +13,7 @@ interface Dokum { satirlar: UrunSatir[]; toplam_kutu: number; toplam_tl: number;
 interface Props { hata: (mesaj: string, adim?: string) => void; }
 
 const paraYaz = (deger: number) => new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(deger);
-const tarihYaz = (deger: string) => new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(deger));
+const tarihYaz = (deger: string) => new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(deger));
 
 export default function EczanemDokum({ hata }: Props) {
   const [periyot, setPeriyot] = useState<Periyot>("bu_ay");

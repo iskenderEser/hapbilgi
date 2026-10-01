@@ -38,7 +38,7 @@ export function eclubAyPenceresi(yil: number, ay: number): EclubDonemPenceresi {
   const periyot = oncekiAy === 11 ? 6 : (oncekiAy + 1) / 2;
   return {
     yil, ay, sonGun: ayGunSayisi(yil, ay), acilisGunu: 1, baslangic, bitisHaric,
-    bitisDahil: new Date(bitisHaric.getTime() - 1), etiket: `1–7 ${AY_ISIMLERI[ay - 1]}`,
+    bitisDahil: new Date(bitisHaric.getTime() - 1), etiket: `01.${String(ay).padStart(2, "0")}.${yil}–07.${String(ay).padStart(2, "0")}.${yil}`,
     donemAdi: `${AY_ISIMLERI[oncekiAy - 1]}–${AY_ISIMLERI[oncekiAy]} ${kazancYili}`,
     donemKodu: `${kazancYili}-P${periyot}`, kazancBaslangic: trZamanUtc(kazancYili, oncekiAy, 1), kazancBitisHaric: baslangic,
   };

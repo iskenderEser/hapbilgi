@@ -55,7 +55,7 @@ interface Props {
 
 const tarihYaz = (deger: string) => new Intl.DateTimeFormat("tr-TR", {
   day: "2-digit",
-  month: "short",
+  month: "2-digit",
   year: "numeric",
 }).format(new Date(deger));
 

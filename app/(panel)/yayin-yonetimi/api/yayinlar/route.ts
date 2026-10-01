@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
     // bildirim gider ve tur penceresi erken başlardı.
     if (planliTarih) {
       return NextResponse.json({
-        mesaj: `Yayın planlandı: ${planliTarih.toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" })} 07:00.`,
+        mesaj: `Yayın planlandı: ${planliTarih.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })} 07:00.`,
         yayin: yeniYayin,
       }, { status: 201 });
     }

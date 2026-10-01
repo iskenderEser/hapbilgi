@@ -53,8 +53,12 @@ export async function aktifUyeEsigi(adminSupabase: SupabaseClient): Promise<numb
 
 interface VYayinAdDetay {
   yayin_id: string;
+  talep_no?: number | null;
+  firma_adi?: string | null;
   urun_adi?: string | null;
   teknik_adi?: string | null;
+  video_puani?: number | null;
+  icerik_turu?: string | null;
   video_url?: string | null;
   thumbnail_url?: string | null;
   arac_kapak_yolu?: string | null;
@@ -173,8 +177,12 @@ async function aktifUyeSayilari(
 
 export interface UttEczanemYayin {
   yayin_id: string;
+  talep_no: number | null;
+  firma_adi: string | null;
   urun_adi: string;
   teknik_adi: string;
+  video_puani: number | null;
+  icerik_turu: string | null;
   video_url: string | null;
   thumbnail_url: string | null;
   yayin_tarihi: string | null;
@@ -208,7 +216,7 @@ export async function uttEczanemVerisi(
   // 1. Eczanem yayınları (bu UTT'nin takımı, yayında)
   let yayinQuery = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
+    .select("yayin_id, talep_no, firma_adi, urun_adi, teknik_adi, video_puani, icerik_turu, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
     .eq("durum", "yayinda")
     .eq("firma_id", firmaId)
     .contains("hedef_roller", ["eczanem"])
@@ -224,8 +232,12 @@ export async function uttEczanemVerisi(
     const { thumbnail_url } = yayinThumbnailCevabi(y);
     return {
       yayin_id: y.yayin_id,
+      talep_no: y.talep_no ?? null,
+      firma_adi: y.firma_adi ?? null,
       urun_adi: y.urun_adi ?? "-",
       teknik_adi: y.teknik_adi ?? "",
+      video_puani: y.video_puani ?? null,
+      icerik_turu: y.icerik_turu ?? null,
       video_url: y.video_url ?? null,
       thumbnail_url: thumbnail_url ?? null,
       yayin_tarihi: y.yayin_tarihi ?? null,

@@ -49,7 +49,7 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
   }, [user]);
 
   const bugunTarih = () =>
-    new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
+    new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   if (loading) {
     return (

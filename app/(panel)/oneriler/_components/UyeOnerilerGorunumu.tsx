@@ -53,7 +53,7 @@ export default function UyeOnerilerGorunumu({
   const formatTarihKisa = (tarih: string) => {
     const date = new Date(tarih);
     if (isNaN(date.getTime())) return "Geçersiz tarih";
-    return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
+    return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
   const formatTarihNoktali = (tarihStr?: string | null) => {

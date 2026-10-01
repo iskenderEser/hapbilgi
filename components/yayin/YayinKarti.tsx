@@ -105,7 +105,7 @@ const formatTarihUzun = (tarihStr?: string | null) => {
   const d = new Date(tarihStr);
   return Number.isNaN(d.getTime())
     ? ""
-    : d.toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+    : d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 };
 
 export function YayinKarti({

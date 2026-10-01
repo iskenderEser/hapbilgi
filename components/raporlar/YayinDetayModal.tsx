@@ -92,7 +92,7 @@ export default function YayinDetayModal({ yayinId, onKapat }: Props) {
     try {
       return new Date(t).toLocaleDateString("tr-TR", {
         day: "2-digit",
-        month: "long",
+        month: "2-digit",
         year: "numeric",
       });
     } catch {

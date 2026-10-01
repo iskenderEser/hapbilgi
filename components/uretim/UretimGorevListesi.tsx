@@ -79,7 +79,7 @@ export default function UretimGorevListesi({ asama, baslik, asamaEtiketi, bosMes
       { anahtar: "ad", etiket: "Ürün / Eğitim", deger: (g: UretimGorevi) => g.talep?.urun_adi ?? "-" },
     ],
   });
-  const formatTarih = (tarih: string) => new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+  const formatTarih = (tarih: string) => new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   if (!kullanici || loading || !aktifDurum) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-[#56aeff]" /></div>;
 

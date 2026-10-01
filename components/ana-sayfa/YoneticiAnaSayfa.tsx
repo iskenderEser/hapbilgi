@@ -77,12 +77,12 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
   }, [user]);
 
   const bugunTarih = () =>
-    new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric", month: "long", year: "numeric", weekday: "long" });
+    new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "2-digit", month: "2-digit", year: "numeric" });
 
   const haftaTarihi = () => {
     const baslangic = haftaBaslangici(new Date());
     const bitis = new Date(baslangic.getTime() + 6 * 24 * 60 * 60 * 1000);
-    return `${baslangic.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "2-digit", month: "short" })} — ${bitis.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "2-digit", month: "short", year: "numeric" })}`;
+    return `${baslangic.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "2-digit", month: "2-digit", year: "numeric" })} — ${bitis.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "2-digit", month: "2-digit", year: "numeric" })}`;
   };
 
   if (loading) {

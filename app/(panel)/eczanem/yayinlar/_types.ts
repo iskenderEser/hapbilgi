@@ -4,8 +4,12 @@ import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 export interface UttEczanemYayin {
   yayin_id: string;
+  talep_no: number | null;
+  firma_adi: string | null;
   urun_adi: string;
   teknik_adi: string;
+  video_puani: number | null;
+  icerik_turu: string | null;
   video_url: string | null;
   thumbnail_url: string | null;
   yayin_tarihi: string | null;
@@ -31,9 +35,4 @@ export interface UttEczanemVeri {
   yayinlar: UttEczanemYayin[];
   eczaneler: UttEczanemEczane[];
   gonderimler: UttEczanemGonderim[];
-}
-
-export interface UttEczanemOnayHedefi {
-  yayin: UttEczanemYayin;
-  eczane: UttEczanemEczane;
 }

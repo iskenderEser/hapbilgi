@@ -61,7 +61,7 @@ const kayitDurumu = (oneri: OneriKaydi): KayitDurumu => {
 
 const tarih = (deger: string) => {
   const nesne = new Date(deger);
-  return Number.isNaN(nesne.getTime()) ? "—" : nesne.toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
+  return Number.isNaN(nesne.getTime()) ? "—" : nesne.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 };
 
 interface Props {

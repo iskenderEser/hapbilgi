@@ -25,7 +25,7 @@ interface Props { hata: (mesaj: string, adim?: string) => void; basari: (mesaj: 
 
 const BOS_VERI: PuanVerisi = { eczaneler: [], kullanilan_puanlar: [], puan_omru_gun: null };
 const paraYaz = (deger: number) => new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(deger);
-const tarihYaz = (deger: string) => new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(deger));
+const tarihYaz = (deger: string) => new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(deger));
 
 function DurumVeAksiyon({ eczane, urun, isliyor, onKullan, onIptal }: { eczane: PuanEczanesi; urun: PuanUrunu; isliyor: boolean; onKullan: () => void; onIptal: () => void }) {
   if (urun.bekleyen_talep) return <div className="flex flex-col items-end gap-1.5"><Badge className="border border-[#efd59f] bg-[#fff7e8] font-extrabold text-[#956417]"><Clock3 /> Onay Bekliyor</Badge><button type="button" disabled={isliyor} onClick={onIptal} className="text-[9px] font-extrabold text-[#8a99aa] hover:text-[#b84444]">İptal Et</button></div>;

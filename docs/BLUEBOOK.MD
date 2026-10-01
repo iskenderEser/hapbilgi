@@ -1062,7 +1062,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `UttEczanemGonderimSatiri.tsx` | UI / React | Eczanem Yayınları listesindeki bir öğrenme içeriğinin eczane bazlı gönderim durumunu ve izinli eylemlerini gösterir. |
+| `EczanemYayinGonderimKarti.tsx` | UI / React | Eczanem yayın kartında eczane bazlı gönderim durumunu ve önizleme ile seçim eylemlerini gösterir. |
 
 ### 📁 app/(panel)/eczanem/utt/mutabakat/
 

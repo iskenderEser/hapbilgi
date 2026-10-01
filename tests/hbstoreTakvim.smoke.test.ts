@@ -77,19 +77,19 @@ test("takvim: durum detayları, sonraki pencere ve kalan süre metinleri doğru 
   // 10 Eylül 2026 (kapalı — sonraki pencere 1–7 Ekim)
   const durumKapali = hbstoreTakvimDurumu(new Date("2026-09-10T12:00:00+03:00"));
   assert.equal(durumKapali.acik, false);
-  assert.equal(durumKapali.sonrakiDonemEtiketi, "1–7 Ekim");
-  assert.equal(durumKapali.sonrakiPencere.etiket, "1–7 Ekim");
+  assert.equal(durumKapali.sonrakiDonemEtiketi, "01.10.2026–07.10.2026");
+  assert.equal(durumKapali.sonrakiPencere.etiket, "01.10.2026–07.10.2026");
   assert.equal(durumKapali.sonrakiPencere.donemAdi, "Temmuz–Eylül");
   assert.equal(durumKapali.aktifPencere, null);
   assert.ok(durumKapali.durumMetni.includes("HBStore Günleri’ne"));
   assert.ok(durumKapali.navMetni.includes("HBStore Günleri’ne"));
-  assert.ok(durumKapali.bakiyeDonemEtiketi.includes("1–7 Ekim siparişi"));
+  assert.ok(durumKapali.bakiyeDonemEtiketi.includes("01.10.2026–07.10.2026 siparişi"));
 
   // 3 Ekim 2026 15:30 (açık — 4 gün 8 sa kaldı)
   const durumAcik = hbstoreTakvimDurumu(new Date("2026-10-03T15:30:00+03:00"));
   assert.equal(durumAcik.acik, true);
-  assert.equal(durumAcik.sonrakiDonemEtiketi, "1–7 Ekim");
-  assert.equal(durumAcik.aktifPencere?.etiket, "1–7 Ekim");
+  assert.equal(durumAcik.sonrakiDonemEtiketi, "01.10.2026–07.10.2026");
+  assert.equal(durumAcik.aktifPencere?.etiket, "01.10.2026–07.10.2026");
   assert.equal(durumAcik.aktifPencere?.donemAdi, "Temmuz–Eylül");
   assert.ok(durumAcik.durumMetni.includes("HBStore Günleri açık"));
   assert.ok(durumAcik.navMetni.includes("HBStore Açık"));
@@ -98,7 +98,7 @@ test("takvim: durum detayları, sonraki pencere ve kalan süre metinleri doğru 
   // 15 Ocak 2027 (kapalı — sonraki pencere 1–7 Nisan 2027)
   const durumYilBasi = hbstoreTakvimDurumu(new Date("2027-01-15T10:00:00+03:00"));
   assert.equal(durumYilBasi.acik, false);
-  assert.equal(durumYilBasi.sonrakiDonemEtiketi, "1–7 Nisan");
+  assert.equal(durumYilBasi.sonrakiDonemEtiketi, "01.04.2027–07.04.2027");
   assert.equal(durumYilBasi.sonrakiPencere.yil, 2027);
   assert.equal(durumYilBasi.sonrakiPencere.ceyrek, 1);
 });
@@ -131,7 +131,7 @@ test("güvenlik: kapalı dönemde sipariş reddi mesajı sonraki dönemi net iç
   const durum = hbstoreTakvimDurumu(kapaliTarih);
   const beklenenHata = `HBStore şu an siparişe kapalıdır. Siparişler yalnızca HBStore Günleri'nde (${durum.sonrakiDonemEtiketi}) verilebilir.`;
 
-  assert.ok(beklenenHata.includes("1–7 Ekim"));
+  assert.ok(beklenenHata.includes("01.10.2026–07.10.2026"));
   assert.ok(beklenenHata.includes("yalnızca HBStore Günleri"));
 });
 
@@ -146,16 +146,16 @@ test("tarih gösterimi: Türkiye saatiyle kullanıcı dostu metinler üretilir, 
   const q3 = pencereler2026.find((p) => p.ceyrek === 3)!;
   assert.ok(q3);
 
-  // Kapanış metni "7 Ekim 23:59’a kadar" olmalı
+  // Kapanış metni "07.10.2026 23:59’a kadar" olmalı
   const kapanis = formatDonemKapanis(q3);
-  assert.equal(kapanis, "7 Ekim 23:59’a kadar");
+  assert.equal(kapanis, "07.10.2026 23:59’a kadar");
 
-  // Açılış metni "1 Ekim 00:00" olmalı
+  // Açılış metni "01.10.2026 00:00" olmalı
   const acilis = formatDonemAcilis(q3);
-  assert.equal(acilis, "1 Ekim 00:00");
+  assert.equal(acilis, "01.10.2026 00:00");
 
   const durum = hbstoreTakvimDurumu(new Date("2026-09-10T12:00:00+03:00"));
-  assert.equal(durum.kapanisMetni, "7 Ekim 23:59’a kadar");
-  assert.equal(durum.acilisMetni, "1 Ekim 00:00");
+  assert.equal(durum.kapanisMetni, "07.10.2026 23:59’a kadar");
+  assert.equal(durum.acilisMetni, "01.10.2026 00:00");
   assert.ok(!durum.kapanisMetni.includes("hariç"));
 });

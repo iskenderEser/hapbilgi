@@ -59,7 +59,7 @@ export function yilDonemPencereleri(yil: number): DonemPenceresi[] {
       baslangic: trZamanUtc(yil, 4, 1, 0, 0, 0),
       bitisHaric: trZamanUtc(yil, 4, 8, 0, 0, 0),
       bitisDahil: new Date(trZamanUtc(yil, 4, 8, 0, 0, 0).getTime() - 1),
-      etiket: "1–7 Nisan",
+      etiket: `01.04.${yil}–07.04.${yil}`,
       donemAdi: "Ocak–Mart",
     },
     {
@@ -68,7 +68,7 @@ export function yilDonemPencereleri(yil: number): DonemPenceresi[] {
       baslangic: trZamanUtc(yil, 7, 1, 0, 0, 0),
       bitisHaric: trZamanUtc(yil, 7, 8, 0, 0, 0),
       bitisDahil: new Date(trZamanUtc(yil, 7, 8, 0, 0, 0).getTime() - 1),
-      etiket: "1–7 Temmuz",
+      etiket: `01.07.${yil}–07.07.${yil}`,
       donemAdi: "Nisan–Haziran",
     },
     {
@@ -77,7 +77,7 @@ export function yilDonemPencereleri(yil: number): DonemPenceresi[] {
       baslangic: trZamanUtc(yil, 10, 1, 0, 0, 0),
       bitisHaric: trZamanUtc(yil, 10, 8, 0, 0, 0),
       bitisDahil: new Date(trZamanUtc(yil, 10, 8, 0, 0, 0).getTime() - 1),
-      etiket: "1–7 Ekim",
+      etiket: `01.10.${yil}–07.10.${yil}`,
       donemAdi: "Temmuz–Eylül",
     },
     {
@@ -86,7 +86,7 @@ export function yilDonemPencereleri(yil: number): DonemPenceresi[] {
       baslangic: trZamanUtc(yil + 1, 1, 1, 0, 0, 0),
       bitisHaric: trZamanUtc(yil + 1, 1, 8, 0, 0, 0),
       bitisDahil: new Date(trZamanUtc(yil + 1, 1, 8, 0, 0, 0).getTime() - 1),
-      etiket: "1–7 Ocak",
+      etiket: `01.01.${yil + 1}–07.01.${yil + 1}`,
       donemAdi: "Ekim–Aralık",
     },
   ];

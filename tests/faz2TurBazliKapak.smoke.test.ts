@@ -33,13 +33,13 @@ test("Faz 2 dağıtım ve öneri yüzeyleri ortak çözümleyici ile tür bazlı
   assert.match(ortakDagitimOzeti, /<AracVarsayilanKapak/);
 
   for (const dosya of [
-    "app/(panel)/eczanem/yayinlar/_components/UttEczanemGonderimSatiri.tsx",
     "components/challenge-club/ChallengeGonderPaneli.tsx",
   ]) {
     assert.match(oku(dosya), /<DagitimIcerikOzeti/, `${dosya} ortak dağıtım özetini kullanmalı`);
   }
 
   const dosyalar = [
+    "app/(panel)/eczanem/yayinlar/_components/EczanemYayinGonderimKarti.tsx",
     "app/(panel)/eczanem/eczane/_components/EczanemVideoGonderimSatiri.tsx",
     "app/(panel)/oneriler/_components/BmOneriTakibi.tsx",
     "app/(panel)/oneriler/_components/TmOneriTakibi.tsx",

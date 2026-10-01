@@ -47,10 +47,6 @@ const TR_OFSET_DK = 3 * 60;
 const GUN_MS = 24 * 60 * 60 * 1000;
 const HAFTA_MS = 7 * GUN_MS;
 
-// Hafta etiketlerinde kullanılır (yilinHaftalari). Ay adları burada durur ki
-// hafta listesi üreten her ekran kendi kopyasını taşımasın.
-const AY_KISA = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
-
 /**
  * Bir anın Türkiye saatine (Europe/Istanbul) göre takvim parçaları.
  * `Intl.DateTimeFormat` kullandığı için sunucunun saat dilimden bağımsızdır.
@@ -295,8 +291,8 @@ export function haftaNo(tarih: Date = new Date()): number {
 export function yilinHaftalari(yil: number): { no: number; label: string }[] {
   const ilkPazartesi = yilinIlkHaftaPazartesi(yil);
   const etiketle = (t: Date) => {
-    const { gun, ay } = trParcalari(t);
-    return `${gun} ${AY_KISA[ay - 1]}`;
+    const { gun, ay, yil: tarihYili } = trParcalari(t);
+    return `${String(gun).padStart(2, "0")}.${String(ay).padStart(2, "0")}.${tarihYili}`;
   };
 
   const liste: { no: number; label: string }[] = [];

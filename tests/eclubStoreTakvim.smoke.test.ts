@@ -12,12 +12,14 @@ test("çek talebi yalnız iki aylık dönemi izleyen ayın 1–7'sinde açılır
 
 test("talep penceresi doğru iki aylık kazanç dönemini taşır", () => {
   const mart = eclubAyPenceresi(2026, 3);
+  assert.equal(mart.etiket, "01.03.2026–07.03.2026");
   assert.equal(mart.donemKodu, "2026-P1");
   assert.equal(mart.donemAdi, "Ocak–Şubat 2026");
   assert.equal(mart.kazancBaslangic.toISOString(), "2025-12-31T21:00:00.000Z");
   assert.equal(mart.kazancBitisHaric.toISOString(), "2026-02-28T21:00:00.000Z");
 
   const ocak = eclubAyPenceresi(2027, 1);
+  assert.equal(ocak.etiket, "01.01.2027–07.01.2027");
   assert.equal(ocak.donemKodu, "2026-P6");
   assert.equal(ocak.donemAdi, "Kasım–Aralık 2026");
 });
