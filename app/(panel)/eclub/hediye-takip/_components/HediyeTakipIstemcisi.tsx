@@ -9,6 +9,8 @@ import CekTakipFiltreleri, {
 import CekTakipListesi, { type CekTakipListeHatasi } from "./CekTakipListesi";
 import HediyeTakipToggle, { type HediyeTakipTuru } from "./HediyeTakipToggle";
 import TakipStatKartlari from "./TakipStatKartlari";
+import SiparisTakipIstemcisi from "./SiparisTakipIstemcisi";
+import type { SiparisTakipStatlari } from "@/lib/eclub/hediyeTakip/siparisTakip";
 
 const BOS_SECENEKLER: CekTakipApiYaniti["filtre_secenekleri"] = {
   eczaneler: [],
@@ -23,6 +25,7 @@ export default function HediyeTakipIstemcisi() {
   const [dahaYukleniyor, setDahaYukleniyor] = useState(false);
   const [cekYukleniyor, setCekYukleniyor] = useState(true);
   const [cekHatasi, setCekHatasi] = useState<CekTakipListeHatasi | null>(null);
+  const [siparisStatlari, setSiparisStatlari] = useState<SiparisTakipStatlari | undefined>();
   const [islemdekiTalepId, setIslemdekiTalepId] = useState<string | null>(null);
   const [yenilemeAnahtari, setYenilemeAnahtari] = useState(0);
   const istekSirasi = useRef(0);
@@ -137,7 +140,7 @@ export default function HediyeTakipIstemcisi() {
           <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Hediye çeki ve sipariş süreçlerini tek alandan takip edin.</p>
         </header>
 
-        <TakipStatKartlari takipTuru={takipTuru} cekStatlari={cekVerisi?.statlar} />
+        <TakipStatKartlari takipTuru={takipTuru} cekStatlari={cekVerisi?.statlar} siparisStatlari={siparisStatlari} />
 
         <div className="flex justify-start">
           <HediyeTakipToggle deger={takipTuru} onDegistir={setTakipTuru} />
@@ -171,7 +174,7 @@ export default function HediyeTakipIstemcisi() {
             onYenidenDene={() => setYenilemeAnahtari((deger) => deger + 1)}
           />
         ) : (
-          <section aria-label="Sipariş takip içeriği" className="min-h-56 rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]" />
+          <SiparisTakipIstemcisi onStatlar={setSiparisStatlari} />
         )}
         </div>
       </main>

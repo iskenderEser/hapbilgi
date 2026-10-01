@@ -1,6 +1,7 @@
 import { CheckCircle2, Clock3, Gift, PackageCheck, Send, ShoppingBag, Truck } from "lucide-react";
 import type { CekTakipStatlari } from "@/lib/eclub/hediyeTakip/cekTakip";
 import type { HediyeTakipTuru } from "./HediyeTakipToggle";
+import type { SiparisTakipStatlari } from "@/lib/eclub/hediyeTakip/siparisTakip";
 
 const CEK_STATLARI = [
   { etiket: "Toplam Talep", detay: "Tüm çek talepleri", ikon: Gift, renk: "#237ac8", zemin: "#edf6fd" },
@@ -19,14 +20,18 @@ const SIPARIS_STATLARI = [
 export default function TakipStatKartlari({
   takipTuru,
   cekStatlari,
+  siparisStatlari,
 }: {
   takipTuru: HediyeTakipTuru;
   cekStatlari?: CekTakipStatlari;
+  siparisStatlari?: SiparisTakipStatlari;
 }) {
   const statlar = takipTuru === "cek" ? CEK_STATLARI : SIPARIS_STATLARI;
   const degerler = takipTuru === "cek" && cekStatlari
     ? [cekStatlari.toplam, cekStatlari.onay_surecinde, cekStatlari.teslimat_surecinde, cekStatlari.tamamlanan]
-    : null;
+    : takipTuru === "siparis" && siparisStatlari
+      ? [siparisStatlari.toplam, siparisStatlari.onay_bekliyor, siparisStatlari.depo_surecinde, siparisStatlari.tamamlandi]
+      : null;
 
   return (
     <section aria-label={`${takipTuru === "cek" ? "Çek" : "Sipariş"} takip özeti`} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
