@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (!filtreSonucu.ok) return validasyonHatasi(filtreSonucu.hata, filtreSonucu.alanlar);
 
     const [statlar, filtre_secenekleri, liste] = await Promise.all([
-      cekTakipStatlariniGetir(adminSupabase, erisim.kapsam),
+      cekTakipStatlariniGetir(adminSupabase, erisim.kapsam, filtreSonucu.filtreler),
       cekTakipFiltreSecenekleriniGetir(adminSupabase, erisim.kapsam),
       cekTakipTalepleriniGetir(adminSupabase, erisim.kapsam, filtreSonucu.filtreler),
     ]);

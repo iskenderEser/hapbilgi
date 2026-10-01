@@ -19,12 +19,14 @@ test("Hediye Takip kabuğu başlık, stat kartları, toggle ve içerik sırasın
   assert.match(istemci, /useState<HediyeTakipTuru>\("cek"\)/);
 });
 
-test("geleneksel kapsül Çek Takip ve Sipariş Takip arasında geçiş sağlar", () => {
+test("erişilebilir kapsül Çek Takip ve Sipariş Takip arasında geçiş sağlar", () => {
   assert.match(istemci, />Hediye Takibi</);
   assert.match(toggle, /key: "cek", label: "Çek Takibi"/);
   assert.match(toggle, /key: "siparis", label: "Sipariş Takibi"/);
-  assert.match(toggle, /PeriyotButonlari<HediyeTakipTuru>/);
-  assert.match(toggle, /w-fit !flex-none/);
+  assert.match(toggle, /role="tablist"/);
+  assert.match(toggle, /role="tab"/);
+  assert.match(toggle, /aria-selected=\{aktif\}/);
+  assert.match(toggle, /w-fit max-w-full flex-none/);
   assert.match(istemci, /className="flex justify-start"/);
   assert.doesNotMatch(istemci, /justify-center/);
 });

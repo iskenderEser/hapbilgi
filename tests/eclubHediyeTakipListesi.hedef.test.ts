@@ -21,10 +21,10 @@ test("mobil kart masaüstündeki teslimat ve çek ayrıntılarını kayıpsız g
   for (const alan of ["Talep Tarihi", "Çek Tutarı", "Eczane \/ Üye", "Kullanılan Puan", "İşlem", "Teslimat"]) {
     assert.match(kart, new RegExp(alan));
   }
-  assert.match(kart, /E-posta:/);
-  assert.match(kart, /Push:/);
-  assert.match(kart, /Gönderim:/);
-  assert.match(kart, /Kod:/);
+  assert.match(kart, /Ana eczacı e-postası:/);
+  assert.match(kart, /Aktif E-Club hesapları push:/);
+  assert.match(kart, /Gönderim tarihi:/);
+  assert.match(kart, /Çek kodu:/);
 });
 
 test("ilk sayfa 30 kayıt ister ve daha fazla sonuç aynı listeye eklenir", () => {
