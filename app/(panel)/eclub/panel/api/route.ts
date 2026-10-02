@@ -13,6 +13,7 @@ import { ECLUB_TUKETICI_ROLLERI, hedefRolleriOku, yayinTuketiciRoluneAcikMi, typ
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { eclubOneriDurumu } from "@/lib/eclub/izlemeKurali";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
+import { yayinGorunenUrunIdHaritasi } from "@/lib/urunler/gorunenId";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
@@ -109,6 +110,7 @@ export async function GET() {
         });
       }
     }
+    const gorunenUrunIdleri = await yayinGorunenUrunIdHaritasi(adminSupabase, [...yayinMap.keys()]);
 
     const [eclubBegeniSonucu, eclubFavoriSonucu] = await Promise.all([
       yayinIds.length > 0
@@ -176,6 +178,7 @@ export async function GET() {
         firma_adi: y?.firma_adi ?? null,
         firma_id: y?.firma_id ?? null,
         urun_adi: y?.urun_adi ?? "-",
+        gorunen_urun_id: gorunenUrunIdleri.get(oo.yayin_id) ?? null,
         teknik_adi: y?.teknik_adi ?? null,
         video_url: y?.video_url ?? null,
         thumbnail_url: y?.thumbnail_url ?? null,

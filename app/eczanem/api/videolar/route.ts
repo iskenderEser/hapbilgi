@@ -12,6 +12,7 @@ import { musteriKimligi } from "@/lib/eczanem/oturum";
 import { eczaneAdMap } from "@/lib/eczanem/gonderim";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { gorunenUrunIdHaritasi } from "@/lib/urunler/gorunenId";
 import type {
   EczanemAracTuru,
   EczanemMusteriVideo,
@@ -123,6 +124,9 @@ export async function GET() {
       for (const y of yayinlar ?? []) yayinMap.set(y.yayin_id, y as YayinDetaySatiri);
       for (const k of kunyeler ?? []) kunyeUrunMap.set(k.yayin_id, (k.urun_id as string | null) ?? null);
     }
+    const gorunenUrunIdleri = await gorunenUrunIdHaritasi(
+      adminSupabase, [...kunyeUrunMap.values()].filter((id): id is string => id !== null),
+    );
 
     // Durum yayın bazında değil gönderim bazındadır; aynı yayın iki eczaneden
     // geldiğinde her eczanenin izleme, soru ve puan akışı bağımsız kalır.
@@ -234,6 +238,7 @@ export async function GET() {
         firma_adi: y.firma_adi ?? null,
         urun_id: urunId,
         urun_adi: y.urun_adi ?? "-",
+        gorunen_urun_id: urunId ? gorunenUrunIdleri.get(urunId) ?? null : null,
         teknik_adi: y.teknik_adi ?? "-",
         video_url: y.video_url ?? null,
         arac_id: g.arac_id,

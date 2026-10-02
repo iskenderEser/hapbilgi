@@ -13,6 +13,7 @@ export interface UttVideo {
   talep_no?: number | null;
   firma_adi?: string | null;
   urun_adi: string;
+  gorunen_urun_id?: string | null;
   teknik_adi: string;
   video_url: string | null;
   thumbnail_url: string | null;

@@ -13,6 +13,7 @@ import { kapsamGenisMi } from "./gorunurluk";
 import { hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import { yayinThumbnailUrlCoz, yayinVideoUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { yayinGorunenUrunIdHaritasi } from "@/lib/urunler/gorunenId";
 
 export interface YayindakiVideo extends AnaSayfaVideo {
   hedef_roller: HedefRoller;
@@ -104,6 +105,7 @@ export async function getYayindakiVideolar(
   if (satirlar.length === 0) return [];
 
   const yayinIdler = satirlar.map((v) => v.yayin_id);
+  const gorunenUrunIdleri = await yayinGorunenUrunIdHaritasi(adminSupabase, yayinIdler);
   const ureticiHarita = new Map<string, UreticiSatiri>();
 
   // "benim" modunda üretici zaten giriş yapan kullanıcının kendisidir
@@ -170,6 +172,7 @@ export async function getYayindakiVideolar(
       talep_no: v.talep_no,
       firma_adi: v.firma_adi,
       urun_adi: v.urun_adi ?? "-",
+      gorunen_urun_id: gorunenUrunIdleri.get(v.yayin_id) ?? null,
       teknik_adi: v.teknik_adi ?? "-",
       video_url: yayinVideoUrlCoz(v),
       thumbnail_url: yayinThumbnailUrlCoz(v),

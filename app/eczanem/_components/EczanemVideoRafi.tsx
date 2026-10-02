@@ -99,6 +99,7 @@ export default function EczanemVideoRafi({
         yayin={{
           yayin_id: video.yayin_id,
           urun_adi: video.urun_adi,
+          gorunen_urun_id: video.gorunen_urun_id,
           teknik_adi: video.teknik_adi,
           video_url: video.video_url,
           thumbnail_url: video.thumbnail_url,

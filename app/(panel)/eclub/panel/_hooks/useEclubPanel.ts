@@ -10,6 +10,7 @@ export interface PanelOneri {
   firma_id: string | null;
   firma_adi?: string | null;
   urun_adi: string;
+  gorunen_urun_id?: string | null;
   teknik_adi: string | null;
   video_url: string | null;
   arac_id: string | null;

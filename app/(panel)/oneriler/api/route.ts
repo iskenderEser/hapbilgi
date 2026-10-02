@@ -10,6 +10,7 @@ import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { tarihAraligi } from "@/lib/utils/tarihAraligi";
 import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 import { yayinThumbnailCevabi, oneriListesiThumbnailZenginlestir } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { yayinGorunenUrunIdHaritasi } from "@/lib/urunler/gorunenId";
 
 const GET_ROLLERI = [...YONLENDIRICI_ROLLER, ...TUKETICI_ROLLER];
 
@@ -251,6 +252,7 @@ export async function GET(request: NextRequest) {
     }
 
     const yayinlar = yayinlarSonucu.data;
+    const gorunenUrunIdleri = await yayinGorunenUrunIdHaritasi(adminSupabase, yayinIdleri);
     const extraPuanHaritasi = new Map((yayinYonetimiSonucu.data ?? []).map((y) => [y.yayin_id, y.extra_puan ?? 0]));
     const izlemeSayilari = new Map<string, number>();
     for (const izleme of (izlemelerSonucu.data ?? [])) {
@@ -278,6 +280,7 @@ export async function GET(request: NextRequest) {
       const ek = yayinEkHaritasi.get(o.yayin_id);
       return {
         ...o,
+        gorunen_urun_id: gorunenUrunIdleri.get(o.yayin_id) ?? null,
         talep_no: ek?.talep_no ?? null,
         firma_adi: ek?.firma_adi ?? null,
         yayin_tarihi: ek?.yayin_tarihi ?? (o.created_at as string | null) ?? null,

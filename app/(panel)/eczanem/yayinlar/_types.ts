@@ -7,6 +7,7 @@ export interface UttEczanemYayin {
   talep_no: number | null;
   firma_adi: string | null;
   urun_adi: string;
+  gorunen_urun_id?: string | null;
   teknik_adi: string;
   video_puani: number | null;
   icerik_turu: string | null;

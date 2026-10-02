@@ -14,6 +14,7 @@ export type YayinKartiDurumu = "yeni" | "devam" | "tamamlanan" | string;
 export interface YayinKartiVerisi {
   yayin_id: string;
   urun_adi: string;
+  gorunen_urun_id?: string | null;
   teknik_adi?: string | null;
   video_url?: string | null;
   thumbnail_url?: string | null;
@@ -257,12 +258,19 @@ export function YayinKarti({
 
         {/* 1. Satır: Başlık & Etkileşim Butonları */}
         <div className="flex items-start justify-between gap-1.5">
-          <h3
-            className="line-clamp-2 flex-1 text-base font-bold leading-[22px] text-gray-900 sm:text-xs sm:leading-normal"
-            title={yayin.urun_adi}
-          >
-            {yayin.urun_adi}
-          </h3>
+          <div className="min-w-0 flex-1">
+            <h3
+              className="line-clamp-2 text-base font-bold leading-[22px] text-gray-900 sm:text-xs sm:leading-normal"
+              title={yayin.urun_adi}
+            >
+              {yayin.urun_adi}
+            </h3>
+            {yayin.gorunen_urun_id && (
+              <span className="block text-[10px] font-normal leading-4 text-gray-400" aria-label={`Ürün ID: ${yayin.gorunen_urun_id}`}>
+                {yayin.gorunen_urun_id}
+              </span>
+            )}
+          </div>
 
           {baslikSagAksiyon}
           {etkilesimGoster && (

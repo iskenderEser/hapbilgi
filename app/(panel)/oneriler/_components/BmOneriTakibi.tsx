@@ -22,6 +22,7 @@ export interface OneriKaydi {
   izlendi_mi: boolean;
   created_at: string;
   urun_adi: string;
+  gorunen_urun_id?: string | null;
   teknik_adi: string;
   video_url: string | null;
   thumbnail_url: string | null;

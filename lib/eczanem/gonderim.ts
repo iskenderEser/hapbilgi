@@ -21,6 +21,7 @@ import { uttEczaneFirmaBaglari } from "@/lib/eclub/uttEczane";
 import { yayinThumbnailCevabi } from "@/lib/ogrenmeAraci/yayinThumbnail";
 import { ayBaslangici, ayKaydir } from "@/lib/zaman/kontrol";
 import { gecerliTurBaslangiclari } from "@/lib/tclub/tur/kayit";
+import { yayinGorunenUrunIdHaritasi } from "@/lib/urunler/gorunenId";
 
 // Ayar okunamazsa güvenli geri düşüş (davet.ts DAVET_GECERLILIK deseni).
 // Canlı seed değeri 10; bu sabit yalnız okuma hatasında devreye girer.
@@ -292,6 +293,10 @@ export async function uttEczanemVerisi(
   const { data: yayinRaw, error: yayinError } = await yayinQuery;
   if (yayinError) throw new Error("Eczanem yayınları okunamadı.");
 
+  const gorunenUrunIdleri = await yayinGorunenUrunIdHaritasi(
+    adminSupabase, (yayinRaw ?? []).map((yayin) => yayin.yayin_id),
+  );
+
   const yayinlar: UttEczanemYayin[] = ((yayinRaw as VYayinAdDetay[] | null) ?? []).filter((y) => Boolean(y.arac_id && y.arac_turu)).map(y => {
     const { thumbnail_url } = yayinThumbnailCevabi(y);
     return {
@@ -299,6 +304,7 @@ export async function uttEczanemVerisi(
       talep_no: y.talep_no ?? null,
       firma_adi: y.firma_adi ?? null,
       urun_adi: y.urun_adi ?? "-",
+      gorunen_urun_id: gorunenUrunIdleri.get(y.yayin_id) ?? null,
       teknik_adi: y.teknik_adi ?? "",
       video_puani: y.video_puani ?? null,
       icerik_turu: y.icerik_turu ?? null,

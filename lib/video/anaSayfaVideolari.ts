@@ -20,12 +20,14 @@ import { IcerikTuru } from "./icerikTuru";
 import { gorunenTurler, kapsamGenisMi } from "./gorunurluk";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import { yayinThumbnailUrlCoz, yayinVideoUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { yayinGorunenUrunIdHaritasi } from "@/lib/urunler/gorunenId";
 
 export interface AnaSayfaVideo {
   yayin_id: string;
   talep_no?: number | null;
   firma_adi?: string | null;
   urun_adi: string;
+  gorunen_urun_id?: string | null;
   teknik_adi: string;
   video_url: string | null;
   thumbnail_url: string | null;
@@ -127,6 +129,7 @@ export async function getAnaSayfaVideolari(
 
   const yayinListesi = (videolar as VYayinDetayRow[] | null) ?? [];
   const yayinIdler = yayinListesi.map((v) => v.yayin_id);
+  const gorunenUrunIdleri = await yayinGorunenUrunIdHaritasi(adminSupabase, yayinIdler);
   const extraPuanMap = new Map<string, number>();
 
   if (yayinIdler.length > 0) {
@@ -147,6 +150,7 @@ export async function getAnaSayfaVideolari(
     talep_no: v.talep_no ?? null,
     firma_adi: v.firma_adi ?? null,
     urun_adi: v.urun_adi ?? "-",
+    gorunen_urun_id: gorunenUrunIdleri.get(v.yayin_id) ?? null,
     teknik_adi: v.teknik_adi ?? "-",
     video_url: yayinVideoUrlCoz(v),
     thumbnail_url: yayinThumbnailUrlCoz(v),

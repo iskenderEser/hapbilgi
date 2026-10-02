@@ -42,6 +42,16 @@ test("YayinKarti: ürün adı mobilde 16px (text-base, leading-[22px]), masaüst
   assert.match(html, /line-clamp-2/);
 });
 
+test("YayinKarti: görünen ürün ID'si adın altında ince gri yazılır; talep ID'si yerinde kalır", () => {
+  const html = renderToStaticMarkup(createElement(YayinKarti, {
+    yayin: ornekYayinUret({ urun_adi: "Normavas", gorunen_urun_id: "30-001", firma_adi: "Hepifarma", talep_no: 30079 }),
+  }));
+  assert.match(html, /Normavas<\/h3><span class="block text-\[10px\] font-normal leading-4 text-gray-400"/);
+  assert.match(html, /30-001/);
+  assert.match(html, /Hepifarma_30079/);
+  assert.doesNotMatch(html, /Ürün ID: [0-9a-f]{8}-/);
+});
+
 test("YayinKarti: durum ve içerik türü kapsülü mobilde 11px (text-[11px]), masaüstünde 9px (sm:text-[9px]) uygulanır", () => {
   const yayin = ornekYayinUret();
   const html = renderToStaticMarkup(createElement(YayinKarti, { yayin }));

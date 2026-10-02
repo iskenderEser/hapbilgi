@@ -9,6 +9,7 @@ import { haftaBaslangici } from "@/lib/zaman/kontrol";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { yayinThumbnailUrlCoz, yayinVideoUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { yayinGorunenUrunIdHaritasi } from "@/lib/urunler/gorunenId";
 
 export interface VYayinSatiri {
   yayin_id: string;
@@ -123,6 +124,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   // periyodu dolan video kendiliğinden "yeni"ye döner (§9.1).
   const yayinListesi = (yayinlar as VYayinSatiri[] | null) ?? [];
   const yayinIdler = yayinListesi.map(y => y.yayin_id);
+  const gorunenUrunIdleri = await yayinGorunenUrunIdHaritasi(adminSupabase, yayinIdler);
   const turMap = await gecerliTurBaslangiclari(adminSupabase, yayinIdler);
 
   const tamamlananMap: Record<string, boolean> = {};       // tur bazlı
@@ -218,6 +220,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     firma_adi: y.firma_adi ?? null,
     sonraki_tur_tarihi: turMap[y.yayin_id]?.sonraki_tur_tarihi ?? null,
     urun_adi: y.urun_adi ?? "-",
+    gorunen_urun_id: gorunenUrunIdleri.get(y.yayin_id) ?? null,
     teknik_adi: y.teknik_adi ?? "-",
     video_url: yayinVideoUrlCoz(y),
     thumbnail_url: yayinThumbnailUrlCoz(y),
