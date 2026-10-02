@@ -313,6 +313,13 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
+  "eczanem-utt-mutabakat": {
+    anahtar: "eczanem-utt-mutabakat",
+    baslik: "Eczanem Mutabakat",
+    ozet: "Önceki ay onaylanan indirimleri yayın kaynakları ve PM tarifesiyle karşılaştırın. Ayın ilk yedi gününde her işlem için onay, beklet veya ret kararı verin. Tutarlar salt okunurdur; müşteri kimliği gösterilmez.",
+    maddeler: [],
+  },
+
   // ─── 19. ÖNERİ TAKİBİ (BM / BÖLGE MÜDÜRÜ) ─────────────────────────────────
   "oneriler-bm": {
     anahtar: "oneriler-bm",
