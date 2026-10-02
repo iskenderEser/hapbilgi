@@ -1,11 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { gorunenUrunIdHaritasi } from "@/lib/urunler/gorunenId";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 export type UttMutabakatKarari = "onay" | "beklet" | "ret";
 export type UttMutabakatFiltresi = "tumu" | "bekliyor" | UttMutabakatKarari;
 
 export interface UttMutabakatKaynagi {
   yayin_id: string;
+  gorunen_talep_id?: string | null;
   arac_id: string;
   arac_turu: OgrenmeAraciTuru;
   teknik_adi: string | null;
@@ -25,6 +28,7 @@ export interface UttMutabakatKaydi {
   eczane_adi: string | null;
   urun_id: string;
   urun_adi: string;
+  gorunen_urun_id?: string | null;
   onay_tarihi: string;
   kullanilan_puan: number;
   indirim_tl: number;
@@ -44,6 +48,25 @@ export interface UttMutabakatListesi {
   toplam: number;
   toplam_puan: number;
   toplam_indirim_tl: number;
+  kayitlar: UttMutabakatKaydi[];
+}
+
+export interface UttMutabakatUrunSatiri {
+  urun_id: string;
+  urun_adi: string;
+  gorunen_urun_id: string | null;
+  islem_sayisi: number;
+  toplam_puan: number;
+  toplam_indirim_tl: number;
+}
+
+export interface UttMutabakatUrunListesi extends Omit<UttMutabakatListesi, "kayitlar"> {
+  toplam_urun: number;
+  urunler: UttMutabakatUrunSatiri[];
+}
+
+export interface UttMutabakatUrunIslemleri {
+  toplam: number;
   kayitlar: UttMutabakatKaydi[];
 }
 
@@ -96,7 +119,66 @@ export async function uttMutabakatlariListele(
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new Error("UTT mutabakat liste yanıtı geçersiz.");
   }
-  return data as UttMutabakatListesi;
+  const liste = data as UttMutabakatListesi;
+  return { ...liste, kayitlar: await uttMutabakatKayitlariniZenginlestir(db, liste.kayitlar) };
+}
+
+async function uttMutabakatKayitlariniZenginlestir(db: SupabaseClient, kayitlar: UttMutabakatKaydi[]): Promise<UttMutabakatKaydi[]> {
+  const urunIdleri = await gorunenUrunIdHaritasi(db, kayitlar.map((kayit) => kayit.urun_id));
+  const yayinIdleri = [...new Set(kayitlar.flatMap((kayit) => kayit.kaynaklar.map((kaynak) => kaynak.yayin_id)))];
+  const talepIdleri = new Map<string, string>();
+  if (yayinIdleri.length > 0) {
+    const { data: yayinlar, error: yayinHatasi } = await db.from("v_yayin_detay")
+      .select("yayin_id, firma_adi, talep_no")
+      .in("yayin_id", yayinIdleri);
+    if (yayinHatasi) throw new Error("Mutabakat yayın kimlikleri okunamadı.");
+    for (const yayin of yayinlar ?? []) {
+      if (yayin.talep_no != null && yayin.firma_adi) {
+        talepIdleri.set(yayin.yayin_id, talepIdGoster(yayin.firma_adi, yayin.talep_no));
+      }
+    }
+  }
+  return kayitlar.map((kayit) => ({
+      ...kayit,
+      gorunen_urun_id: urunIdleri.get(kayit.urun_id) ?? null,
+      kaynaklar: kayit.kaynaklar.map((kaynak) => ({
+        ...kaynak,
+        gorunen_talep_id: talepIdleri.get(kaynak.yayin_id) ?? null,
+      })),
+    }));
+}
+
+export async function uttMutabakatUrunleriniListele(
+  db: SupabaseClient, uttAuthId: string, donem: string,
+  durum: UttMutabakatFiltresi, sayfa: number,
+): Promise<UttMutabakatUrunListesi> {
+  const { data, error } = await db.rpc("eczanem_utt_mutabakat_urunleri_listele", {
+    p_utt_id: uttAuthId, p_donem: `${donem}-01`, p_durum: durum,
+    p_limit: UTT_MUTABAKAT_SAYFA_BOYUTU,
+    p_offset: sayfa * UTT_MUTABAKAT_SAYFA_BOYUTU,
+  });
+  if (error) throw new Error(`UTT mutabakat ürünleri alınamadı: ${error.code ?? "DB"}`);
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("UTT mutabakat ürün yanıtı geçersiz.");
+  }
+  return data as UttMutabakatUrunListesi;
+}
+
+export async function uttMutabakatUrunIslemleriniListele(
+  db: SupabaseClient, uttAuthId: string, donem: string,
+  durum: UttMutabakatFiltresi, urunId: string, sayfa: number,
+): Promise<UttMutabakatUrunIslemleri> {
+  const { data, error } = await db.rpc("eczanem_utt_mutabakat_urun_islemleri_listele", {
+    p_utt_id: uttAuthId, p_donem: `${donem}-01`, p_urun_id: urunId,
+    p_durum: durum, p_limit: UTT_MUTABAKAT_SAYFA_BOYUTU,
+    p_offset: sayfa * UTT_MUTABAKAT_SAYFA_BOYUTU,
+  });
+  if (error) throw new Error(`UTT mutabakat işlemleri alınamadı: ${error.code ?? "DB"}`);
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("UTT mutabakat işlem yanıtı geçersiz.");
+  }
+  const liste = data as UttMutabakatUrunIslemleri;
+  return { ...liste, kayitlar: await uttMutabakatKayitlariniZenginlestir(db, liste.kayitlar) };
 }
 
 export async function uttMutabakatKarariVer(

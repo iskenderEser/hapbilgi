@@ -4,7 +4,8 @@ import { uttEczanemErisimi, ECZANEM_KAPALI_MESAJI } from "@/lib/eczanem/erisim";
 import {
   UTT_MUTABAKAT_DURUMLARI, UTT_MUTABAKAT_KARARLARI,
   uttMutabakatDonemiGecerliMi, uttMutabakatIdGecerliMi,
-  uttMutabakatlariListele, uttMutabakatKarariVer, varsayilanUttMutabakatDonemi,
+  uttMutabakatUrunleriniListele, uttMutabakatUrunIslemleriniListele,
+  uttMutabakatKarariVer, varsayilanUttMutabakatDonemi,
   type UttMutabakatFiltresi, type UttMutabakatKarari,
 } from "@/lib/eczanem/uttMutabakat";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
@@ -31,12 +32,16 @@ export async function GET(request: NextRequest) {
     const donem = request.nextUrl.searchParams.get("donem") ?? varsayilanUttMutabakatDonemi();
     const durum = request.nextUrl.searchParams.get("durum") ?? "tumu";
     const sayfaMetni = request.nextUrl.searchParams.get("sayfa") ?? "0";
+    const urunId = request.nextUrl.searchParams.get("urun_id");
     const sayfa = Number(sayfaMetni);
     if (!uttMutabakatDonemiGecerliMi(donem) || !UTT_MUTABAKAT_DURUMLARI.includes(durum as UttMutabakatFiltresi)
-      || !/^\d{1,4}$/.test(sayfaMetni) || !Number.isSafeInteger(sayfa) || sayfa > 500) {
-      return validasyonHatasi("Mutabakat filtreleri geçersiz.", ["donem", "durum", "sayfa"]);
+      || !/^\d{1,4}$/.test(sayfaMetni) || !Number.isSafeInteger(sayfa) || sayfa > 500
+      || (urunId !== null && !uttMutabakatIdGecerliMi(urunId))) {
+      return validasyonHatasi("Mutabakat filtreleri geçersiz.", ["donem", "durum", "sayfa", "urun_id"]);
     }
-    const sonuc = await uttMutabakatlariListele(yetki.db!, yetki.uttId!, donem, durum as UttMutabakatFiltresi, sayfa);
+    const sonuc = urunId
+      ? await uttMutabakatUrunIslemleriniListele(yetki.db!, yetki.uttId!, donem, durum as UttMutabakatFiltresi, urunId, sayfa)
+      : await uttMutabakatUrunleriniListele(yetki.db!, yetki.uttId!, donem, durum as UttMutabakatFiltresi, sayfa);
     return NextResponse.json(sonuc, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return sunucuHatasi(error, "GET /eczanem/utt/api/mutabakat");
