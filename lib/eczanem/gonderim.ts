@@ -19,6 +19,7 @@ import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { uttEczaneFirmaBaglari } from "@/lib/eclub/uttEczane";
 import { yayinThumbnailCevabi } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { ayBaslangici, ayKaydir } from "@/lib/zaman/kontrol";
 
 // Ayar okunamazsa güvenli geri düşüş (davet.ts DAVET_GECERLILIK deseni).
 // Canlı seed değeri 10; bu sabit yalnız okuma hatasında devreye girer.
@@ -200,6 +201,50 @@ export interface UttEczanemVeri {
   yayinlar: UttEczanemYayin[];
   eczaneler: UttEczanemEczane[];
   gonderimler: Array<{ yayin_id: string; eczane_id: string; created_at: string }>;
+  aylikIstatistikler: UttEczanemAylikIstatistikler;
+}
+
+export interface UttEczanemAylikIstatistikler {
+  uttGonderimSayisi: number;
+  eczaneGonderimSayisi: number;
+  sonrakiAyBaslangici: string;
+}
+
+/** Sayaç penceresi Türkiye saatinde ayın 1'i 00:00 (dahil) – sonraki ayın 1'i 00:00 (hariç). */
+export function eczanemAylikSayacPenceresi(simdi: Date = new Date()) {
+  return {
+    baslangic: ayBaslangici(simdi).toISOString(),
+    bitisHaric: ayKaydir(simdi, 1).toISOString(),
+  };
+}
+
+export async function uttEczanemAylikIstatistikleri(
+  adminSupabase: SupabaseClient,
+  uttAuthId: string,
+  eczaneIdler: string[],
+  simdi: Date = new Date(),
+): Promise<UttEczanemAylikIstatistikler> {
+  const { baslangic, bitisHaric } = eczanemAylikSayacPenceresi(simdi);
+  const [uttSonuc, eczaneSonuc] = await Promise.all([
+    adminSupabase.from("eczanem_eczane_gonderimleri")
+      .select("gonderim_id", { count: "exact", head: true })
+      .eq("gonderen_utt_id", uttAuthId)
+      .gte("created_at", baslangic)
+      .lt("created_at", bitisHaric),
+    eczaneIdler.length > 0
+      ? adminSupabase.from("eczanem_gonderimler")
+        .select("gonderim_id", { count: "exact", head: true })
+        .in("eczane_id", eczaneIdler)
+        .gte("created_at", baslangic)
+        .lt("created_at", bitisHaric)
+      : Promise.resolve({ count: 0, error: null }),
+  ]);
+  if (uttSonuc.error || eczaneSonuc.error) throw new Error("Eczanem aylık gönderim sayıları okunamadı.");
+  return {
+    uttGonderimSayisi: uttSonuc.count ?? 0,
+    eczaneGonderimSayisi: eczaneSonuc.count ?? 0,
+    sonrakiAyBaslangici: bitisHaric,
+  };
 }
 
 // UTT'nin takımındaki Eczanem yayınları + kendi bağımsız listesine aldığı
@@ -251,9 +296,10 @@ export async function uttEczanemVerisi(
   const eczaneIdler = [...new Set(
     uttBaglari.filter((bag) => bag.firmaId === firmaId).map((bag) => bag.eczaneId)
   )];
-  const [adMap, sayiMap] = await Promise.all([
+  const [adMap, sayiMap, aylikIstatistikler] = await Promise.all([
     eczaneAdMap(adminSupabase, eczaneIdler),
     aktifUyeSayilari(adminSupabase, eczaneIdler),
+    uttEczanemAylikIstatistikleri(adminSupabase, uttAuthId, eczaneIdler),
   ]);
 
   const eczaneler: UttEczanemEczane[] = eczaneIdler
@@ -284,7 +330,7 @@ export async function uttEczanemVerisi(
     }));
   }
 
-  return { esik, yayinlar, eczaneler, gonderimler };
+  return { esik, yayinlar, eczaneler, gonderimler, aylikIstatistikler };
 }
 
 export interface GonderimSonuc {

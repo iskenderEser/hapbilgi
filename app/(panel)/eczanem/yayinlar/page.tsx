@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ChevronDown, ChevronLeft, CircleAlert, Film, UsersRound } from "lucide-react";
+import { Building2, ChevronDown, ChevronLeft, CircleAlert, Send, UsersRound } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,7 @@ import type { UttEczanemGonderim, UttEczanemVeri, UttEczanemYayin } from "./_typ
 type GonderimFiltresi = "tumu" | "gonderilebilir" | "gonderilen";
 
 function OzetKarti({ ikon: Icon, etiket, deger, detay, renk, zemin }: {
-  ikon: typeof Film;
+  ikon: typeof Building2;
   etiket: string;
   deger: number;
   detay: string;
@@ -32,7 +32,7 @@ function OzetKarti({ ikon: Icon, etiket, deger, detay, renk, zemin }: {
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-gray-400">{etiket}</p>
           <p className="mt-2 text-2xl font-extrabold leading-none text-gray-900 md:text-3xl">{deger.toLocaleString("tr-TR")}</p>
-          <p className="mt-1.5 hidden text-xs text-gray-500 md:block">{detay}</p>
+          <p className="mt-1.5 text-[11px] leading-snug text-gray-500 md:text-xs">{detay}</p>
         </div>
         <span className="flex size-9 shrink-0 items-center justify-center rounded-xl" style={{ color: renk, background: zemin }}><Icon className="size-4.5" /></span>
       </CardContent>
@@ -81,11 +81,44 @@ export default function EczanemYayinlariPage() {
 
   useEffect(() => { veriCek(true); }, [veriCek]);
 
+  const sayacCek = useCallback(async () => {
+    if (document.visibilityState !== "visible") return;
+    try {
+      const res = await fetch("/eczanem/yayinlar/api?sayac=1", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setVeri((onceki) => onceki && data.aylikIstatistikler
+        ? { ...onceki, aylikIstatistikler: data.aylikIstatistikler }
+        : onceki);
+    } catch {
+      // Sayaç yenilemesi sessizce sonraki denemede tekrarlanır.
+    }
+  }, []);
+
+  useEffect(() => {
+    const aralik = window.setInterval(() => void sayacCek(), 10_000);
+    const gorunurOldu = () => { if (document.visibilityState === "visible") void sayacCek(); };
+    document.addEventListener("visibilitychange", gorunurOldu);
+    return () => { window.clearInterval(aralik); document.removeEventListener("visibilitychange", gorunurOldu); };
+  }, [sayacCek]);
+
+  useEffect(() => {
+    const sonrakiAy = veri?.aylikIstatistikler.sonrakiAyBaslangici;
+    if (!sonrakiAy) return;
+    let zamanlayici: number | undefined;
+    const ayBasiniBekle = () => {
+      const kalanMs = new Date(sonrakiAy).getTime() - Date.now();
+      if (kalanMs <= 0) { void sayacCek(); return; }
+      zamanlayici = window.setTimeout(ayBasiniBekle, Math.min(kalanMs, 60 * 60 * 1000));
+    };
+    ayBasiniBekle();
+    return () => { if (zamanlayici) window.clearTimeout(zamanlayici); };
+  }, [veri?.aylikIstatistikler.sonrakiAyBaslangici, sayacCek]);
+
   const yayinlar = veri?.yayinlar ?? [];
   const eczaneler = veri?.eczaneler ?? [];
   const esik = veri?.esik ?? 0;
   const hazirEczaneler = eczaneler.filter((eczane) => eczane.esik_uygun);
-  const esikAltiSayisi = eczaneler.length - hazirEczaneler.length;
   const gonderimMap = useMemo<ReadonlyMap<string, UttEczanemGonderim>>(() => new Map(
     (veri?.gonderimler ?? []).map((gonderim) => [`${gonderim.yayin_id}::${gonderim.eczane_id}`, gonderim]),
   ), [veri?.gonderimler]);
@@ -165,6 +198,13 @@ export default function EczanemYayinlariPage() {
             if (!res.ok) { atlanan += 1; hata(data.hata ?? data.error ?? "Öğrenme içeriği gönderilemedi.", "Eczanem gönderimi"); continue; }
             yayinGonderildi = true;
             gonderilenEczane += 1;
+            setVeri((onceki) => onceki ? {
+              ...onceki,
+              aylikIstatistikler: {
+                ...onceki.aylikIstatistikler,
+                uttGonderimSayisi: onceki.aylikIstatistikler.uttGonderimSayisi + 1,
+              },
+            } : onceki);
           } catch {
             atlanan += 1;
             hata("Öğrenme içeriği gönderilemedi.", "Eczanem gönderimi");
@@ -239,9 +279,9 @@ export default function EczanemYayinlariPage() {
         ) : (
           <>
             <section aria-label="Eczanem öğrenme içeriği özeti" className="grid grid-cols-2 gap-2 md:grid-cols-3">
-              <OzetKarti ikon={Film} etiket="Eczane Sayısı" deger={eczaneler.length} detay="UTT listenizdeki aktif eczaneler" renk="#237ac8" zemin="#edf6fd" />
-              <OzetKarti ikon={CheckCircle2} etiket="Gönderime Hazır Eczane" deger={hazirEczaneler.length} detay={`En az ${esik} aktif üyesi bulunan`} renk="#16865f" zemin="#eaf7f2" />
-              <OzetKarti ikon={UsersRound} etiket="Eşik Altındaki Eczane" deger={esikAltiSayisi} detay="Üyelik gelişimi gereken" renk="#b7791f" zemin="#fff7e6" />
+              <OzetKarti ikon={Building2} etiket="Gönderilebilen Eczane Sayısı" deger={hazirEczaneler.length} detay={`Eclub takımınızda olan toplam eczane sayısı ${eczaneler.length}`} renk="#237ac8" zemin="#edf6fd" />
+              <OzetKarti ikon={Send} etiket="Gönderilen Toplam Yayın" deger={veri?.aylikIstatistikler.uttGonderimSayisi ?? 0} detay="Bu ay içinde gönderdiğiniz toplam yayın adedi" renk="#16865f" zemin="#eaf7f2" />
+              <OzetKarti ikon={UsersRound} etiket="Eczanelerin Gönderdiği Toplam Yayın" deger={veri?.aylikIstatistikler.eczaneGonderimSayisi ?? 0} detay="Bu ay içinde eczanelerin gönderdiği toplam yayın adedi" renk="#b7791f" zemin="#fff7e6" />
             </section>
 
             <div className="flex flex-wrap items-center justify-between gap-3">

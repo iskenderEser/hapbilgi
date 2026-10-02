@@ -35,4 +35,9 @@ export interface UttEczanemVeri {
   yayinlar: UttEczanemYayin[];
   eczaneler: UttEczanemEczane[];
   gonderimler: UttEczanemGonderim[];
+  aylikIstatistikler: {
+    uttGonderimSayisi: number;
+    eczaneGonderimSayisi: number;
+    sonrakiAyBaslangici: string;
+  };
 }
