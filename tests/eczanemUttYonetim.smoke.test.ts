@@ -12,8 +12,6 @@ const videoOnizleme = readFileSync("components/video/VideoOnizleme.tsx", "utf8")
 const ortakOnizleme = readFileSync("components/ogrenme-araci/OgrenmeAraciOnizleme.tsx", "utf8");
 const videoCercevesi = readFileSync("components/video/VideoCercevesi.tsx", "utf8");
 const videoEtkilesimKatmani = readFileSync("components/video/useVideoEtkilesimKatmani.ts", "utf8");
-const dokum = readFileSync("app/(panel)/eczanem/utt/_components/UttEczanemDokum.tsx", "utf8");
-const mutabakatPage = readFileSync("app/(panel)/eczanem/utt/mutabakat/page.tsx", "utf8");
 const nav = readFileSync("components/panel/panelNav.config.ts", "utf8");
 const route = readFileSync("app/eczanem/yayinlar/api/route.ts", "utf8");
 const gonderim = readFileSync("lib/eczanem/gonderim.ts", "utf8");
@@ -27,7 +25,12 @@ test("mutlu: UTT yüzeyi panel kabuğunda, shadcn deseninde ve atomik gönderiml
   assert.match(page, /seciliEczaneIdleri/);
   assert.match(page, /ortakUygunEczaneler/);
   assert.match(page, /<EczanemYayinGonderimKarti/);
-  assert.match(page, /etiket="Eczane Sayısı"/);
+  assert.match(page, /etiket="Gönderilebilen Eczane Sayısı" deger=\{hazirEczaneler\.length\}/);
+  assert.match(page, /Eclub takımınızda olan toplam eczane sayısı/);
+  assert.match(page, /etiket="Gönderilen Toplam Yayın" deger=\{veri\?\.aylikIstatistikler\.uttGonderimSayisi/);
+  assert.match(page, /etiket="Eczanelerin Gönderdiği Toplam Yayın" deger=\{veri\?\.aylikIstatistikler\.eczaneGonderimSayisi/);
+  assert.match(page, /api\?sayac=1/);
+  assert.match(page, /uttGonderimSayisi: onceki\.aylikIstatistikler\.uttGonderimSayisi \+ 1/);
   assert.match(page, /Eczaneleri seçin/);
   assert.match(page, /topluGonderiliyor \? "Gönderiliyor…" : "Gönder"/);
   assert.match(yayinKarti, /Göndermek için seçin/);
@@ -41,9 +44,12 @@ test("mutlu: UTT yüzeyi panel kabuğunda, shadcn deseninde ve atomik gönderiml
   assert.match(page, /<MobilYayinAkisi/);
   assert.match(page, /grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5/);
   assert.match(page, /sifirlamaAnahtari=\{`\$\{gonderimFiltresi\}-\$\{aktifYayinTuru\}`\}/);
-  assert.doesNotMatch(page, /UttGonderimIncelemesi/);
+  assert.match(page, /<UttGonderimIncelemesi/);
+  assert.match(page, /kanal="eczanem"/);
+  assert.match(page, /gonderilebilirYayinlar\.filter\(\(yayin\) => yayin\.gonderim_incelemesi_tamamlandi\)/);
+  assert.match(yayinKarti, /Göndermek için yayını tamamlayın/);
+  assert.match(route, /uttGonderimIncelemesiTamamlandi\(adminSupabase, user\.id, yayinId\)/);
   assert.match(ortakOnizleme, /bitisGecikmesiMs=\{1500\}/);
-  assert.doesNotMatch(page, /UttEczanemDokum/);
   assert.match(yayinKarti, /onClick=\{onOnizle\}/);
   assert.match(yayinKarti, /gonderim\.created_at/);
   assert.match(videoCercevesi, /etkilesimKatmani\?\.yalnizPlayButonu/);
@@ -54,9 +60,7 @@ test("mutlu: UTT yüzeyi panel kabuğunda, shadcn deseninde ve atomik gönderiml
   assert.match(videoOnizleme, /seconds >= duration - 0\.5/);
   assert.match(videoOnizleme, /Video tamamlandı/);
   assert.doesNotMatch(videoOnizleme, /fetch\(|\/izle\/api\//);
-  assert.match(dokum, /AbortController/);
-  assert.match(mutabakatPage, /<UttEczanemDokum hata=\{hata\}/);
-  assert.match(nav, /Eczanem Yayınları[\s\S]*?\/eczanem\/yayinlar[\s\S]*?Mutabakat Dökümü[\s\S]*?\/eczanem\/utt\/mutabakat/);
+  assert.match(nav, /Eczanem Yayınları[\s\S]*?\/eczanem\/yayinlar/);
   assert.match(route, /uttEczanemVerisi\(adminSupabase, user\.id, firmaId, erisim\.takimId/);
   assert.match(gonderim, /rpc\("eczanem_utt_eczaneye_gonder"/);
   assert.match(gonderim, /yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu/);

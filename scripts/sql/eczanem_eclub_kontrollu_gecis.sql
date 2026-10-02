@@ -7,7 +7,7 @@
 --     üretilemez. Müşteri yalnız mevcut puanını siparişle kullanabilir.
 --   * Puan kullanımı tamamlanınca veya müşteri puanlarından açıkça vazgeçince
 --     müşteri kimliği kaldırılır ve AYNI auth hesabı E-Club'a atomik geçirilir.
---   * Finansal mutabakat için PII içermeyen puan kapanış ve geçiş kayıtları kalır.
+--   * PII içermeyen puan kapanış ve geçiş kayıtları kalır.
 --
 -- Bu dosyayı İskender Supabase SQL Editor'da bir kez çalıştırır.
 
@@ -57,7 +57,7 @@ ALTER TABLE public.eczanem_eclub_gecis_kayitlari
   ADD COLUMN IF NOT EXISTS beyan_surumu text NOT NULL DEFAULT 'eczanem-eclub-v1';
 
 -- Kişisel veri içermez; eczane/firma/ürün ekseninde hangi puanın neden
--- kapandığını mutabakat için saklar.
+-- kapandığını izlemek için saklar.
 CREATE TABLE IF NOT EXISTS public.eczanem_eclub_puan_kapanislari (
   kayit_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   gecis_id uuid NOT NULL,
@@ -522,7 +522,7 @@ BEGIN
   GROUP BY pk.eczane_id, pk.firma_id, pk.urun_id,
     CASE WHEN pk.created_at < v_alt_sinir THEN 'suresi_doldu' ELSE 'kullanici_vazgecti' END;
 
-  -- Sipariş/harcama mutabakatı korunur; müşteri PII bağı kaldırılır.
+  -- Sipariş/harcama işlem izi korunur; müşteri PII bağı kaldırılır.
   UPDATE public.eczanem_harcama_kayitlari hk
   SET kaynak_kayit_id = NULL
   WHERE hk.kaynak_kayit_id IN (

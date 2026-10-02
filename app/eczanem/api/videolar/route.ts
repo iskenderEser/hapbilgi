@@ -3,7 +3,7 @@
 // (eczanem_gonderimler) + kendi ilerlemesi + müşteri-geneli etkileşim sayıları
 // + hiyerarşik sidebar veri sözleşmesi (eczane -> firma -> urun -> yayin -> arac).
 // Global sayılar yalnız müşteri ana sayfasındaki keşif raflarını sıralar; firma,
-// UTT veya mutabakat raporlarına bağlanmaz.
+// UTT raporlarına bağlanmaz.
 
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";

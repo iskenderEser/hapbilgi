@@ -90,7 +90,7 @@ Eczanem üyesi, bağlı olduğu eczanenin gönderdiği uygun içeriği tamamlaya
 3. Hesaplanan indirim, kullanıcının onayına sunulur ve eczane onayına gönderilir.
 4. Puan, eczane talebi onayladığında kesin olarak düşülür. Talep reddedilir veya onaydan önce kullanıcı tarafından geri çekilirse puan düşülmez.
 
-Eczanem'de ürünün satıcısı ilgili eczanedir. Mill Danışmanlık, ürünün satıcısı, eczanenin temsilcisi veya kullanıcıdan satış bedeli tahsil eden taraf değildir; yalnız puan ve indirim hakkının teknik hesaplama ve mutabakat altyapısını işletir. Ürünün satış fiyatı, teslimi, ayıbı ve eczane satış işlemine ilişkin yükümlülükler ilgili eczane ile kullanıcı arasındaki ilişkiye tabidir.
+Eczanem'de ürünün satıcısı ilgili eczanedir. Mill Danışmanlık, ürünün satıcısı, eczanenin temsilcisi veya kullanıcıdan satış bedeli tahsil eden taraf değildir; yalnız puan ve indirim hakkının teknik hesaplama altyapısını işletir. Ürünün satış fiyatı, teslimi, ayıbı ve eczane satış işlemine ilişkin yükümlülükler ilgili eczane ile kullanıcı arasındaki ilişkiye tabidir.
 
 ## 7. Hesap, üyelik ve kötüye kullanım
 

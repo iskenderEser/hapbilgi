@@ -23,7 +23,6 @@ import {
   ECLUB_GOREN_ROLLER,
   ECLUB_YONETIM_ROLLERI,
   TUKETICI_ROLLER,
-  ECZANEM_RAPOR_GOREN_ROLLER,
 } from "@/lib/utils/roller";
 import { UTT_VIDEO_KATEGORILERI } from "@/lib/video/uttVideoKategorileri";
 
@@ -151,8 +150,6 @@ export const PANEL_NAV: NavGrup[] = [
     baslik: "Eczanem",
     oglar: [
       { etiket: "Eczanem Yayınları", path: "/eczanem/yayinlar",   tamEslesme: true, gate: (c) => c.eczanemAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "Mutabakat Dökümü",  path: "/eczanem/utt/mutabakat",                gate: (c) => c.eczanemAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "Eczanem Raporları", path: "/raporlar/eczanem",                     gate: (c) => c.eczanemAcik && ECZANEM_RAPOR_GOREN_ROLLER.includes(c.rolKucu) },
     ],
   },
 ];
@@ -231,7 +228,6 @@ export function eclubKisiNavOlustur(firmalar: Array<{ firma_id: string; firma_ad
       { etiket: "Müşterilerim",     path: "/eczanem/eczane/musterilerim", gate: (c) => c.eczanemAcik },
       { etiket: "Video Dağıtımı",   path: "/eczanem/eczane/dagitim", badgeKey: "eczanem_video_gonderilecek", gate: (c) => c.eczanemAcik },
       { etiket: "Sipariş Onayı",    path: "/eczanem/eczane/siparisler", badgeKey: "eczanem_siparis_bekleyen", gate: (c) => c.eczanemAcik },
-      { etiket: "İşlem Dökümü",     path: "/eczanem/eczane/dokum",        gate: (c) => c.eczanemAcik },
     ],
   },
   ];

@@ -12,8 +12,6 @@ const sayfalar = [
   oku("app/(panel)/eczanem/eczane/dagitim/page.tsx"),
   oku("app/(panel)/eczanem/eczane/musterilerim/page.tsx"),
   oku("app/(panel)/eczanem/eczane/_components/EczanemSiparisKuyrugu.tsx"),
-  oku("app/(panel)/eczanem/eczane/_components/EczanemDokum.tsx"),
-  oku("app/(panel)/eczanem/utt/_components/UttEczanemDokum.tsx"),
 ];
 
 test("mutlu: operasyon sayfaları ortak, pasiflenebilir ve durum koruyan yenileme kullanır", () => {
@@ -26,8 +24,7 @@ test("mutlu: operasyon sayfaları ortak, pasiflenebilir ve durum koruyan yenilem
   assert.match(oku("app/(panel)/eclub/listem/_hooks/useEclubListem.ts"), /if \(ilkYukleme\) setLoading\(true\);\s*else setYenileniyor\(true\)/);
 });
 
-test("red: manuel yenileme tarayıcıyı yeniden yüklemez ve yarışan döküm isteğini iptal eder", () => {
+test("red: manuel yenileme tarayıcıyı yeniden yüklemez", () => {
   const tumKaynak = [ortak, ...sayfalar].join("\n");
   assert.doesNotMatch(tumKaynak, /window\.location\.reload|location\.reload|router\.refresh/);
-  assert.match(oku("app/(panel)/eczanem/utt/_components/UttEczanemDokum.tsx"), /istekRef\.current\?\.abort\(\)/);
 });

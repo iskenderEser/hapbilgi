@@ -8,7 +8,7 @@
 //  - Bakiye(müşteri, eczane, ürün) = Σ kalan_puan WHERE created_at ≥ now−180g
 //    (İP-§7.4 kayan pencere; ayar: eczanem_puan_omru_gun).
 //  - İndirim = bakiye_puan × (tarife.tl / tarife.puan). ADET İNDİRİMİ ÇARPMAZ
-//    (İP-§8.2): adet yalnız kutu sayısıdır (mutabakat), indirim hakkı kadardır.
+//    (İP-§8.2): adet yalnız kutu sayısıdır, indirim hakkı kadardır.
 //  - Tarife onay anına kadar müşteri aleyhine değişmez (K-E3): sipariş anında
 //    tarife_snapshot alınır; onay bu snapshot'ı kullanır.
 

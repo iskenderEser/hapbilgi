@@ -199,14 +199,6 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 10. ECZANEM RAPORLARI (SAYFA BAŞLIĞI STANDARDI) ─────────────────────
-  "raporlar-eczanem": {
-    anahtar: "raporlar-eczanem",
-    baslik: "Eczanem Raporları",
-    ozet: "Tüketicilerin tamamladığı yayınlar karşılığında eczanelerde kullandığı indirimleri; ürün, takım, bölge ve eczane bazında kutu satışı ve TL karşılığıyla analiz etmenizi sağlar.",
-    maddeler: [],
-  },
-
   // ─── 11. ÜRETİM RAPORLARI (SAYFA BAŞLIĞI STANDARDI) ───────────────────────
   "raporlar-uretim": {
     anahtar: "raporlar-uretim",
@@ -321,14 +313,6 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 18. ECZANEM MUTABAKAT DÖKÜMÜ (UTT) ───────────────────────────────────
-  "eczanem-utt-mutabakat": {
-    anahtar: "eczanem-utt-mutabakat",
-    baslik: "Mutabakat Dökümü",
-    ozet: "Eczanelerinizde tüketicilere uygulanan ürün indirimlerinin ve onaylanan satış mutabakatlarının dökümünü takip etmenizi sağlar.",
-    maddeler: [],
-  },
-
   // ─── 19. ÖNERİ TAKİBİ (BM / BÖLGE MÜDÜRÜ) ─────────────────────────────────
   "oneriler-bm": {
     anahtar: "oneriler-bm",
@@ -430,14 +414,6 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     anahtar: "eczanem-eczane-siparisler",
     baslik: "Sipariş Onayı",
     ozet: "Danışanlarınızın video izleyerek kazandığı ürün indirimlerini eczanenizde kullandığı anda gelen satış ve indirim onay kuyruğunu yönetmenizi sağlar.",
-    maddeler: [],
-  },
-
-  // ─── 32. ECZANEM İŞLEM DÖKÜMÜ (ECZANE) ────────────────────────────────────
-  "eczanem-eczane-dokum": {
-    anahtar: "eczanem-eczane-dokum",
-    baslik: "İşlem Dökümü",
-    ozet: "Yaptığınız indirimli satışların mutabakatlarını, ürün ve dönem bazında döküm olarak incelemenizi sağlar.",
     maddeler: [],
   },
 

@@ -5,9 +5,7 @@ import { readFileSync } from "node:fs";
 const musteriRoute = readFileSync("app/(panel)/eczanem/eczane/api/musteriler/route.ts", "utf8");
 const gonderimRoute = readFileSync("app/(panel)/eczanem/eczane/api/gonderim/route.ts", "utf8");
 const siparisRoute = readFileSync("app/(panel)/eczanem/eczane/api/siparisler/route.ts", "utf8");
-const dokumRoute = readFileSync("app/(panel)/eczanem/eczane/api/dokum/route.ts", "utf8");
 const gonderim = readFileSync("lib/eczanem/gonderim.ts", "utf8");
-const dokum = readFileSync("lib/eczanem/dokum.ts", "utf8");
 
 test("eczacı müşteri ve gönderim listeleri yalnız çözümlenen eczane bağlamını kullanır", () => {
   assert.match(musteriRoute, /\.eq\("eczane_id", ctx\.eczaneId\)/);
@@ -17,10 +15,8 @@ test("eczacı müşteri ve gönderim listeleri yalnız çözümlenen eczane bağ
   assert.match(gonderim, /p_eczane_id: eczaneId/);
 });
 
-test("eczacı sipariş ve döküm listeleri başka eczane kimliğini kabul etmez", () => {
+test("eczacı sipariş listesi başka eczane kimliğini kabul etmez", () => {
   const eczaneSiparisFiltreleri = siparisRoute.match(/\.eq\("eczane_id", eden\.eczaneId!\)/g) ?? [];
   assert.ok(eczaneSiparisFiltreleri.length >= 3);
   assert.match(siparisRoute, /if \(siparis\.eczane_id !== eden\.eczaneId\) return rolHatasi/);
-  assert.match(dokumRoute, /eczaneDokumu\(adminSupabase, eden\.eczaneId!, baslangic, bitis, eden\.firmaIdler\)/);
-  assert.match(dokum, /p_eczane_id: eczaneId/);
 });

@@ -217,7 +217,7 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
 * **Üye Yüzeyi ve Kimlik:** `app/login/`, `app/eczanem/`, `app/eczanem/api/giris/sifre/route.ts`, `lib/eczanem/oturum.ts`, `lib/eczanem/telefon.ts`, `lib/eczanem/aktifUyelik.ts`, `lib/eczanem/erisim.ts`.
 * **Dağıtım ve Öğrenme:** `app/(panel)/eczanem/yayinlar/`, `app/(panel)/eczanem/eczane/`, `app/eczanem/api/izleme/`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `lib/eczanem/gonderim.ts`, `components/ogrenme-araci/`.
-* **Puan, Tarife ve İşlem:** `app/eczanem/api/puanlar/`, `app/eczanem/api/siparis/`, `lib/eczanem/kasa.ts`, `lib/eczanem/tarife.ts`, `lib/eczanem/dokum.ts`.
+* **Puan, Tarife ve İşlem:** `app/eczanem/api/puanlar/`, `app/eczanem/api/siparis/`, `lib/eczanem/kasa.ts`, `lib/eczanem/tarife.ts`.
 * **Geçiş ve Silme:** `app/eczanem/api/eclub-gecisi/route.ts`, `app/eczanem/api/hesabimi-sil/route.ts`, `lib/eczanem/silme.ts`, `eczanem_eclub_gecis_karar_ver`, `eczanem_musteri_kendini_tam_sil`.
 * **Güvenlik Kapıları:** Üye kimliği, eczane üyeliği, firma modül bayrağı, UTT liste bağı, yayın kapsamı, araç kimliği, aktif üye eşiği, tarife ve sipariş sahipliği sunucuda yeniden doğrulanır. Dağıtım, tamamlama, cevap, üyelik ve sipariş kararları korumalı RPC'lerden geçer.
 
@@ -329,7 +329,7 @@ Kulüp motorları ve ortak platform katmanları, ortak mimari ilkeler içinde ke
 ### 6. 16 Eylül 2026 Temizlik Kaydı
 
 * Gerçek kullanım, iç çağrı, dış cron/webhook girişi ve Git geçmişi birlikte incelendi; 7 kullanılmayan API rotası ile bunlara bağlı `lib/cclub/uygunVideoListesi.ts` kaldırıldı.
-* Kullanılmayan `SenaryoDuzeltmeEditoru.tsx`, `EczanemDokumBolumu.tsx`, `lib/ogrenmeAraci/oynatici.ts`, `lib/utils/senaryo/duzeltmeModeli.ts` ve ilgili eski test kaldırıldı.
+* Kullanılmayan `SenaryoDuzeltmeEditoru.tsx`, `lib/ogrenmeAraci/oynatici.ts`, `lib/utils/senaryo/duzeltmeModeli.ts` ve ilgili eski test kaldırıldı.
 * İşlevsiz `vercel.json`, iki kullanılmayan operasyon/denetim betiği ve yalnız sabit kişi/UUID hedefleyen iki tek kullanımlık SQL teşhisi kaldırıldı.
 * Tamamlanmış eski HapBi ve öğrenme aracı geliştirme dönemlerini tekrar eden 6 tarihsel plan belgesi kaldırıldı. Güncel sistem kaydı BLUEBOOK, açık işler REDBOOK, davranış kanıtı kaynak kod ve otomatik testlerdir.
 * SQL denetiminde kalan 181 dosyanın aktif şema sözleşmesi, tekrar çalıştırılabilir değişiklik, test/mutabakat aracı veya gerekli tarihsel geçiş kaydı olduğu doğrulandı.
@@ -986,16 +986,9 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `EczanemDokum.tsx` | UI / React | Eczanem döküm, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `EczanemEczaneArayuz.tsx` | UI / React | Eczanem eczane Arayuz, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `EczanemSiparisKuyrugu.tsx` | UI / React | Eczanem sipariş Kuyrugu, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `EczanemVideoGonderimSatiri.tsx` | UI / React | Eczanem video gönderim Satiri, Eczanem listesindeki bir eczanem video gönderim kaydını durumu ve izinli eylemleriyle gösterir. |
-
-### 📁 app/(panel)/eczanem/eczane/api/dokum/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | API / Route Handler | `/eczanem/eczane/api/dokum` uç noktasında GET isteklerini işler; Eczanem için eczane döküm sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ### 📁 app/(panel)/eczanem/eczane/api/gonderim/
 
@@ -1033,12 +1026,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `page.tsx` | UI / React | `/eczanem/eczane/dagitim` rotasında Eczanem kapsamındaki dağıtım arayüzünü sunan Next.js sayfa bileşenidir. |
 
-### 📁 app/(panel)/eczanem/eczane/dokum/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | `/eczanem/eczane/dokum` rotasında Eczanem kapsamındaki döküm arayüzünü sunan Next.js sayfa bileşenidir. |
-
 ### 📁 app/(panel)/eczanem/eczane/musterilerim/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
@@ -1063,18 +1050,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `EczanemYayinGonderimKarti.tsx` | UI / React | Eczanem yayın kartında eczane bazlı gönderim durumunu ve önizleme ile seçim eylemlerini gösterir. |
-
-### 📁 app/(panel)/eczanem/utt/mutabakat/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | `/eczanem/utt/mutabakat` rotasında Eczanem kapsamındaki mutabakat arayüzünü sunan Next.js sayfa bileşenidir. |
-
-### 📁 app/(panel)/eczanem/utt/_components/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `UttEczanemDokum.tsx` | UI / React | UTT Eczanem döküm, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
 ### 📁 app/(panel)/hapbilgi-nedir/
 
@@ -1204,12 +1179,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `route.ts` | API / Route Handler | `/raporlar/api/bm` uç noktasında GET isteklerini işler; raporlama için raporlar bm sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
-### 📁 app/(panel)/raporlar/api/eczanem/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | API / Route Handler | `/raporlar/api/eczanem` uç noktasında GET isteklerini işler; Eczanem için raporlar Eczanem sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
-
 ### 📁 app/(panel)/raporlar/api/tclub-uretici/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
@@ -1258,12 +1227,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `bm-report.module.css` | Stil / CSS | raporlama görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
 | `page.tsx` | UI / React | Bölge Müdürünün bölgesine bağlı UTT'lerin eğitim ve öneri tamamlama performansını analiz ettiği bölge raporu. |
-
-### 📁 app/(panel)/raporlar/eczanem/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | `/raporlar/eczanem` rotasında Eczanem kapsamındaki Eczanem arayüzünü sunan Next.js sayfa bileşenidir. |
 
 ### 📁 app/(panel)/raporlar/tclub-uretici/
 
@@ -2108,12 +2071,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `route.ts` | API / Route Handler | `/eczanem/yayinlar/api` uç noktasında GET, POST isteklerini işler; Eczanem Yayınları sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
-### 📁 app/eczanem/utt/api/dokum/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | API / Route Handler | `/eczanem/utt/api/dokum` uç noktasında GET isteklerini işler; Eczanem için UTT döküm sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
-
 ## 6. APP ORTAK ÖĞRENME TAKİP ROTALARI
 
 ### 📁 app/izle/api/
@@ -2258,7 +2215,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `aktifUyelik.ts` | TypeScript / Lib | Eczanem kapsamında `aktifEczaneUyeliginiDogrula`, `aktifGonderimUyeliginiDogrula` işlev ve sabitlerini ve `AktifUyelikSonucu` veri sözleşmelerini sağlar; aktif Uyelik iş kurallarını tek modülde toplar. |
-| `dokum.ts` | TypeScript / Lib | Eczanem kapsamında `UrunToplam`, `EczaneDokum`, `EczaneUrunSatir` veri sözleşmelerini sağlar; döküm iş kurallarını tek modülde toplar. |
 | `eclubUyesiKontrol.ts` | TypeScript / Lib | Eczanem kapsamında `ECLUB_UYESI_MUSTERI_OLAMAZ_MESAJI`, `ECZANEM_MUSTERISI_ECLUB_UYESI_OLAMAZ_MESAJI`, `eclubTelefonVaryantlari`, `eclubUyesiTelefonMu` işlev ve sabitlerini sağlar; E-Club Uyesi Kontrol iş kurallarını tek modülde toplar. |
 | `eczaci.ts` | TypeScript / Lib | Eczanem kapsamında `eczaciAktifEczanesi` işlev ve sabitlerini sağlar; eczaci iş kurallarını tek modülde toplar. |
 | `erisim.ts` | TypeScript / Lib | Eczanem kapsamında `ECZANEM_KAPALI_MESAJI`, `PASIFE_PUAN_KULLANIM_GUN`, `eczaneEczanemFirmaIdleri`, `uttEczanemErisimi` işlev ve sabitlerini ve `EczanemErisimSonucu` veri sözleşmelerini sağlar; erişim iş kurallarını tek modülde toplar. |
@@ -3033,13 +2989,12 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `eczanemEclubUyesiEngeli.smoke.test.ts` | Test / TypeScript | “mutlu: global E-Club kontrolü kanonik ve mevcut telefon biçimlerini kapsar” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eczanemEczaciVideoDagitimi.smoke.test.ts` | Test / TypeScript | “mutlu: eczacı dağıtımı UTT ile aynı satır içi yönetim ve önizleme akışını kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eczanemEczaneIslemKapsami.smoke.test.ts` | Test / TypeScript | “eczacı müşteri ve gönderim listeleri yalnız çözümlenen eczane bağlamını kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
-| `eczanemEczaneYonetim.smoke.test.ts` | Test / TypeScript | “mutlu: personel izi, ayrılmış sipariş kuyruğu ve DB toplamları ortak arayüzle kurulur” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemEczaneYonetim.smoke.test.ts` | Test / TypeScript | “mutlu: personel izi ve ayrılmış sipariş kuyruğu ortak arayüzle kurulur” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eczanemIzlemeCevapGuvenligi.smoke.test.ts` | Test / TypeScript | “mutlu: izleme ve cevap akışı sabit soru kümesiyle atomik RPC'leri kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eczanemMusteriAuthKapisi.smoke.test.ts` | Test / TypeScript | “müşteri provizyonu geçerli Auth hesabı olmadan aktif müşteri oluşturmaz” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eczanemMusteriTamSilme.smoke.test.ts` | Test / TypeScript | “mutlu: müşteri modal ve şifre teyidiyle bütün hesap zincirini siler” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eczanemMusteriYuzeyi.smoke.test.ts` | Test / TypeScript | “mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve ayrı Puanlarım sayfasını sunar” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eczanemOgrenmeAraciYayinKimligi.smoke.test.ts` | Test / TypeScript | “Eczanem iki dağıtım katmanında ortak araç kimliğini taşır ve doğrular” davranışını otomatik olarak doğrulayan smoke testidir. |
-| `eczanemSiparisMutabakat.smoke.test.ts` | Test / TypeScript | “mutlu: yetkili personel kararı aynı firma kapsamındaki UTT mutabakatına girer” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eczanemUttYonetim.smoke.test.ts` | Test / TypeScript | “mutlu: UTT yüzeyi panel kabuğunda, shadcn deseninde ve atomik gönderimle çalışır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eczanemUyelikDurumu.smoke.test.ts` | Test / TypeScript | “mutlu: müşteri durumu eczaneye özel üyelik bağında okunur ve yazılır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eczanemUyelikListedenSilme.smoke.test.ts` | Test / TypeScript | “mutlu: eczacı liste silmesini tek atomik RPC ile yapar” davranışını otomatik olarak doğrulayan smoke testidir. |

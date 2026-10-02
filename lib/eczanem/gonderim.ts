@@ -116,7 +116,6 @@ async function yayinAdMap(
 }
 
 // ── Ortak yardımcı: eczane_id'lerden ad haritası (gln → master) ─────────────
-// dokum.ts (U9) da kullanır — export bilinçli.
 export async function eczaneAdMap(
   adminSupabase: SupabaseClient,
   eczaneIdler: string[]

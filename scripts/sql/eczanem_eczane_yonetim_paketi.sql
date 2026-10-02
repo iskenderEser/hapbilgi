@@ -3,8 +3,7 @@
 -- 1) Aynı eczanedeki eczacı/ikinci eczacı/teknisyen işlemlerini kişi bazında izler.
 -- 2) Müşteri bağlama ve üyelik durumunu atomik RPC'lere taşır.
 -- 3) Sipariş onay/red kararını mevcut FIFO onay RPC'sini bozmadan kişiyle kaydeder.
--- 4) Eczane işlem dökümünü PostgreSQL tarafında ürün bazında toplar.
--- 5) Eczane -> müşteri video dağıtımını yarışa dayanıklı ve tekrar çalıştırılabilir yapar.
+-- 4) Eczane -> müşteri video dağıtımını yarışa dayanıklı ve tekrar çalıştırılabilir yapar.
 --
 -- Bu dosyayı yalnız İskender, Supabase SQL Editor'da çalıştırır.
 
@@ -339,37 +338,6 @@ BEGIN
 END;
 $fonksiyon$;
 
--- Dönüş imzası satis_tl ile genişledi; CREATE OR REPLACE imzayı değiştiremediği için önce düşürülür.
-DROP FUNCTION IF EXISTS public.eczanem_eczane_dokumu(uuid, timestamptz, timestamptz, uuid[]);
-CREATE OR REPLACE FUNCTION public.eczanem_eczane_dokumu(
-  p_eczane_id uuid,
-  p_baslangic timestamptz,
-  p_bitis timestamptz,
-  p_firma_idler uuid[] DEFAULT NULL
-)
-RETURNS TABLE(urun_id uuid, urun_adi text, kutu bigint, indirim_tl numeric, satis_tl numeric)
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $fonksiyon$
-  SELECT
-    s.urun_id,
-    COALESCE(u.urun_adi, '-')::text,
-    SUM(s.adet)::bigint,
-    ROUND(SUM(s.indirim_tl)::numeric, 2),
-    ROUND(SUM(COALESCE((s.tarife_snapshot->>'satis_fiyati')::numeric, 0) * s.adet), 2)
-  FROM public.eczanem_siparisler s
-  JOIN public.urunler u ON u.urun_id = s.urun_id
-  WHERE s.eczane_id = p_eczane_id
-    AND s.durum = 'onaylandi'
-    AND s.onay_tarihi >= p_baslangic
-    AND s.onay_tarihi <= p_bitis
-    AND (p_firma_idler IS NULL OR u.firma_id = ANY(p_firma_idler))
-  GROUP BY s.urun_id, u.urun_adi
-  ORDER BY SUM(s.indirim_tl) DESC, u.urun_adi ASC;
-$fonksiyon$;
-
 CREATE OR REPLACE FUNCTION public.eczanem_musterilere_video_gonder(
   p_eczane_id uuid,
   p_gonderen_kisi_id uuid,
@@ -459,7 +427,6 @@ REVOKE ALL ON FUNCTION public.eczanem_musteri_bagla_atomik(uuid, uuid, uuid) FRO
 REVOKE ALL ON FUNCTION public.eczanem_musteri_durum_degistir(uuid, uuid, uuid, boolean) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.eczanem_yeni_musteri_provizyonu_izli(text, text, uuid, uuid, uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.eczanem_siparis_personel_islemi(uuid, uuid, uuid, text) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.eczanem_eczane_dokumu(uuid, timestamptz, timestamptz, uuid[]) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.eczanem_musterilere_video_gonder(uuid, uuid, uuid, uuid[]) FROM PUBLIC, anon, authenticated;
 -- Çekirdek FIFO RPC yalnız yukarıdaki kişi/eczane doğrulamalı sarmalayıcıdan
 -- çağrılır. Doğrudan istemci çağrısı personel izini ve eczane yetkisini atlayamaz.
@@ -470,7 +437,6 @@ GRANT EXECUTE ON FUNCTION public.eczanem_musteri_bagla_atomik(uuid, uuid, uuid) 
 GRANT EXECUTE ON FUNCTION public.eczanem_musteri_durum_degistir(uuid, uuid, uuid, boolean) TO service_role;
 GRANT EXECUTE ON FUNCTION public.eczanem_yeni_musteri_provizyonu_izli(text, text, uuid, uuid, uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.eczanem_siparis_personel_islemi(uuid, uuid, uuid, text) TO service_role;
-GRANT EXECUTE ON FUNCTION public.eczanem_eczane_dokumu(uuid, timestamptz, timestamptz, uuid[]) TO service_role;
 GRANT EXECUTE ON FUNCTION public.eczanem_musterilere_video_gonder(uuid, uuid, uuid, uuid[]) TO service_role;
 GRANT EXECUTE ON FUNCTION public.eczanem_siparis_onayla(uuid) TO service_role;
 
@@ -489,7 +455,6 @@ BEGIN
          AND column_name = 'karar_tarihi'
      )
      OR to_regprocedure('public.eczanem_siparis_personel_islemi(uuid,uuid,uuid,text)') IS NULL
-     OR to_regprocedure('public.eczanem_eczane_dokumu(uuid,timestamptz,timestamptz,uuid[])') IS NULL
      OR to_regprocedure('public.eczanem_musterilere_video_gonder(uuid,uuid,uuid,uuid[])') IS NULL
   THEN
     RAISE EXCEPTION 'Eczanem eczane yönetim paketi eksik kuruldu; işlem geri alındı.';
