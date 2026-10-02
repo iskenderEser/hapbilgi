@@ -5,6 +5,7 @@ import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { getYayindakiVideolar } from "@/lib/video/yayindakiVideolar";
 import { gecerliTurBaslangiclari } from "@/lib/tclub/tur/kayit";
 import { sunucuHatasi, validasyonHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
+import { uttEczanemErisimi } from "@/lib/eczanem/erisim";
 
 type Inceleme = {
   inceleme_id: string;
@@ -32,19 +33,27 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { yayin_id, islem } = body;
+    const eczanem = body.kanal === "eczanem";
     if (typeof yayin_id !== "string" || !/^[0-9a-f-]{36}$/i.test(yayin_id) || !["baslat", "ilerle", "tamamla"].includes(islem))
       return validasyonHatasi("Yayın veya inceleme işlemi geçersiz.", ["yayin_id", "islem"]);
 
-    if (islem === "baslat") {
+    if (islem === "baslat" && !eczanem) {
       const katalog = await getYayindakiVideolar(user.id, rol, db);
       const izinli = katalog.some((y) => y.yayin_id === yayin_id && y.arac_id && y.hedef_roller.some((r) => r === "eczaci" || r === "eczane_teknisyeni"));
       if (!izinli) return NextResponse.json({ hata: "Yayın E-Club inceleme kapsamında değil." }, { status: 403 });
     }
     const { data: detay, error: detayHatasi } = await db.from("v_yayin_detay")
-      .select("arac_id, arac_turu, arac_sure_saniye, video_suresi_saniye, arac_sayfa_sayisi, yayin_tarihi, durum")
+      .select("arac_id, arac_turu, arac_sure_saniye, video_suresi_saniye, arac_sayfa_sayisi, yayin_tarihi, durum, firma_id, takim_id, hedef_roller")
       .eq("yayin_id", yayin_id).single();
     if (detayHatasi || !detay || detay.durum !== "yayinda")
       return NextResponse.json({ hata: "Yayın bilgisi doğrulanamadı." }, { status: 422 });
+    if (eczanem) {
+      const erisim = await uttEczanemErisimi(db, user.id);
+      if (!erisim.ok || !erisim.acik || !erisim.firmaIdler.includes(detay.firma_id)
+        || (detay.takim_id && detay.takim_id !== erisim.takimId)
+        || !detay.hedef_roller?.includes("eczanem"))
+        return NextResponse.json({ hata: "Yayın Eczanem inceleme kapsamında değil." }, { status: 403 });
+    }
 
     const turler = await gecerliTurBaslangiclari(db, [yayin_id], true);
     const turBaslangici = turler[yayin_id]?.baslangic_tarihi ?? detay.yayin_tarihi;

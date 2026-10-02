@@ -14,9 +14,10 @@ interface Props {
   urunAdi: string;
   onTamamlandi: () => void | Promise<void>;
   hata: (mesaj: string, adim?: string, detay?: string) => void;
+  kanal?: "eclub" | "eczanem";
 }
 
-export default function UttGonderimIncelemesi({ yayinId, aracId, aracTuru, videoUrl, urunAdi, onTamamlandi, hata }: Props) {
+export default function UttGonderimIncelemesi({ yayinId, aracId, aracTuru, videoUrl, urunAdi, onTamamlandi, hata, kanal = "eclub" }: Props) {
   const [incelemeId, setIncelemeId] = useState<string | null>(null);
   const [podcastUrl, setPodcastUrl] = useState<string | null>(null);
   const [islem, setIslem] = useState(false);
@@ -29,12 +30,12 @@ export default function UttGonderimIncelemesi({ yayinId, aracId, aracTuru, video
     const response = await fetch("/eclub/oneriler/api/inceleme", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ yayin_id: yayinId, islem: islemTuru, inceleme_id: incelemeId, sekme_aktif: document.visibilityState === "visible", ...ek }),
+      body: JSON.stringify({ yayin_id: yayinId, islem: islemTuru, inceleme_id: incelemeId, sekme_aktif: document.visibilityState === "visible", kanal, ...ek }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.hata ?? "Yayın incelemesi kaydedilemedi.");
     return data;
-  }, [yayinId, incelemeId]);
+  }, [yayinId, incelemeId, kanal]);
 
   useEffect(() => {
     let aktif = true;

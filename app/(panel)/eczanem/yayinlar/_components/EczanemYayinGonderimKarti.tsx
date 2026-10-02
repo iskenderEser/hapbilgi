@@ -52,6 +52,7 @@ export function EczanemYayinGonderimKarti({
           talepNoGoster={false}
           baslikSagAksiyon={yayin.talep_no != null ? <span className="shrink-0 font-mono text-xs text-[#bc2d0d] sm:text-[10px]">{talepIdGoster(yayin.firma_adi, yayin.talep_no)}</span> : undefined}
           donguGoster={false}
+          thumbnailAltBant={!yayin.gonderim_incelemesi_tamamlandi ? <span className="block w-full rounded-md bg-[#fff3f1] px-1.5 py-0.5 text-center text-[9px] font-medium leading-3 text-[#ad625c]">Göndermek için yayını tamamlayın</span> : undefined}
           tarihSatiriSagAksiyon={(secilebilir || gonderilecekGoster) ? (
             <label onClick={(event) => event.stopPropagation()} className={`inline-flex shrink-0 items-center gap-1 text-xs font-normal sm:text-[10px] ${secili ? "text-[#1d65aa]" : "text-[#526780]"} ${secilebilir ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}>
               <input type="checkbox" checked={secili} disabled={!secilebilir} onChange={onSecim} aria-label={`${yayin.urun_adi} yayınını gönderim için seç`} className="size-3 accent-[#237ac8]" />

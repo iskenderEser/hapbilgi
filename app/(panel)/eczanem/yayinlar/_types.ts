@@ -15,6 +15,7 @@ export interface UttEczanemYayin {
   yayin_tarihi: string | null;
   arac_id: string;
   arac_turu: OgrenmeAraciTuru;
+  gonderim_incelemesi_tamamlandi: boolean;
 }
 
 export interface UttEczanemEczane {

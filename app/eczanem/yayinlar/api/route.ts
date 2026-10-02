@@ -8,7 +8,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi, hataYaniti } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
-import { uttEczanemVerisi, uttEczanemAylikIstatistikleri, eczaneyeGonder } from "@/lib/eczanem/gonderim";
+import { uttEczanemVerisi, uttEczanemAylikIstatistikleri, uttGonderimIncelemesiTamamlandi, eczaneyeGonder } from "@/lib/eczanem/gonderim";
 import { ECZANEM_KAPALI_MESAJI, uttEczanemErisimi } from "@/lib/eczanem/erisim";
 import { uttEczaneFirmaBaglari } from "@/lib/eclub/uttEczane";
 
@@ -62,6 +62,9 @@ export async function POST(request: NextRequest) {
     if (typeof yayinId !== "string" || typeof eczaneId !== "string" || !yayinId || !eczaneId) {
       return validasyonHatasi("yayin_id ve eczane_id zorunludur.", ["yayin_id", "eczane_id"]);
     }
+
+    if (!await uttGonderimIncelemesiTamamlandi(adminSupabase, user.id, yayinId))
+      return isKuraluHatasi("Göndermek için yayını önce tamamlayın.");
 
     const sonuc = await eczaneyeGonder(adminSupabase, user.id, yayinId, eczaneId);
     if (!sonuc.ok) return isKuraluHatasi(sonuc.hata ?? "Gönderim başarısız.");

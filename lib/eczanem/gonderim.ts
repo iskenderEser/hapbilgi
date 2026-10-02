@@ -20,6 +20,7 @@ import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { uttEczaneFirmaBaglari } from "@/lib/eclub/uttEczane";
 import { yayinThumbnailCevabi } from "@/lib/ogrenmeAraci/yayinThumbnail";
 import { ayBaslangici, ayKaydir } from "@/lib/zaman/kontrol";
+import { gecerliTurBaslangiclari } from "@/lib/tclub/tur/kayit";
 
 // Ayar okunamazsa güvenli geri düşüş (davet.ts DAVET_GECERLILIK deseni).
 // Canlı seed değeri 10; bu sabit yalnız okuma hatasında devreye girer.
@@ -189,6 +190,7 @@ export interface UttEczanemYayin {
   yayin_tarihi: string | null;
   arac_id: string;
   arac_turu: OgrenmeAraciTuru;
+  gonderim_incelemesi_tamamlandi: boolean;
 }
 export interface UttEczanemEczane {
   eczane_id: string;
@@ -208,6 +210,24 @@ export interface UttEczanemAylikIstatistikler {
   uttGonderimSayisi: number;
   eczaneGonderimSayisi: number;
   sonrakiAyBaslangici: string;
+}
+
+export async function uttGonderimIncelemesiTamamlandi(
+  adminSupabase: SupabaseClient,
+  uttAuthId: string,
+  yayinId: string,
+): Promise<boolean> {
+  const { data: yayin, error: yayinError } = await adminSupabase.from("v_yayin_detay")
+    .select("arac_id, yayin_tarihi").eq("yayin_id", yayinId).maybeSingle();
+  if (yayinError || !yayin?.arac_id || !yayin.yayin_tarihi) return false;
+  const turler = await gecerliTurBaslangiclari(adminSupabase, [yayinId], true);
+  const baslangic = turler[yayinId]?.baslangic_tarihi ?? yayin.yayin_tarihi;
+  const { data: inceleme, error: incelemeError } = await adminSupabase.from("eclub_utt_yayin_incelemeleri")
+    .select("inceleme_id")
+    .eq("utt_id", uttAuthId).eq("yayin_id", yayinId).eq("arac_id", yayin.arac_id)
+    .gte("tamamlandi_at", baslangic).limit(1).maybeSingle();
+  if (incelemeError) throw new Error("Gönderim öncesi inceleme doğrulanamadı.");
+  return !!inceleme;
 }
 
 /** Sayaç penceresi Türkiye saatinde ayın 1'i 00:00 (dahil) – sonraki ayın 1'i 00:00 (hariç). */
@@ -288,8 +308,28 @@ export async function uttEczanemVerisi(
       yayin_tarihi: y.yayin_tarihi ?? null,
       arac_id: y.arac_id!,
       arac_turu: y.arac_turu!,
+      gonderim_incelemesi_tamamlandi: false,
     };
   });
+
+  if (yayinlar.length > 0) {
+    const yayinIdler = yayinlar.map((yayin) => yayin.yayin_id);
+    const turler = await gecerliTurBaslangiclari(adminSupabase, yayinIdler, true);
+    const { data: incelemeler, error: incelemeError } = await adminSupabase
+      .from("eclub_utt_yayin_incelemeleri")
+      .select("yayin_id, arac_id, tamamlandi_at")
+      .eq("utt_id", uttAuthId)
+      .in("yayin_id", yayinIdler)
+      .not("tamamlandi_at", "is", null);
+    if (incelemeError) throw new Error("Eczanem gönderim öncesi incelemeleri okunamadı.");
+    const tamamlanan = new Set((incelemeler ?? []).filter((inceleme) => {
+      const yayin = yayinlar.find((kayit) => kayit.yayin_id === inceleme.yayin_id);
+      const baslangic = turler[inceleme.yayin_id]?.baslangic_tarihi ?? yayin?.yayin_tarihi;
+      return yayin && baslangic && inceleme.arac_id === yayin.arac_id
+        && new Date(inceleme.tamamlandi_at).getTime() >= new Date(baslangic).getTime();
+    }).map((inceleme) => inceleme.yayin_id));
+    for (const yayin of yayinlar) yayin.gonderim_incelemesi_tamamlandi = tamamlanan.has(yayin.yayin_id);
+  }
 
   // 2. UTT'nin bağladığı aktif eczaneler
   const uttBaglari = await uttEczaneFirmaBaglari(adminSupabase, uttAuthId);

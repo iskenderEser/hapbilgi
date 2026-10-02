@@ -9,6 +9,7 @@ import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import OgrenmeAraciOnizleme from "@/components/ogrenme-araci/OgrenmeAraciOnizleme";
+import UttGonderimIncelemesi from "@/components/eclub/UttGonderimIncelemesi";
 import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
@@ -137,7 +138,7 @@ export default function EczanemYayinlariPage() {
     ? durumFiltreliYayinlar
     : durumFiltreliYayinlar.filter((yayin) => yayin.arac_turu === aktifYayinTuru))]
     .sort((a, b) => new Date(b.yayin_tarihi ?? 0).getTime() - new Date(a.yayin_tarihi ?? 0).getTime());
-  const gonderilebilirIdler = new Set(gonderilebilirYayinlar.map((yayin) => yayin.yayin_id));
+  const gonderilebilirIdler = new Set(gonderilebilirYayinlar.filter((yayin) => yayin.gonderim_incelemesi_tamamlandi).map((yayin) => yayin.yayin_id));
   const seciliYayinlar = gorunenYayinlar.filter((yayin) => seciliYayinIdleri.includes(yayin.yayin_id) && gonderilebilirIdler.has(yayin.yayin_id));
   const ortakUygunEczaneler = seciliYayinlar.length === 0 ? [] : eczaneler.filter((eczane) =>
     seciliYayinlar.every((yayin) => !gonderimMap.has(`${yayin.yayin_id}::${eczane.eczane_id}`)));
@@ -168,7 +169,7 @@ export default function EczanemYayinlariPage() {
       gonderimler={yayinGonderimleri}
       secili={seciliYayinIdleri.includes(yayin.yayin_id)}
       secilebilir={gonderilebilirIdler.has(yayin.yayin_id) && !topluGonderiliyor}
-      gonderilecekGoster={gonderimFiltresi === "gonderilebilir" || (gonderimFiltresi === "tumu" && gonderilebilirIdler.has(yayin.yayin_id))}
+      gonderilecekGoster={gonderimFiltresi === "gonderilebilir" || (gonderimFiltresi === "tumu" && gonderilebilirYayinlar.some((kayit) => kayit.yayin_id === yayin.yayin_id))}
       gonderimDetayiGoster={gonderimFiltresi === "gonderilen"}
       gonderimDetayiAcik={acikDetayYayinId === yayin.yayin_id}
       onSecim={() => yayinSecimiDegistir(yayin.yayin_id)}
@@ -237,7 +238,7 @@ export default function EczanemYayinlariPage() {
             <CardTitle className="text-base text-gray-900">{aktifVideo.urun_adi}</CardTitle>
             <CardDescription className="mt-1">{aktifVideo.teknik_adi || "Eczanem öğrenme içeriği"}</CardDescription>
           </div>
-          <OgrenmeAraciOnizleme
+          {aktifVideo.gonderim_incelemesi_tamamlandi ? <OgrenmeAraciOnizleme
             key={aktifVideo.yayin_id}
             yayinId={aktifVideo.yayin_id}
             aracId={aktifVideo.arac_id}
@@ -246,7 +247,17 @@ export default function EczanemYayinlariPage() {
             urunAdi={aktifVideo.urun_adi}
             hata={hata}
             onBitti={() => setAktifVideo(null)}
-          />
+          /> : <UttGonderimIncelemesi
+            key={aktifVideo.yayin_id}
+            yayinId={aktifVideo.yayin_id}
+            aracId={aktifVideo.arac_id}
+            aracTuru={aktifVideo.arac_turu}
+            videoUrl={aktifVideo.video_url}
+            urunAdi={aktifVideo.urun_adi}
+            kanal="eczanem"
+            hata={hata}
+            onTamamlandi={async () => { setAktifVideo(null); await veriCek(); }}
+          />}
         </Card>
         <HataMesajiContainer mesajlar={mesajlar} />
       </div>
