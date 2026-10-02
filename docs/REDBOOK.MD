@@ -13,6 +13,10 @@
 
 *Kayıt tarihi: 9 Eylül 2026 — İskender talebiyle hatırlatma olarak kasaya alındı; uygulama yapılmadı.*
 
+- **API–RPC iş kuralı uyumu incelemesi.** HapBilgi API'lerini tarayarak hangilerinin RPC kullandığını, hangilerinde RPC gerekip gerekmediğini ve RPC kullanan işlemlerde API ile RPC'nin yetki, kapsam ve iş kurallarının paralel olup olmadığını kontrol et. Bulguları ve olası güvenlik boşluklarını raporla; bu hatırlatma uygulama değişikliği yetkisi vermez.
+
+*Kayıt tarihi: 2 Ekim 2026 — İskender talebiyle hatırlatma olarak eklendi; inceleme yapılmadı.*
+
 ### Teknik Borç
 
 - **[TB-01] İzleme tablolarında soru-hakkı alan asimetrisi (tek-kaynak yönetimi).**
