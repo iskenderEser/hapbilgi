@@ -16,6 +16,10 @@ E-Club'da puan karşılığı çekler eczacıya e-posta ile gönderilir; ayrıca
 
 Her yeni çalışma oturumunda `docs/ECLUB_CANLI_DOGRULAMA_TAKIBI.md` dosyasındaki **Hediye Takibi uçtan uca testi** bölümünü kontrol et. Durum `TAMAMLANDI` değilse kullanıcıya oturumda bir kez “Hediye Takibi uçtan uca testleri hâlâ bekliyor.” hatırlatmasını yap. Kullanıcı canlı testi şimdilik park etti: açık talimat almadan iki aylık dönem sınırını değiştirme, test için sahte sipariş oluşturma veya fiziksel testi başlatma. Hedef test tamamlanmadan durumu `TAMAMLANDI` yapma. Bu hatırlatma kullanıcının asıl talebini engellemez.
 
+## Zorunlu hatırlatma: Hediye çeki BM → TM onay zinciri
+
+Hediye çeki akışında BM → TM geçişinin veritabanı tanımı repoda vardır: `eclub_store_bm_onayla` talebi TM onayına taşır, `eclub_store_tm_onayla` TM son onayını kaydeder. Eksik olan BM/TM arayüz ve API bağlantılarıdır; ayrıca bu SQL tanımlarının canlı veritabanına uygulanmış olduğu doğrulanmamıştır. Hediye çeki onay mekanizmasıyla ilgili her geliştirme ve incelemede bu eksikleri zorunlu olarak hatırlat; arayüz/API bağlantıları tamamlanmadan ve canlı DB doğrulanmadan zinciri uçtan uca tamamlanmış kabul etme.
+
 ## Üçüncü zorunlu kural: Video Mimarisi ve Öğrenme Araçları Ayrımı
 
 **Videoları ASLA diğer öğrenme araçları (PDF, Görsel, Podcast) ile aynı ortak yükleme/doğrulama paketine veya ara durum tablolarına sokma.**
@@ -31,4 +35,3 @@ Her yeni çalışma oturumunda `docs/ECLUB_CANLI_DOGRULAMA_TAKIBI.md` dosyasınd
 1. **DB Saklama Kuralı (GUID)**: `ogrenme_araclari.dosya_yolu`, `videolar.video_url` veya `talepler.hazir_video_url` alanlarında tam URL (`https://player.mediadelivery.net/...`) DEĞİL, yalnızca 36 karakterlik ham Bunny GUID (`fcae5775-cf9b-4283-9ec8-deb1f3b62b7c`) saklanır.
 2. **Kütüphane ve Ortam Bağımsızlığı**: Bunny kütüphane numarası (`LIBRARY_ID: 707975`) ortam değişkenindedir. Veritabanına tam link yazmak veriyi ortama bağımlı kılar ve ileride token authentication/domain restriction geçişlerini imkansızlaştırır.
 3. **Dinamik Çözümleme**: İstemci veya oynatıcı iframe'ine verilecek tam oynatma adresi (`https://player.mediadelivery.net/embed/{LIBRARY_ID}/{GUID}`) her zaman API / sunucu katmanında çalışma anında dinamik olarak çözümlenerek üretilir; DB'ye statik olarak yazılmaz.
-
