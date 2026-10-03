@@ -1,39 +1,23 @@
--- Yeni Eczanem Mutabakat sayfasının yalnız UTT okuma ve karar RPC'leri.
--- eczanem_utt_mutabakat_kayit.sql başarıyla kurulduktan sonra yalnız İskender
--- tarafından Supabase SQL Editor'de çalıştırılır.
+-- Düz mutabakat tablosunun ana liste RPC'sine mevcut, atomik İndirim ID'yi ekler.
+-- Test ve gerçek kayıtlar için aynı eczanem_indirim_onaylari.gorunen_indirim_id
+-- alanı kullanılır; yeni ID üretmez ve mevcut veriyi değiştirmez.
+-- Supabase SQL Editor'de bu dosya bir bütün olarak kullanıcı tarafından çalıştırılır.
 
 BEGIN;
 
-CREATE OR REPLACE FUNCTION public.eczanem_utt_mutabakat_yetkili_mi(
-  p_utt_id uuid,
-  p_firma_id uuid,
-  p_takim_id uuid,
-  p_eczane_id uuid
-)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $fonksiyon$
-  SELECT EXISTS (
+DO $kontrol$
+BEGIN
+  IF NOT EXISTS (
     SELECT 1
-    FROM public.kullanicilar k
-    JOIN public.firmalar f ON f.firma_id = k.firma_id
-    JOIN public.eclub_utt_eczane ue ON ue.utt_id = k.kullanici_id AND ue.aktif_mi = true
-    JOIN public.eclub_eczane_firma ef
-      ON ef.id = ue.eczane_firma_id AND ef.aktif_mi = true
-    WHERE k.kullanici_id = p_utt_id
-      AND LOWER(k.rol) = 'utt'
-      AND k.aktif_mi = true
-      AND f.aktif = true
-      AND f.eczanem_aktif = true
-      AND k.firma_id = p_firma_id
-      AND ef.firma_id = p_firma_id
-      AND ef.eczane_id = p_eczane_id
-      AND (p_takim_id IS NULL OR p_takim_id = k.takim_id)
-  );
-$fonksiyon$;
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'eczanem_indirim_onaylari'
+      AND column_name = 'gorunen_indirim_id'
+  ) THEN
+    RAISE EXCEPTION 'gorunen_indirim_id alanı bulunamadı; önce eczanem_indirim_gorunen_id_atomik.sql çalıştırılmalıdır.';
+  END IF;
+END;
+$kontrol$;
 
 CREATE OR REPLACE FUNCTION public.eczanem_utt_mutabakat_listele(
   p_utt_id uuid,
@@ -154,95 +138,21 @@ BEGIN
 END;
 $fonksiyon$;
 
-CREATE OR REPLACE FUNCTION public.eczanem_utt_mutabakat_karar_ver(
-  p_utt_id uuid,
-  p_mutabakat_id uuid,
-  p_karar text
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-VOLATILE
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $fonksiyon$
-DECLARE
-  v_onay public.eczanem_indirim_onaylari%ROWTYPE;
-  v_mutabakat public.eczanem_utt_mutabakatlar%ROWTYPE;
-  v_simdi timestamptz := clock_timestamp();
-  v_simdi_tr timestamp;
-  v_ay_basi_tr timestamp;
-BEGIN
-  IF p_karar IS NULL OR p_karar NOT IN ('onay', 'beklet', 'ret') OR p_mutabakat_id IS NULL THEN
-    RAISE EXCEPTION 'Geçersiz UTT mutabakat kararı.' USING ERRCODE = '22023';
-  END IF;
-
-  SELECT * INTO v_mutabakat FROM public.eczanem_utt_mutabakatlar
-  WHERE mutabakat_id = p_mutabakat_id FOR UPDATE;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Mutabakat bulunamadı.' USING ERRCODE = 'P0002';
-  END IF;
-  SELECT * INTO v_onay FROM public.eczanem_indirim_onaylari
-  WHERE eczanem_indirim_onay_id = p_mutabakat_id;
-  IF NOT public.eczanem_utt_mutabakat_yetkili_mi(
-    p_utt_id, v_onay.firma_id, v_onay.takim_id, v_onay.eczane_id
-  ) THEN
-    RAISE EXCEPTION 'Bu mutabakat işleminde UTT yetkiniz yok.' USING ERRCODE = '42501';
-  END IF;
-
-  v_simdi_tr := timezone('Europe/Istanbul', v_simdi);
-  v_ay_basi_tr := date_trunc('month', v_simdi_tr);
-  IF v_simdi_tr >= v_ay_basi_tr + INTERVAL '7 days'
-     OR timezone('Europe/Istanbul', v_onay.onay_tarihi) < v_ay_basi_tr - INTERVAL '1 month'
-     OR timezone('Europe/Istanbul', v_onay.onay_tarihi) >= v_ay_basi_tr THEN
-    RAISE EXCEPTION 'Karar yalnız önceki ay işlemleri için ayın ilk yedi günü verilebilir.' USING ERRCODE = 'P0001';
-  END IF;
-
-  IF v_mutabakat.utt_karar IS NOT DISTINCT FROM p_karar THEN
-    RETURN jsonb_build_object('mutabakat_id', p_mutabakat_id, 'karar', p_karar,
-      'karar_tarihi', v_mutabakat.utt_karar_tarihi, 'surum', v_mutabakat.karar_surumu);
-  END IF;
-
-  UPDATE public.eczanem_utt_mutabakatlar
-  SET utt_karar = p_karar,
-      utt_karar_veren_id = p_utt_id,
-      utt_karar_tarihi = v_simdi,
-      karar_surumu = karar_surumu + 1
-  WHERE mutabakat_id = p_mutabakat_id
-  RETURNING * INTO v_mutabakat;
-
-  INSERT INTO public.eczanem_utt_mutabakat_kararlari
-    (mutabakat_id, surum, karar, karar_veren_id, karar_tarihi)
-  VALUES (p_mutabakat_id, v_mutabakat.karar_surumu, p_karar, p_utt_id, v_simdi);
-
-  RETURN jsonb_build_object('mutabakat_id', p_mutabakat_id, 'karar', p_karar,
-    'karar_tarihi', v_simdi, 'surum', v_mutabakat.karar_surumu);
-END;
-$fonksiyon$;
-
-REVOKE ALL ON FUNCTION public.eczanem_utt_mutabakat_yetkili_mi(uuid, uuid, uuid, uuid)
-FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.eczanem_utt_mutabakat_listele(uuid, date, text, integer, integer)
 FROM PUBLIC, anon, authenticated, service_role;
-REVOKE ALL ON FUNCTION public.eczanem_utt_mutabakat_karar_ver(uuid, uuid, text)
-FROM PUBLIC, anon, authenticated, service_role;
-
 GRANT EXECUTE ON FUNCTION public.eczanem_utt_mutabakat_listele(uuid, date, text, integer, integer)
 TO service_role;
-GRANT EXECUTE ON FUNCTION public.eczanem_utt_mutabakat_karar_ver(uuid, uuid, text)
-TO service_role;
-
-DO $kontrol$
-BEGIN
-  IF to_regprocedure('public.eczanem_utt_mutabakat_listele(uuid,date,text,integer,integer)') IS NULL
-     OR to_regprocedure('public.eczanem_utt_mutabakat_karar_ver(uuid,uuid,text)') IS NULL THEN
-    RAISE EXCEPTION 'Eczanem UTT mutabakat RPC paketi eksik kuruldu.';
-  END IF;
-END;
-$kontrol$;
 
 NOTIFY pgrst, 'reload schema';
 COMMIT;
 
 SELECT
-  to_regprocedure('public.eczanem_utt_mutabakat_listele(uuid,date,text,integer,integer)') IS NOT NULL AS liste_rpc_hazir,
-  to_regprocedure('public.eczanem_utt_mutabakat_karar_ver(uuid,uuid,text)') IS NOT NULL AS karar_rpc_hazir;
+  EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'eczanem_indirim_onaylari'
+      AND column_name = 'gorunen_indirim_id'
+  ) AS indirim_id_alani_hazir,
+  pg_get_functiondef('public.eczanem_utt_mutabakat_listele(uuid,date,text,integer,integer)'::regprocedure)
+    LIKE '%' || quote_literal('gorunen_indirim_id') || '%' AS liste_rpc_indirim_id_hazir;

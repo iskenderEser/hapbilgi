@@ -5,6 +5,57 @@ import { talepIdGoster } from "@/lib/utils/talepId";
 
 export type UttMutabakatKarari = "onay" | "beklet" | "ret";
 export type UttMutabakatFiltresi = "tumu" | "bekliyor" | UttMutabakatKarari;
+export type MutabakatOnayDurumu = "utt_hazirliginda" | "bm_onayinda" | "tm_onayinda" | "onaylandi" | "tm_reddetti";
+export type MutabakatOnayRolu = "utt" | "bm" | "tm";
+
+const MUTABAKAT_ONAY_DURUMU_ETIKETLERI: Record<MutabakatOnayRolu, Record<MutabakatOnayDurumu, string>> = {
+  utt: {
+    utt_hazirliginda: "UTT Kararı Bekleniyor",
+    bm_onayinda: "BM Onayı Bekleniyor",
+    tm_onayinda: "TM Onayı Bekleniyor",
+    onaylandi: "Onaylandı",
+    tm_reddetti: "TM Reddetti",
+  },
+  bm: {
+    utt_hazirliginda: "UTT İşlemi Bekleniyor",
+    bm_onayinda: "BM Onayınız Bekleniyor",
+    tm_onayinda: "TM Onayı Bekleniyor",
+    onaylandi: "TM Onayladı",
+    tm_reddetti: "TM Reddetti",
+  },
+  tm: {
+    utt_hazirliginda: "UTT İşlemi Bekleniyor",
+    bm_onayinda: "BM Onayı Bekleniyor",
+    tm_onayinda: "TM Onayınız Bekleniyor",
+    onaylandi: "Onaylandı",
+    tm_reddetti: "Reddedildi",
+  },
+};
+
+export function mutabakatOnayDurumuEtiketi(
+  rol: MutabakatOnayRolu,
+  durum: MutabakatOnayDurumu,
+  uttKarariVarMi = false,
+): string {
+  if (rol === "utt" && durum === "utt_hazirliginda" && uttKarariVarMi) {
+    return "BM Onayına Gönderilmeyi Bekliyor";
+  }
+  return MUTABAKAT_ONAY_DURUMU_ETIKETLERI[rol][durum];
+}
+
+export function uttMutabakatSonucEtiketi(
+  karar: UttMutabakatKarari | null,
+  onayDurumu: MutabakatOnayDurumu,
+): string {
+  if (karar === "beklet") return "Beklemede";
+  if (karar === "ret") return "Reddedildi";
+  if (karar === "onay" && onayDurumu === "bm_onayinda") return "BM Onayında";
+  if (karar === "onay" && onayDurumu === "tm_onayinda") return "TM Onayında";
+  if (karar === "onay" && onayDurumu === "onaylandi") return "Onaylandı";
+  if (karar === "onay" && onayDurumu === "tm_reddetti") return "TM Reddetti";
+  if (karar === "onay") return "BM Onayına Gönder";
+  return "Karar Bekliyor";
+}
 
 export interface UttMutabakatKaynagi {
   yayin_id: string;
@@ -39,8 +90,36 @@ export interface UttMutabakatKaydi {
   utt_karar: UttMutabakatKarari | null;
   utt_karar_tarihi: string | null;
   karar_surumu: number;
+  onay_durumu: MutabakatOnayDurumu;
+  bm_id: string | null;
+  utt_gonderim_tarihi: string | null;
+  bm_karar: UttMutabakatKarari | null;
+  bm_karar_tarihi: string | null;
+  bm_karar_surumu: number;
+  bm_onay_tarihi: string | null;
+  tm_id: string | null;
+  tm_karar: UttMutabakatKarari | null;
+  tm_karar_tarihi: string | null;
+  tm_karar_surumu: number;
+  tm_onay_tarihi: string | null;
   kaynaklar: UttMutabakatKaynagi[];
   karar_gecmisi: UttMutabakatKararGecmisi[];
+}
+
+export function mutabakatRolSonucEtiketi(kayit: UttMutabakatKaydi, rol: MutabakatOnayRolu): string {
+  if (rol === "utt") return uttMutabakatSonucEtiketi(kayit.utt_karar, kayit.onay_durumu);
+  if (rol === "bm") {
+    if (kayit.onay_durumu === "tm_onayinda") return "TM Onayında";
+    if (kayit.onay_durumu === "tm_reddetti") return "TM Reddetti";
+    if (kayit.onay_durumu === "onaylandi") return "TM Onayladı";
+    if (kayit.bm_karar === "beklet") return "Beklemede";
+    if (kayit.bm_karar === "ret") return "Reddedildi";
+    return "Karar Bekliyor";
+  }
+  if (kayit.onay_durumu === "onaylandi") return "Onaylandı";
+  if (kayit.onay_durumu === "tm_reddetti") return "Reddedildi";
+  if (kayit.tm_karar === "beklet") return "Beklemede";
+  return "Karar Bekliyor";
 }
 
 export interface UttMutabakatListesi {
@@ -97,6 +176,34 @@ export interface UttMutabakatKararSonucu {
   surum: number;
 }
 
+export interface BmMutabakatKararSonucu {
+  mutabakat_id: string;
+  karar: UttMutabakatKarari;
+  karar_tarihi: string;
+  surum: number;
+}
+
+export interface TmMutabakatKararSonucu extends BmMutabakatKararSonucu {
+  onay_durumu: MutabakatOnayDurumu;
+  tm_onay_tarihi: string | null;
+}
+
+export interface MutabakatOnaySonucu {
+  mutabakat_id: string;
+  onay_durumu: MutabakatOnayDurumu;
+  bm_id?: string | null;
+  tm_id?: string | null;
+  utt_gonderim_tarihi?: string | null;
+  bm_karar?: UttMutabakatKarari | null;
+  bm_karar_tarihi?: string | null;
+  bm_karar_surumu?: number;
+  bm_onay_tarihi?: string | null;
+  tm_karar?: UttMutabakatKarari | null;
+  tm_karar_tarihi?: string | null;
+  tm_karar_surumu?: number;
+  tm_onay_tarihi?: string | null;
+}
+
 export const UTT_MUTABAKAT_SAYFA_BOYUTU = 20;
 export const UTT_MUTABAKAT_DURUMLARI: readonly UttMutabakatFiltresi[] = [
   "tumu", "bekliyor", "onay", "beklet", "ret",
@@ -140,10 +247,35 @@ export async function uttMutabakatlariListele(
     throw new Error("UTT mutabakat liste yanıtı geçersiz.");
   }
   const liste = data as UttMutabakatListesi;
-  return { ...liste, kayitlar: await uttMutabakatKayitlariniZenginlestir(db, liste.kayitlar) };
+  return { ...liste, kayitlar: await uttMutabakatKayitlariniZenginlestir(db, uttAuthId, liste.kayitlar) };
 }
 
-async function uttMutabakatKayitlariniZenginlestir(db: SupabaseClient, kayitlar: UttMutabakatKaydi[]): Promise<UttMutabakatKaydi[]> {
+export async function tumUttMutabakatKayitlariniListele(
+  db: SupabaseClient,
+  uttAuthId: string,
+  donem: string,
+  durum: UttMutabakatFiltresi,
+): Promise<UttMutabakatKaydi[]> {
+  const ilkSayfa = await uttMutabakatlariListele(db, uttAuthId, donem, durum, 0);
+  const sayfaSayisi = Math.ceil(ilkSayfa.toplam / UTT_MUTABAKAT_SAYFA_BOYUTU);
+  const kalanSayfalar = sayfaSayisi > 1
+    ? await Promise.all(Array.from({ length: sayfaSayisi - 1 }, (_, indeks) =>
+        uttMutabakatlariListele(db, uttAuthId, donem, durum, indeks + 1)))
+    : [];
+  return [ilkSayfa, ...kalanSayfalar].flatMap((liste) => liste.kayitlar);
+}
+
+async function uttMutabakatKayitlariniZenginlestir(db: SupabaseClient, uttId: string, kayitlar: UttMutabakatKaydi[]): Promise<UttMutabakatKaydi[]> {
+  if (kayitlar.length === 0) return [];
+  const mutabakatIdler = kayitlar.map((kayit) => kayit.mutabakat_id);
+  const { data: onayDurumlari, error: onayDurumuHatasi } = await db.rpc("eczanem_mutabakat_onay_durumlari", {
+    p_utt_id: uttId,
+    p_mutabakat_idler: mutabakatIdler,
+  });
+  if (onayDurumuHatasi) throw new Error(`Mutabakat onay durumları alınamadı: ${onayDurumuHatasi.code ?? "DB"}`);
+  const onayHaritasi = new Map(
+    ((onayDurumlari ?? []) as MutabakatOnaySonucu[]).map((durum) => [durum.mutabakat_id, durum]),
+  );
   const urunIdleri = await gorunenUrunIdHaritasi(db, kayitlar.map((kayit) => kayit.urun_id));
   const yayinIdleri = [...new Set(kayitlar.flatMap((kayit) => kayit.kaynaklar.map((kaynak) => kaynak.yayin_id)))];
   const talepIdleri = new Map<string, string>();
@@ -160,6 +292,20 @@ async function uttMutabakatKayitlariniZenginlestir(db: SupabaseClient, kayitlar:
   }
   return kayitlar.map((kayit) => ({
       ...kayit,
+      ...(onayHaritasi.get(kayit.mutabakat_id) ?? {
+        onay_durumu: "utt_hazirliginda" as const,
+        bm_id: null,
+        utt_gonderim_tarihi: null,
+        bm_karar: null,
+        bm_karar_tarihi: null,
+        bm_karar_surumu: 0,
+        bm_onay_tarihi: null,
+        tm_id: null,
+        tm_karar: null,
+        tm_karar_tarihi: null,
+        tm_karar_surumu: 0,
+        tm_onay_tarihi: null,
+      }),
       gorunen_urun_id: urunIdleri.get(kayit.urun_id) ?? null,
       kaynaklar: kayit.kaynaklar.map((kaynak) => ({
         ...kaynak,
@@ -198,7 +344,7 @@ export async function uttMutabakatUrunIslemleriniListele(
     throw new Error("UTT mutabakat işlem yanıtı geçersiz.");
   }
   const liste = data as UttMutabakatUrunIslemleri;
-  return { ...liste, kayitlar: await uttMutabakatKayitlariniZenginlestir(db, liste.kayitlar) };
+  return { ...liste, kayitlar: await uttMutabakatKayitlariniZenginlestir(db, uttAuthId, liste.kayitlar) };
 }
 
 export async function uttMutabakatEczaneleriniListele(
@@ -231,7 +377,7 @@ export async function uttMutabakatEczaneIslemleriniListele(
     throw new Error("UTT mutabakat eczane işlem yanıtı geçersiz.");
   }
   const liste = data as UttMutabakatEczaneIslemleri;
-  return { ...liste, kayitlar: await uttMutabakatKayitlariniZenginlestir(db, liste.kayitlar) };
+  return { ...liste, kayitlar: await uttMutabakatKayitlariniZenginlestir(db, uttAuthId, liste.kayitlar) };
 }
 
 export async function uttMutabakatKarariVer(
@@ -254,3 +400,61 @@ export async function uttMutabakatKarariVer(
   }
   return data as UttMutabakatKararSonucu;
 }
+
+export async function bmMutabakatKarariVer(
+  db: SupabaseClient,
+  bmId: string,
+  mutabakatId: string,
+  karar: UttMutabakatKarari,
+): Promise<BmMutabakatKararSonucu> {
+  const { data, error } = await db.rpc("eczanem_mutabakat_bm_karar_ver", {
+    p_bm_id: bmId,
+    p_mutabakat_id: mutabakatId,
+    p_karar: karar,
+  });
+  if (error) throw new Error(`BM mutabakat kararı kaydedilemedi: ${error.code ?? "DB"}`);
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("BM mutabakat karar yanıtı geçersiz.");
+  }
+  return data as BmMutabakatKararSonucu;
+}
+
+export async function tmMutabakatKarariVer(
+  db: SupabaseClient,
+  tmId: string,
+  mutabakatId: string,
+  karar: UttMutabakatKarari,
+): Promise<TmMutabakatKararSonucu> {
+  const { data, error } = await db.rpc("eczanem_mutabakat_tm_karar_ver", {
+    p_tm_id: tmId,
+    p_mutabakat_id: mutabakatId,
+    p_karar: karar,
+  });
+  if (error) throw new Error(`TM mutabakat kararı kaydedilemedi: ${error.code ?? "DB"}`);
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("TM mutabakat karar yanıtı geçersiz.");
+  }
+  return data as TmMutabakatKararSonucu;
+}
+
+async function mutabakatOnayIslemi(
+  db: SupabaseClient,
+  rpc: "eczanem_mutabakat_bm_onayina_gonder" | "eczanem_mutabakat_tm_onayina_gonder" | "eczanem_mutabakat_tm_onayla",
+  kullaniciAlani: "p_utt_id" | "p_bm_id" | "p_tm_id",
+  kullaniciId: string,
+  mutabakatId: string,
+): Promise<MutabakatOnaySonucu> {
+  const { data, error } = await db.rpc(rpc, { [kullaniciAlani]: kullaniciId, p_mutabakat_id: mutabakatId });
+  if (error) throw new Error(`Mutabakat onay işlemi tamamlanamadı: ${error.code ?? "DB"}`);
+  if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Mutabakat onay yanıtı geçersiz.");
+  return data as MutabakatOnaySonucu;
+}
+
+export const uttMutabakatiBmOnayinaGonder = (db: SupabaseClient, uttId: string, mutabakatId: string) =>
+  mutabakatOnayIslemi(db, "eczanem_mutabakat_bm_onayina_gonder", "p_utt_id", uttId, mutabakatId);
+
+export const bmMutabakatiTmOnayinaGonder = (db: SupabaseClient, bmId: string, mutabakatId: string) =>
+  mutabakatOnayIslemi(db, "eczanem_mutabakat_tm_onayina_gonder", "p_bm_id", bmId, mutabakatId);
+
+export const tmMutabakatiOnayla = (db: SupabaseClient, tmId: string, mutabakatId: string) =>
+  mutabakatOnayIslemi(db, "eczanem_mutabakat_tm_onayla", "p_tm_id", tmId, mutabakatId);

@@ -10,8 +10,10 @@ import { ureticiYetenegi } from "@/lib/uretici/yetenekler";
 
 export interface EclubKapsamUtt {
   utt_id: string;
+  rol: string;
   utt_adi: string;
   takim_adi: string;
+  bm_id: string | null;
   bm_adi: string;
   bolge_adi: string;
 }
@@ -49,8 +51,10 @@ export async function eclubYonetimKapsaminiGetir(
     return {
       uttler: [{
         utt_id: kullanici.kullanici_id,
+        rol,
         utt_adi: tamAd(kullanici),
         takim_adi: "Takımım",
+        bm_id: null,
         bm_adi: "—",
         bolge_adi: "—",
       }],
@@ -123,8 +127,10 @@ export async function eclubYonetimKapsaminiGetir(
     const bm = bmHaritasi.get(bmAnahtari(utt.takim_id, utt.bolge_id)) ?? null;
     return {
       utt_id: utt.kullanici_id,
+      rol: (utt.rol ?? "").toLowerCase(),
       utt_adi: tamAd(utt),
       takim_adi: utt.takim_id ? takimAdlari.get(utt.takim_id) ?? "—" : "Takımsız",
+      bm_id: bm?.kullanici_id ?? null,
       bm_adi: bm ? tamAd(bm) : "BM ataması bulunmuyor",
       bolge_adi: utt.bolge_id ? bolgeAdlari.get(utt.bolge_id) ?? "—" : "Bölgesiz",
     };
