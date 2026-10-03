@@ -9,6 +9,8 @@
 -- Test kayıtları kullanıcının Tümü/Karar bekliyor/Onay/Beklet/Ret filtrelerinde
 -- görünür. Varsayılan seçilen ay için önceki ayın tarihini kullanır.
 -- Aynı dosya ikinci kez çalıştırılmamalıdır; sabit mutabakat UUID'leri korunur.
+-- Teste özel 99 önekli görünür İndirim ID için ardından
+-- eczanem_mutabakat_test_urun_adlarini_duzelt.sql çalıştırılır.
 
 BEGIN;
 
@@ -80,11 +82,11 @@ sirali_eczaneler AS (
 ),
 ornekler(sira, mutabakat_id, urun_adi, arac_turu, teknik_adi, kullanilan_puan, indirim_tl, pm_puani, karar, ayin_gunu) AS (
   VALUES
-    (1, 'a73682fb-521c-4313-bd38-44245b65336b'::uuid, 'TEST Mutabakat Ürünü A', 'video',    'TEST Ürün A anlatımı',         40, 20.00::numeric, 15, NULL::text,  3),
-    (2, '9c894492-0d2d-4c0e-8117-0e16f8fb8255'::uuid, 'TEST Mutabakat Ürünü B', 'podcast',  'TEST Ürün B sesli anlatım',  60, 30.00::numeric, 20, 'onay',      7),
-    (3, 'd622ad69-7b73-43a7-9a07-8eb61a8e5e0f'::uuid, 'TEST Mutabakat Ürünü C', 'gorsel',   'TEST Ürün C broşürü',        100, 50.00::numeric, 30, 'beklet',   11),
-    (4, 'b64148ef-bab4-499f-8aa6-7d6122a61990'::uuid, 'TEST Mutabakat Ürünü D', 'flip_pdf', 'TEST Ürün D literatürü',      80, 40.00::numeric, 25, 'ret',      15),
-    (5, '49be3a03-806e-4f76-af40-d2d22ec79b7c'::uuid, 'TEST Mutabakat Ürünü E', 'video',    'TEST Ürün E anlatımı',        150, 75.00::numeric, 40, NULL::text, 20)
+    (1, 'a73682fb-521c-4313-bd38-44245b65336b'::uuid, 'Test Ürün A', 'video',    'TEST Ürün A anlatımı',         40, 20.00::numeric, 15, NULL::text,  3),
+    (2, '9c894492-0d2d-4c0e-8117-0e16f8fb8255'::uuid, 'Test Ürün B', 'podcast',  'TEST Ürün B sesli anlatım',  60, 30.00::numeric, 20, 'onay',      7),
+    (3, 'd622ad69-7b73-43a7-9a07-8eb61a8e5e0f'::uuid, 'Test Ürün C', 'gorsel',   'TEST Ürün C broşürü',        100, 50.00::numeric, 30, 'beklet',   11),
+    (4, 'b64148ef-bab4-499f-8aa6-7d6122a61990'::uuid, 'Test Ürün D', 'flip_pdf', 'TEST Ürün D literatürü',      80, 40.00::numeric, 25, 'ret',      15),
+    (5, '49be3a03-806e-4f76-af40-d2d22ec79b7c'::uuid, 'Test Ürün E', 'video',    'TEST Ürün E anlatımı',        150, 75.00::numeric, 40, NULL::text, 20)
 )
 SELECT o.*, u.utt_id, u.firma_id, u.takim_id, e.eczane_id,
   COALESCE(e.eczane_adi, 'TEST Eczane ' || e.sira) AS eczane_adi,
