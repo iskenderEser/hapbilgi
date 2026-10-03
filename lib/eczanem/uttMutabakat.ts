@@ -24,6 +24,7 @@ export interface UttMutabakatKararGecmisi {
 
 export interface UttMutabakatKaydi {
   mutabakat_id: string;
+  gorunen_indirim_id?: string | null;
   eczane_id: string;
   eczane_adi: string | null;
   urun_id: string;
@@ -67,6 +68,25 @@ export interface UttMutabakatUrunListesi extends Omit<UttMutabakatListesi, "kayi
 
 export interface UttMutabakatUrunIslemleri {
   toplam: number;
+  kayitlar: UttMutabakatKaydi[];
+}
+
+export interface UttMutabakatEczaneSatiri {
+  eczane_id: string;
+  eczane_adi: string | null;
+  islem_sayisi: number;
+  toplam_puan: number;
+  toplam_indirim_tl: number;
+}
+
+export interface UttMutabakatEczaneListesi extends Omit<UttMutabakatListesi, "kayitlar"> {
+  toplam_eczane: number;
+  eczaneler: UttMutabakatEczaneSatiri[];
+}
+
+export interface UttMutabakatEczaneIslemleri {
+  toplam: number;
+  urun_secenekleri: { urun_id: string; urun_adi: string; gorunen_urun_id: string | null }[];
   kayitlar: UttMutabakatKaydi[];
 }
 
@@ -178,6 +198,39 @@ export async function uttMutabakatUrunIslemleriniListele(
     throw new Error("UTT mutabakat işlem yanıtı geçersiz.");
   }
   const liste = data as UttMutabakatUrunIslemleri;
+  return { ...liste, kayitlar: await uttMutabakatKayitlariniZenginlestir(db, liste.kayitlar) };
+}
+
+export async function uttMutabakatEczaneleriniListele(
+  db: SupabaseClient, uttAuthId: string, donem: string,
+  durum: UttMutabakatFiltresi, sayfa: number,
+): Promise<UttMutabakatEczaneListesi> {
+  const { data, error } = await db.rpc("eczanem_utt_mutabakat_eczaneleri_listele", {
+    p_utt_id: uttAuthId, p_donem: `${donem}-01`, p_durum: durum,
+    p_limit: UTT_MUTABAKAT_SAYFA_BOYUTU,
+    p_offset: sayfa * UTT_MUTABAKAT_SAYFA_BOYUTU,
+  });
+  if (error) throw new Error(`UTT mutabakat eczaneleri alınamadı: ${error.code ?? "DB"}`);
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("UTT mutabakat eczane yanıtı geçersiz.");
+  }
+  return data as UttMutabakatEczaneListesi;
+}
+
+export async function uttMutabakatEczaneIslemleriniListele(
+  db: SupabaseClient, uttAuthId: string, donem: string,
+  durum: UttMutabakatFiltresi, eczaneId: string, urunId: string | null, sayfa: number,
+): Promise<UttMutabakatEczaneIslemleri> {
+  const { data, error } = await db.rpc("eczanem_utt_mutabakat_eczane_islemleri_filtreli_listele", {
+    p_utt_id: uttAuthId, p_donem: `${donem}-01`, p_eczane_id: eczaneId,
+    p_durum: durum, p_urun_id: urunId, p_limit: UTT_MUTABAKAT_SAYFA_BOYUTU,
+    p_offset: sayfa * UTT_MUTABAKAT_SAYFA_BOYUTU,
+  });
+  if (error) throw new Error(`UTT mutabakat eczane işlemleri alınamadı: ${error.code ?? "DB"}`);
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("UTT mutabakat eczane işlem yanıtı geçersiz.");
+  }
+  const liste = data as UttMutabakatEczaneIslemleri;
   return { ...liste, kayitlar: await uttMutabakatKayitlariniZenginlestir(db, liste.kayitlar) };
 }
 

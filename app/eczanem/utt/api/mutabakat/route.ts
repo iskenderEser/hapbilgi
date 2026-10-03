@@ -4,7 +4,7 @@ import { uttEczanemErisimi, ECZANEM_KAPALI_MESAJI } from "@/lib/eczanem/erisim";
 import {
   UTT_MUTABAKAT_DURUMLARI, UTT_MUTABAKAT_KARARLARI,
   uttMutabakatDonemiGecerliMi, uttMutabakatIdGecerliMi,
-  uttMutabakatUrunleriniListele, uttMutabakatUrunIslemleriniListele,
+  uttMutabakatEczaneleriniListele, uttMutabakatEczaneIslemleriniListele,
   uttMutabakatKarariVer, varsayilanUttMutabakatDonemi,
   type UttMutabakatFiltresi, type UttMutabakatKarari,
 } from "@/lib/eczanem/uttMutabakat";
@@ -32,16 +32,18 @@ export async function GET(request: NextRequest) {
     const donem = request.nextUrl.searchParams.get("donem") ?? varsayilanUttMutabakatDonemi();
     const durum = request.nextUrl.searchParams.get("durum") ?? "tumu";
     const sayfaMetni = request.nextUrl.searchParams.get("sayfa") ?? "0";
+    const eczaneId = request.nextUrl.searchParams.get("eczane_id");
     const urunId = request.nextUrl.searchParams.get("urun_id");
     const sayfa = Number(sayfaMetni);
     if (!uttMutabakatDonemiGecerliMi(donem) || !UTT_MUTABAKAT_DURUMLARI.includes(durum as UttMutabakatFiltresi)
       || !/^\d{1,4}$/.test(sayfaMetni) || !Number.isSafeInteger(sayfa) || sayfa > 500
-      || (urunId !== null && !uttMutabakatIdGecerliMi(urunId))) {
-      return validasyonHatasi("Mutabakat filtreleri geçersiz.", ["donem", "durum", "sayfa", "urun_id"]);
+      || (eczaneId !== null && !uttMutabakatIdGecerliMi(eczaneId))
+      || (urunId !== null && (eczaneId === null || !uttMutabakatIdGecerliMi(urunId)))) {
+      return validasyonHatasi("Mutabakat filtreleri geçersiz.", ["donem", "durum", "sayfa", "eczane_id", "urun_id"]);
     }
-    const sonuc = urunId
-      ? await uttMutabakatUrunIslemleriniListele(yetki.db!, yetki.uttId!, donem, durum as UttMutabakatFiltresi, urunId, sayfa)
-      : await uttMutabakatUrunleriniListele(yetki.db!, yetki.uttId!, donem, durum as UttMutabakatFiltresi, sayfa);
+    const sonuc = eczaneId
+      ? await uttMutabakatEczaneIslemleriniListele(yetki.db!, yetki.uttId!, donem, durum as UttMutabakatFiltresi, eczaneId, urunId, sayfa)
+      : await uttMutabakatEczaneleriniListele(yetki.db!, yetki.uttId!, donem, durum as UttMutabakatFiltresi, sayfa);
     return NextResponse.json(sonuc, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return sunucuHatasi(error, "GET /eczanem/utt/api/mutabakat");
