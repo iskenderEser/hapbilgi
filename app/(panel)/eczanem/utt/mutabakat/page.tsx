@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Popover } from "radix-ui";
 import { Banknote, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Coins, FileText, type LucideIcon } from "lucide-react";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
-import { YAYIN_TURU_SUNUMU } from "@/lib/ogrenmeAraci/turSunumu";
+import MutabakatIslemTablosu, { type MutabakatDuzKaydi } from "../../_components/MutabakatIslemTablosu";
+import MutabakatExcelButonu from "../../_components/MutabakatExcelButonu";
 import {
   UTT_MUTABAKAT_SAYFA_BOYUTU, varsayilanUttMutabakatDonemi,
   type UttMutabakatFiltresi, type UttMutabakatKarari, type UttMutabakatKaydi,
@@ -20,19 +21,8 @@ const DURUMLAR: { deger: UttMutabakatFiltresi; etiket: string }[] = [
   { deger: "onay", etiket: "Onay" }, { deger: "beklet", etiket: "Beklet" },
   { deger: "ret", etiket: "Ret" },
 ];
-const KARARLAR: { deger: UttMutabakatKarari; etiket: string }[] = [
-  { deger: "onay", etiket: "Onayla" }, { deger: "beklet", etiket: "Beklet" },
-  { deger: "ret", etiket: "Reddet" },
-];
 const AY_ADLARI = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"] as const;
-const ISLEM_SUTUNLARI = "lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.65fr)_minmax(0,1.1fr)_minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,0.85fr)_minmax(0,1.65fr)_minmax(0,0.8fr)]";
-
-function tarih(deger: string): string {
-  const zaman = new Date(deger);
-  return Number.isNaN(zaman.getTime()) ? "—" : zaman.toLocaleDateString("tr-TR", {
-    day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Istanbul",
-  });
-}
+interface DuzMutabakatListesi { kayitlar: MutabakatDuzKaydi[]; }
 
 function sayi(deger: number): string { return deger.toLocaleString("tr-TR"); }
 function para(deger: number): string { return `${deger.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`; }
@@ -103,73 +93,14 @@ function OzetKarti({ ikon: Icon, etiket, deger, detay, renk, zemin }: {
   </Card>;
 }
 
-function MutabakatIslemSatiri({ kayit, kararAcik, urunSecenekleri, seciliUrunId, onUrunDegistir, onKarar }: {
-  kayit: UttMutabakatKaydi;
-  kararAcik: boolean;
-  urunSecenekleri: UttMutabakatEczaneIslemleri["urun_secenekleri"];
-  seciliUrunId: string | null;
-  onUrunDegistir: (urunId: string | null) => void;
-  onKarar: (kayit: UttMutabakatKaydi, karar: UttMutabakatKarari) => void;
-}) {
-  const [urunMenusuAcik, setUrunMenusuAcik] = useState(false);
-  return <div className="border-t border-[#e8eef5] bg-white px-3 py-3 text-xs text-[#405976] md:px-4">
-    <div className={`grid gap-2 lg:items-center ${ISLEM_SUTUNLARI}`}>
-      <div><span className="lg:hidden text-[#7b8da5]">İndirim Onay Tarihi: </span>{tarih(kayit.onay_tarihi)}</div>
-      <div className="min-w-0"><span className="lg:hidden text-[#7b8da5]">Ürün Adı: </span>
-        <Popover.Root open={urunMenusuAcik} onOpenChange={setUrunMenusuAcik}>
-          <Popover.Trigger asChild>
-            <button type="button" aria-label={`${kayit.urun_adi}: ürün adına göre filtrele`}
-              className="inline-flex max-w-full items-center gap-1 text-left font-bold text-[#203653] hover:text-[#237ac8] focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-[#237ac8]">
-              <span className="min-w-0 break-words">{kayit.urun_adi}</span><ChevronDown className="size-3 shrink-0" aria-hidden="true" />
-            </button>
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Content align="start" sideOffset={5} className="z-50 max-h-64 w-[min(280px,calc(100vw-24px))] overflow-y-auto rounded-xl border border-[#dbe5ef] bg-white p-1 shadow-[0_12px_28px_rgba(31,74,111,.18)]">
-              <button type="button" aria-pressed={seciliUrunId === null}
-                onClick={() => { onUrunDegistir(null); setUrunMenusuAcik(false); }}
-                className={`block w-full rounded-lg px-2 py-2 text-left text-xs font-semibold hover:bg-[#f2f7fc] ${seciliUrunId === null ? "bg-[#eaf4fd] text-[#237ac8]" : "text-[#405976]"}`}>Tümü</button>
-              {urunSecenekleri.map((urun) => <button key={urun.urun_id} type="button" aria-pressed={seciliUrunId === urun.urun_id}
-                onClick={() => { onUrunDegistir(urun.urun_id); setUrunMenusuAcik(false); }}
-                className={`block w-full rounded-lg px-2 py-2 text-left text-xs font-semibold hover:bg-[#f2f7fc] ${seciliUrunId === urun.urun_id ? "bg-[#eaf4fd] text-[#237ac8]" : "text-[#405976]"}`}>
-                {urun.urun_adi}{urun.gorunen_urun_id ? ` · ${urun.gorunen_urun_id}` : ""}
-              </button>)}
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
-        {kayit.gorunen_urun_id && <span className="block text-[10px] text-[#7b8da5]">{kayit.gorunen_urun_id}</span>}
-      </div>
-      <div className="min-w-0"><span className="lg:hidden text-[#7b8da5]">Öğrenme Aracı: </span>{kayit.kaynaklar.map((kaynak) => <div key={`${kaynak.yayin_id}-${kaynak.arac_id}`} className="leading-snug">
-        <span>{YAYIN_TURU_SUNUMU[kaynak.arac_turu]?.etiket ?? "Öğrenme içeriği"}</span>
-        {kaynak.gorunen_talep_id && <span className="block text-[10px] text-[#7b8da5]">Talep ID: {kaynak.gorunen_talep_id}</span>}
-      </div>)}</div>
-      <div className="lg:text-center"><span className="lg:hidden text-[#7b8da5]">PSF: </span>{kayit.satis_fiyati === null ? "—" : para(kayit.satis_fiyati)}</div>
-      <div className="lg:text-center"><span className="lg:hidden text-[#7b8da5]">İndirim Limiti: </span><strong>{sayi(kayit.tarife_puan)} puan = {para(kayit.tarife_tl)}</strong></div>
-      <div className="min-w-0 lg:text-center"><span className="lg:hidden text-[#7b8da5]">İndirim ID: </span><span className="break-all text-[10px]" title={kayit.gorunen_indirim_id ?? undefined}>{kayit.gorunen_indirim_id || "—"}</span></div>
-      <div className="lg:text-center"><span className="lg:hidden text-[#7b8da5]">Onaylanan İndirim Puanı: </span>{sayi(kayit.kullanilan_puan)} puan</div>
-      <div className="lg:text-center"><span className="lg:hidden text-[#7b8da5]">İndirim Tutarı: </span>{para(kayit.indirim_tl)}</div>
-      <div className="flex flex-wrap gap-1 lg:justify-center" aria-label="UTT kararı">
-        {KARARLAR.map(({ deger, etiket }) => {
-          const secili = kayit.utt_karar === deger;
-          const islemKapali = !kararAcik;
-          return <Button key={deger} type="button" size="sm" variant="outline"
-            aria-pressed={secili}
-            className={`h-7 px-2 text-[11px] font-bold ${secili
-              ? "border-[#237ac8] bg-[#237ac8] text-white shadow-sm hover:bg-[#1d69ad] hover:text-white"
-              : "border-[#a9c9e5] bg-white text-[#237ac8] hover:border-[#237ac8] hover:bg-[#edf6fd] hover:text-[#1d69ad]"} ${islemKapali ? "disabled:opacity-50" : secili ? "disabled:opacity-100" : ""}`}
-            disabled={islemKapali || secili}
-            onClick={() => onKarar(kayit, deger)}>{etiket}</Button>;
-        })}
-      </div>
-      <div className="lg:text-center"><span className="lg:hidden text-[#7b8da5]">Sonuç: </span><span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-extrabold ${kayit.utt_karar ? "bg-[#edf6fd] text-[#237ac8]" : "bg-[#f3f6f9] text-[#718198]"}`}>{kayit.utt_karar ? DURUMLAR.find((d) => d.deger === kayit.utt_karar)?.etiket : "Karar bekliyor"}</span></div>
-    </div>
-  </div>;
-}
-
 export default function EczanemUttMutabakatPage() {
   const [donem, setDonem] = useState(varsayilanUttMutabakatDonemi);
   const [durum, setDurum] = useState<UttMutabakatFiltresi>("tumu");
   const [sayfa, setSayfa] = useState(0);
   const [veri, setVeri] = useState<UttMutabakatEczaneListesi | null>(null);
+  const [duzVeri, setDuzVeri] = useState<DuzMutabakatListesi | null>(null);
+  const [gorunum, setGorunum] = useState<"akordiyon" | "duz">("akordiyon");
+  const [duzUrunId, setDuzUrunId] = useState<string | null>(null);
   const [acikEczaneId, setAcikEczaneId] = useState<string | null>(null);
   const [seciliUrunId, setSeciliUrunId] = useState<string | null>(null);
   const [islemSayfa, setIslemSayfa] = useState(0);
@@ -181,16 +112,35 @@ export default function EczanemUttMutabakatPage() {
   const [bildirim, setBildirim] = useState<string | null>(null);
   const [yenileme, setYenileme] = useState(0);
   const kararKaydiSuruyor = useRef(false);
+  const [onayIslemdeId, setOnayIslemdeId] = useState<string | null>(null);
+  const duzUrunSecenekleri = useMemo(() => {
+    const urunler = new Map<string, { urun_id: string; urun_adi: string; gorunen_urun_id: string | null }>();
+    for (const kayit of duzVeri?.kayitlar ?? []) urunler.set(kayit.urun_id, { urun_id: kayit.urun_id, urun_adi: kayit.urun_adi, gorunen_urun_id: kayit.gorunen_urun_id ?? null });
+    return [...urunler.values()].sort((a, b) => a.urun_adi.localeCompare(b.urun_adi, "tr"));
+  }, [duzVeri?.kayitlar]);
+  const duzKayitlar = useMemo(() => (duzVeri?.kayitlar ?? []).filter((kayit) => !duzUrunId || kayit.urun_id === duzUrunId), [duzUrunId, duzVeri?.kayitlar]);
+
+  useEffect(() => {
+    try {
+      const kayitliGorunum = window.localStorage.getItem("eczanem-utt-mutabakat-gorunumu");
+      if (kayitliGorunum === "duz" || kayitliGorunum === "akordiyon") setGorunum(kayitliGorunum);
+    } catch { /* Tarayıcı depolaması kapalıysa varsayılan görünüm kullanılır. */ }
+  }, []);
 
   const listeyiYukle = useCallback(async (signal?: AbortSignal) => {
     setYukleniyor(true);
     setHata(null);
     try {
       const params = new URLSearchParams({ donem, durum, sayfa: String(sayfa) });
-      const yanit = await fetch(`/eczanem/utt/api/mutabakat?${params}`, { cache: "no-store", signal });
-      const govde = await yanit.json();
+      const duzParams = new URLSearchParams({ donem, durum, gorunum: "duz" });
+      const [yanit, duzYanit] = await Promise.all([
+        fetch(`/eczanem/utt/api/mutabakat?${params}`, { cache: "no-store", signal }),
+        fetch(`/eczanem/utt/api/mutabakat?${duzParams}`, { cache: "no-store", signal }),
+      ]);
+      const [govde, duzGovde] = await Promise.all([yanit.json(), duzYanit.json()]);
       if (!yanit.ok) throw new Error(govde.hata ?? govde.error ?? "Mutabakat kayıtları yüklenemedi.");
-      if (!signal?.aborted) setVeri(govde as UttMutabakatEczaneListesi);
+      if (!duzYanit.ok) throw new Error(duzGovde.hata ?? duzGovde.error ?? "Düz mutabakat tablosu yüklenemedi.");
+      if (!signal?.aborted) { setVeri(govde as UttMutabakatEczaneListesi); setDuzVeri(duzGovde as DuzMutabakatListesi); }
     } catch (neden) {
       if (!signal?.aborted) setHata(neden instanceof Error ? neden.message : "Mutabakat kayıtları yüklenemedi.");
     } finally {
@@ -242,11 +192,23 @@ export default function EczanemUttMutabakatPage() {
     setSeciliUrunId(null);
     setIslemSayfa(0);
     setEczaneIslemleri(null);
+    setDuzUrunId(null);
   };
+
+  const gorunumDegistir = (sonraki: "akordiyon" | "duz") => {
+    setGorunum(sonraki);
+    try { window.localStorage.setItem("eczanem-utt-mutabakat-gorunumu", sonraki); } catch { /* Tercih yalnız bu oturumda korunur. */ }
+  };
+
+  const duzKaydiGuncelle = (mutabakatId: string, guncelleme: Partial<UttMutabakatKaydi>) => setDuzVeri((mevcut) => mevcut ? {
+    ...mevcut,
+    kayitlar: mevcut.kayitlar.map((satir) => satir.mutabakat_id === mutabakatId ? { ...satir, ...guncelleme } : satir),
+  } : mevcut);
 
   const kararVer = async (kayit: UttMutabakatKaydi, karar: UttMutabakatKarari) => {
     if (kararKaydiSuruyor.current) return;
     kararKaydiSuruyor.current = true;
+    setOnayIslemdeId(kayit.mutabakat_id);
     setBildirim(null);
     try {
       const yanit = await fetch("/eczanem/utt/api/mutabakat", {
@@ -256,13 +218,17 @@ export default function EczanemUttMutabakatPage() {
       const govde = await yanit.json();
       if (!yanit.ok) throw new Error(govde.hata ?? govde.error ?? "Karar kaydedilemedi.");
       const sonuc = govde as UttMutabakatKararSonucu;
+      const guncelleme = {
+        utt_karar: sonuc.karar,
+        utt_karar_tarihi: sonuc.karar_tarihi,
+        karar_surumu: sonuc.surum,
+      };
+      duzKaydiGuncelle(sonuc.mutabakat_id, guncelleme);
       setEczaneIslemleri((mevcut) => mevcut ? {
         ...mevcut,
         kayitlar: mevcut.kayitlar.map((satir) => satir.mutabakat_id === sonuc.mutabakat_id ? {
           ...satir,
-          utt_karar: sonuc.karar,
-          utt_karar_tarihi: sonuc.karar_tarihi,
-          karar_surumu: sonuc.surum,
+          ...guncelleme,
           karar_gecmisi: [...satir.karar_gecmisi, {
             surum: sonuc.surum, karar: sonuc.karar, karar_tarihi: sonuc.karar_tarihi,
           }],
@@ -272,6 +238,32 @@ export default function EczanemUttMutabakatPage() {
       setBildirim(neden instanceof Error ? neden.message : "Karar kaydedilemedi.");
     } finally {
       kararKaydiSuruyor.current = false;
+      setOnayIslemdeId(null);
+    }
+  };
+
+  const bmOnayinaGonder = async (kayit: UttMutabakatKaydi) => {
+    if (onayIslemdeId) return;
+    setOnayIslemdeId(kayit.mutabakat_id);
+    setBildirim(null);
+    try {
+      const yanit = await fetch("/eczanem/utt/api/mutabakat", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mutabakat_id: kayit.mutabakat_id, islem: "bm_onayina_gonder" }),
+      });
+      const sonuc = await yanit.json();
+      if (!yanit.ok) throw new Error(sonuc.hata ?? sonuc.error ?? "Mutabakat BM onayına gönderilemedi.");
+      duzKaydiGuncelle(sonuc.mutabakat_id, sonuc);
+      setEczaneIslemleri((mevcut) => mevcut ? {
+        ...mevcut,
+        kayitlar: mevcut.kayitlar.map((satir) => satir.mutabakat_id === sonuc.mutabakat_id
+          ? { ...satir, onay_durumu: sonuc.onay_durumu, bm_id: sonuc.bm_id, utt_gonderim_tarihi: sonuc.utt_gonderim_tarihi }
+          : satir),
+      } : mevcut);
+    } catch (neden) {
+      setBildirim(neden instanceof Error ? neden.message : "Mutabakat BM onayına gönderilemedi.");
+    } finally {
+      setOnayIslemdeId(null);
     }
   };
 
@@ -288,7 +280,7 @@ export default function EczanemUttMutabakatPage() {
         <YenileButonu yenileniyor={yukleniyor} onYenile={() => setYenileme((deger) => deger + 1)} />
       </header>
 
-      {veri && <section aria-label="Mutabakat dönem özeti" className="grid grid-cols-2 gap-2 md:grid-cols-3">
+      {veri && <section aria-label="Mutabakat dönem özeti" className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
         <OzetKarti ikon={FileText} etiket="Toplam İndirim Adedi" deger={sayi(veri.toplam)} detay="Mutabakat ayı içinde eczanelerinizin onayladığı indirim adedi" renk="#237ac8" zemin="#edf6fd" />
         <OzetKarti ikon={Coins} etiket="Onaylanan İndirim Puanı" deger={sayi(veri.toplam_puan)} detay="Eczanelerinizin mutabakat ayı içinde indirim için onayladıkları puan toplamı" renk="#16865f" zemin="#eaf7f2" />
         <OzetKarti ikon={Banknote} etiket="Uygulanan Toplam İndirim" deger={para(veri.toplam_indirim_tl)} detay="Eczanelerinizin onayladığı indirim puanları karşılığında uyguladığı toplam indirim tutarı" renk="#b7791f" zemin="#fff7e6" />
@@ -316,55 +308,71 @@ export default function EczanemUttMutabakatPage() {
         </CardContent>
       </Card>}
       {!yukleniyor && !hata && <section aria-label="Mutabakat işlemleri">
-        <div className="mb-3">
-          <h2 className="text-base font-extrabold text-[#203653]">İndirim İşlemleri</h2>
-          <p className="mt-0.5 text-[11px] font-semibold text-[#7b8da5]">{veri?.eczaneler.length ?? 0} / {veri?.toplam_eczane ?? 0} eczane gösteriliyor · {veri?.toplam ?? 0} indirim işlemi</p>
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div><h2 className="text-base font-extrabold text-[#203653]">İndirim Onay Tablosu</h2>
+            <p className="mt-0.5 text-[11px] font-semibold text-[#7b8da5]">{veri?.eczaneler.length ?? 0} / {veri?.toplam_eczane ?? 0} eczane gösteriliyor · {veri?.toplam ?? 0} indirim işlemi</p></div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <PeriyotButonlari<"akordiyon" | "duz"> secenekler={[{ key: "akordiyon", label: "Akordiyon Tablo" }, { key: "duz", label: "Düz Tablo" }]} deger={gorunum} onDegistir={gorunumDegistir} ariaLabel="Mutabakat tablo görünümü" className="h-10 w-fit flex-none [&>button]:h-[30px] [&>button]:py-0" />
+            <MutabakatExcelButonu rol="utt" donem={donem} kayitlar={duzVeri?.kayitlar ?? []} />
+          </div>
         </div>
-        {veri?.eczaneler.length === 0 ? <div className="rounded-2xl border border-[#dfe7f1] bg-white px-4 py-14 text-center text-sm font-semibold text-[#8090a4]">
+        {gorunum === "duz" ? <MutabakatIslemTablosu
+          rol="utt"
+          gorunum="duz"
+          kayitlar={duzKayitlar}
+          kararPenceresiAcik={veri?.karar_penceresi_acik}
+          islemdeId={onayIslemdeId}
+          urunSecenekleri={duzUrunSecenekleri}
+          seciliUrunId={duzUrunId}
+          onUrunDegistir={setDuzUrunId}
+          onKarar={(secili, karar) => { void kararVer(secili, karar); }}
+          onOnayaGonder={(secili) => { void bmOnayinaGonder(secili); }}
+          bosIcerik={<div className="px-4 py-14 text-center text-sm font-semibold text-[#8090a4]">Bu dönem ve filtrede gösterilecek mutabakat işlemi yok.</div>}
+        /> : veri?.eczaneler.length === 0 ? <div className="rounded-2xl border border-[#dfe7f1] bg-white px-4 py-14 text-center text-sm font-semibold text-[#8090a4]">
           Bu dönem ve durumda onaylı indirim işlemi bulunmuyor.
         </div> : <div className="overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-sm">
-          <div className="hidden grid-cols-[minmax(200px,2fr)_160px_180px_190px_30px] gap-3 border-b border-[#e8eef5] bg-[#f5f8fc] px-4 py-2 text-[11px] font-extrabold uppercase text-[#7b8da5] md:grid">
+          <div className="hidden grid-cols-[minmax(200px,2fr)_160px_180px_190px_30px] gap-3 border-b border-[#e8eef5] bg-[#f5f8fc] px-4 py-2 text-[11px] font-extrabold uppercase text-[#7b8da5] lg:grid">
             <span>Eczane Adı</span><span className="text-center">Toplam İşlem Adedi</span><span className="text-center">Toplam Onaylanan Puan</span><span className="text-center">Toplam İndirim Tutarı</span><span />
           </div>
           {veri?.eczaneler.map((eczane) => <div key={eczane.eczane_id} className="border-b border-[#e8eef5] last:border-b-0">
             <button type="button" aria-expanded={acikEczaneId === eczane.eczane_id}
               aria-controls={`eczane-islemleri-${eczane.eczane_id}`}
               onClick={() => eczaneAcKapat(eczane.eczane_id)}
-              className="grid w-full gap-2 px-4 py-3 text-left text-xs text-[#405976] hover:bg-[#f8fbff] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#237ac8] md:grid-cols-[minmax(200px,2fr)_160px_180px_190px_30px] md:items-center md:gap-3">
-              <span className="min-w-0"><strong className="block text-sm font-extrabold text-[#203653]">{eczane.eczane_adi || "Eczane"}</strong></span>
-              <span className="md:text-center"><span className="md:hidden">Toplam işlem adedi: </span>{sayi(eczane.islem_sayisi)}</span>
-              <span className="md:text-center"><span className="md:hidden">Toplam onaylanan puan: </span>{sayi(eczane.toplam_puan)}</span>
-              <span className="md:text-center"><span className="md:hidden">Toplam indirim tutarı: </span>{para(eczane.toplam_indirim_tl)}</span>
-              <ChevronDown className={`size-4 text-[#237ac8] transition-transform ${acikEczaneId === eczane.eczane_id ? "rotate-180" : ""}`} aria-hidden="true" />
+              className="relative grid w-full grid-cols-2 gap-2 px-4 py-3 pr-10 text-left text-xs text-[#405976] hover:bg-[#f8fbff] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#237ac8] sm:grid-cols-3 lg:grid-cols-[minmax(200px,2fr)_160px_180px_190px_30px] lg:items-center lg:gap-3 lg:pr-4">
+              <span className="col-span-full min-w-0 lg:col-span-1"><strong className="block text-sm font-extrabold text-[#203653]">{eczane.eczane_adi || "Eczane"}</strong></span>
+              <span className="lg:text-center"><span className="lg:hidden">İşlem: </span>{sayi(eczane.islem_sayisi)}</span>
+              <span className="hidden sm:block lg:text-center"><span className="lg:hidden">Puan: </span>{sayi(eczane.toplam_puan)}</span>
+              <span className="lg:text-center"><span className="lg:hidden">Tutar: </span>{para(eczane.toplam_indirim_tl)}</span>
+              <ChevronDown className={`absolute right-4 top-4 size-4 text-[#237ac8] transition-transform lg:static ${acikEczaneId === eczane.eczane_id ? "rotate-180" : ""}`} aria-hidden="true" />
             </button>
             {acikEczaneId === eczane.eczane_id && <div id={`eczane-islemleri-${eczane.eczane_id}`} className="border-t border-[#dfe7f1] bg-[#f8fbff] p-2 md:p-3">
               {islemYukleniyor && <p role="status" className="px-3 py-4 text-xs text-[#7b8da5]">İşlemler yükleniyor…</p>}
               {islemHatasi && <p role="alert" className="px-3 py-4 text-xs text-[#b42318]">{islemHatasi}</p>}
-              {!islemYukleniyor && !islemHatasi && eczaneIslemleri && <div className="overflow-hidden rounded-xl border border-[#dfe7f1] bg-white">
-                <div className={`hidden gap-2 bg-[#f2f7fc] px-4 py-2 text-[10px] font-extrabold uppercase leading-tight text-[#7b8da5] lg:grid lg:min-h-14 lg:items-center ${ISLEM_SUTUNLARI}`}>
-                  <span>İndirim Onay Tarihi</span><span>Ürün Adı</span>
-                  <span>Öğrenme Aracı</span><span className="text-center" title="Perakende Satış Fiyatı">PSF</span><span className="text-center">İndirim Limiti</span><span className="text-center">İndirim ID</span><span className="text-center">Onaylanan İndirim Puanı</span><span className="text-center">İndirim Tutarı</span><span className="text-center">Karar</span><span className="text-center">Sonuç</span>
-                </div>
-                {eczaneIslemleri.kayitlar.length === 0 ? <div className="px-4 py-6 text-center text-xs text-[#7b8da5]">
+              {!islemYukleniyor && !islemHatasi && eczaneIslemleri && <MutabakatIslemTablosu
+                rol="utt"
+                kayitlar={eczaneIslemleri.kayitlar}
+                kararPenceresiAcik={veri.karar_penceresi_acik}
+                islemdeId={onayIslemdeId}
+                urunSecenekleri={eczaneIslemleri.urun_secenekleri}
+                seciliUrunId={seciliUrunId}
+                onUrunDegistir={(urunId) => { setSeciliUrunId(urunId); setIslemSayfa(0); }}
+                onKarar={(secili, karar) => { void kararVer(secili, karar); }}
+                onOnayaGonder={(secili) => { void bmOnayinaGonder(secili); }}
+                bosIcerik={<div className="px-4 py-6 text-center text-xs text-[#7b8da5]">
                   <p>{seciliUrunId ? "Bu ürün için gösterilecek işlem yok." : "Bu eczanede gösterilecek işlem yok."}</p>
                   {seciliUrunId && <button type="button" onClick={() => { setSeciliUrunId(null); setIslemSayfa(0); }} className="mt-2 font-bold text-[#237ac8] underline">Tümünü göster</button>}
-                </div>
-                  : eczaneIslemleri.kayitlar.map((kayit) => <MutabakatIslemSatiri key={kayit.mutabakat_id} kayit={kayit}
-                    kararAcik={veri.karar_penceresi_acik}
-                    urunSecenekleri={eczaneIslemleri.urun_secenekleri} seciliUrunId={seciliUrunId}
-                    onUrunDegistir={(urunId) => { setSeciliUrunId(urunId); setIslemSayfa(0); }}
-                    onKarar={(secili, karar) => { void kararVer(secili, karar); }} />)}
-                {eczaneIslemleri.toplam > UTT_MUTABAKAT_SAYFA_BOYUTU && <nav aria-label={`${eczane.eczane_adi || "Eczane"} işlem sayfaları`} className="flex items-center justify-end gap-2 border-t border-[#e8eef5] px-3 py-2">
+                </div>}
+                altIcerik={eczaneIslemleri.toplam > UTT_MUTABAKAT_SAYFA_BOYUTU ? <nav aria-label={`${eczane.eczane_adi || "Eczane"} işlem sayfaları`} className="flex items-center justify-end gap-2 border-t border-[#e8eef5] px-3 py-2">
                   <Button type="button" size="sm" variant="outline" disabled={islemSayfa === 0} onClick={() => setIslemSayfa((deger) => deger - 1)}>Önceki</Button>
                   <span className="text-xs font-semibold text-[#526780]">{islemSayfa + 1} / {Math.ceil(eczaneIslemleri.toplam / UTT_MUTABAKAT_SAYFA_BOYUTU)}</span>
                   <Button type="button" size="sm" variant="outline" disabled={(islemSayfa + 1) * UTT_MUTABAKAT_SAYFA_BOYUTU >= eczaneIslemleri.toplam} onClick={() => setIslemSayfa((deger) => deger + 1)}>Sonraki</Button>
-                </nav>}
-              </div>}
+                </nav> : undefined}
+              />}
             </div>}
           </div>)}
         </div>}
       </section>}
-      {!yukleniyor && !hata && veri && veri.toplam_eczane > UTT_MUTABAKAT_SAYFA_BOYUTU && <nav aria-label="Mutabakat eczane sayfaları" className="flex items-center justify-end gap-3">
+      {!yukleniyor && !hata && gorunum === "akordiyon" && veri && veri.toplam_eczane > UTT_MUTABAKAT_SAYFA_BOYUTU && <nav aria-label="Mutabakat eczane sayfaları" className="flex items-center justify-end gap-3">
         <Button type="button" variant="outline" disabled={sayfa === 0} onClick={() => { setAcikEczaneId(null); setSeciliUrunId(null); setEczaneIslemleri(null); setSayfa((deger) => deger - 1); }}>Önceki</Button>
         <span className="text-xs font-semibold text-[#526780]">{sayfa + 1} / {Math.ceil(veri.toplam_eczane / UTT_MUTABAKAT_SAYFA_BOYUTU)}</span>
         <Button type="button" variant="outline" disabled={(sayfa + 1) * UTT_MUTABAKAT_SAYFA_BOYUTU >= veri.toplam_eczane} onClick={() => { setAcikEczaneId(null); setSeciliUrunId(null); setEczaneIslemleri(null); setSayfa((deger) => deger + 1); }}>Sonraki</Button>

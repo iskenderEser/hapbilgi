@@ -7,6 +7,7 @@ import {
   varsayilanUttMutabakatDonemi, uttMutabakatlariListele, uttMutabakatKarariVer,
   uttMutabakatUrunleriniListele, uttMutabakatUrunIslemleriniListele,
   uttMutabakatEczaneleriniListele, uttMutabakatEczaneIslemleriniListele,
+  uttMutabakatSonucEtiketi,
 } from "../lib/eczanem/uttMutabakat.ts";
 
 const oku = (yol: string) => readFileSync(yol, "utf8");
@@ -21,6 +22,7 @@ const testAdlariSql = oku("scripts/sql/eczanem_mutabakat_test_urun_adlarini_duze
 const route = oku("app/eczanem/utt/api/mutabakat/route.ts");
 const nav = oku("components/panel/panelNav.config.ts");
 const sayfa = oku("app/(panel)/eczanem/utt/mutabakat/page.tsx");
+const ortakTablo = oku("app/(panel)/eczanem/_components/MutabakatIslemTablosu.tsx");
 
 test("Türkiye saatine göre varsayılan dönem önceki aydır; UUID ve dönem filtresi doğrulanır", () => {
   assert.equal(varsayilanUttMutabakatDonemi(new Date("2026-01-01T00:30:00+03:00")), "2025-12");
@@ -29,6 +31,15 @@ test("Türkiye saatine göre varsayılan dönem önceki aydır; UUID ve dönem f
   assert.equal(uttMutabakatDonemiGecerliMi("2026-13"), false);
   assert.equal(uttMutabakatIdGecerliMi("765b6890-183f-4518-b887-07003ff5cdc7"), true);
   assert.equal(uttMutabakatIdGecerliMi("siparis-1"), false);
+});
+
+test("UTT sonuç sütunu iş kararını sade sonuç metnine dönüştürür", () => {
+  assert.equal(uttMutabakatSonucEtiketi("onay", "utt_hazirliginda"), "BM Onayına Gönder");
+  assert.equal(uttMutabakatSonucEtiketi("onay", "bm_onayinda"), "BM Onayında");
+  assert.equal(uttMutabakatSonucEtiketi("onay", "tm_reddetti"), "TM Reddetti");
+  assert.equal(uttMutabakatSonucEtiketi("beklet", "utt_hazirliginda"), "Beklemede");
+  assert.equal(uttMutabakatSonucEtiketi("ret", "utt_hazirliginda"), "Reddedildi");
+  assert.equal(uttMutabakatSonucEtiketi(null, "utt_hazirliginda"), "Karar Bekliyor");
 });
 
 test("liste ve karar yalnız tanımlı RPC parametrelerini taşır", async () => {
@@ -58,7 +69,10 @@ test("mutabakat listesi gerçek ürün ve talep ID'lerini çözer, UUID'leri yal
   const urunId = "151b6890-183f-4518-b887-07003ff5cdc7";
   const yayinId = "251b6890-183f-4518-b887-07003ff5cdc7";
   const db = {
-    rpc: async () => ({ data: {
+    rpc: async (ad: string) => ad === "eczanem_mutabakat_onay_durumlari" ? ({ data: [{
+      mutabakat_id: mutabakatId, onay_durumu: "utt_hazirliginda", bm_id: null,
+      utt_gonderim_tarihi: null, bm_onay_tarihi: null, tm_id: null, tm_onay_tarihi: null,
+    }], error: null }) : ({ data: {
       donem: "2026-09", karar_penceresi_acik: true, toplam: 1, toplam_puan: 100, toplam_indirim_tl: 10,
       kayitlar: [{ mutabakat_id: mutabakatId, urun_id: urunId, urun_adi: "Normavas", kaynaklar: [{ yayin_id: yayinId, arac_id: "arac" }] }],
     }, error: null }),
@@ -127,14 +141,16 @@ test("mutabakat ekranı eczaneleri gruplar ve seçilen eczanenin işlemlerini ay
   assert.match(urunFiltresiSql, /p_urun_id IS NULL OR o\.urun_id = p_urun_id/g);
   assert.match(urunFiltresiSql, /LIMIT p_limit OFFSET p_offset/);
   assert.match(urunFiltresiSql, /'urun_secenekleri', v_urun_secenekleri/);
-  assert.match(sayfa, /aria-label=\{`\$\{kayit\.urun_adi\}: ürün adına göre filtrele`\}/);
-  assert.match(sayfa, /aria-pressed=\{seciliUrunId === null\}/);
-  assert.match(sayfa, /onUrunDegistir\(urun\.urun_id\)/);
-  assert.doesNotMatch(sayfa, /<select aria-label="Ürün adına göre filtrele"/);
+  assert.match(ortakTablo, /aria-label=\{`\$\{kayit\.urun_adi\}: ürün adına göre filtrele`\}/);
+  assert.match(ortakTablo, /aria-pressed=\{seciliUrunId === null\}/);
+  assert.match(ortakTablo, /onUrunDegistir\(urun\.urun_id\)/);
+  assert.doesNotMatch(ortakTablo, /<select aria-label="Ürün adına göre filtrele"/);
   assert.match(sayfa, /setIslemSayfa\(0\)/);
 });
 
 test("görünen İndirim ID tüm ürünlerin onaylarında atomik atanır ve UUID'nin yerini ekranda alır", () => {
+  const anaListeSql = oku("scripts/sql/eczanem_utt_mutabakat_rpc.sql");
+  const duzeltmeSql = oku("scripts/sql/eczanem_utt_mutabakat_liste_gorunen_indirim_id.sql");
   assert.match(indirimIdSql, /ROW_NUMBER\(\) OVER \(\s*PARTITION BY o\.firma_id ORDER BY o\.onay_tarihi, o\.eczanem_indirim_onay_id/);
   assert.match(indirimIdSql, /UPDATE public\.firmalar\s+SET son_indirim_sira = son_indirim_sira \+ 1/);
   assert.match(indirimIdSql, /BEFORE INSERT OR UPDATE ON public\.eczanem_indirim_onaylari/);
@@ -142,8 +158,12 @@ test("görünen İndirim ID tüm ürünlerin onaylarında atomik atanır ve UUID
   assert.match(indirimIdSql, /NEW\.gorunen_indirim_id := v_urun_kodu/);
   assert.match(indirimIdSql, /NEW\.gorunen_indirim_id IS DISTINCT FROM OLD\.gorunen_indirim_id/);
   assert.match(indirimIdSql, /'gorunen_indirim_id', s\.gorunen_indirim_id/);
-  assert.match(sayfa, /kayit\.gorunen_indirim_id \|\| "—"/);
-  assert.doesNotMatch(sayfa, /\{kayit\.mutabakat_id\}<\/code>/);
+  assert.match(anaListeSql, /'gorunen_indirim_id', s\.gorunen_indirim_id/);
+  assert.match(duzeltmeSql, /CREATE OR REPLACE FUNCTION public\.eczanem_utt_mutabakat_listele/);
+  assert.match(duzeltmeSql, /'gorunen_indirim_id', s\.gorunen_indirim_id/);
+  assert.doesNotMatch(duzeltmeSql, /UPDATE public\.eczanem_indirim_onaylari/);
+  assert.match(ortakTablo, /kayit\.gorunen_indirim_id \|\| "—"/);
+  assert.doesNotMatch(ortakTablo, /\{kayit\.mutabakat_id\}<\/code>/);
 });
 
 test("görünüm test ürünleri kısa ad ve 99 önekli İndirim ID kullanır", () => {
@@ -161,22 +181,23 @@ test("yeni yüzey yalnız UTT rolünde, kimlik ve müşteri bilgisi taşımadan 
   assert.match(nav, /path: "\/eczanem\/utt\/mutabakat"[\s\S]*?c\.rolKucu === "utt"/);
   assert.match(route, /rol !== "utt"/);
   assert.match(route, /uttEczanemErisimi/);
-  assert.match(route, /Yalnız mutabakat kimliği ve karar gönderilebilir/);
+  assert.match(route, /Mutabakat işlem alanları geçersiz/);
   assert.match(route, /Cache-Control": "no-store"/);
   assert.match(sayfa, /role="status"/);
-  assert.match(sayfa, /const islemKapali = !kararAcik/);
+  assert.match(ortakTablo, /kararPenceresiAcik && kayit\.onay_durumu === "utt_hazirliginda"/);
   assert.doesNotMatch(sayfa, /musteri_id|musteri_adi|müşteri adı/i);
   assert.doesNotMatch(rpcSql, /'musteri_id'|'musteri_adi'/i);
 });
 
 test("Mutabakat arayüzü Eczanem Yayınları panel desenini ve işlem alanlarını korur", () => {
   const yayinlarSayfasi = oku("app/(panel)/eczanem/yayinlar/page.tsx");
+  const mutabakatArayuzu = `${sayfa}\n${ortakTablo}`;
   for (const desen of ["max-w-[1480px]", "bg-gray-50", "'Nunito', sans-serif", "text-[#172b4d]", "<YenileButonu", "<PeriyotButonlari", "<OzetKarti"]) {
     assert.ok(yayinlarSayfasi.includes(desen), `Yayınlar referansı eksik: ${desen}`);
     assert.ok(sayfa.includes(desen), `Mutabakat uyarlaması eksik: ${desen}`);
   }
   for (const alan of ["gorunen_urun_id", "gorunen_talep_id", "gorunen_indirim_id", "Toplam İndirim Adedi", "Onaylanan İndirim Puanı", "Uygulanan Toplam İndirim", "Öğrenme Aracı", "Perakende Satış Fiyatı", "İndirim Limiti", "İndirim Tutarı", "Sonuç", "Eczane Adı", "Ürün Adı", "İndirim Onay Tarihi", "İndirim ID", "Toplam İşlem Adedi", "Toplam Onaylanan Puan", "Toplam İndirim Tutarı"]) {
-    assert.ok(sayfa.includes(alan), `İşlem alanı eksik: ${alan}`);
+    assert.ok(mutabakatArayuzu.includes(alan), `İşlem alanı eksik: ${alan}`);
   }
   for (const eskiMetin of ["PM tarifesi", "PM öğrenme puanı:", "Bu indirimde:", "UTT karar geçmişi", "Yayın ve karar ayrıntıları", "Önceki ayın indirimleri için karar dönemi açık"]) {
     assert.ok(!sayfa.includes(eskiMetin), `Eski mutabakat metni kaldı: ${eskiMetin}`);
@@ -184,9 +205,9 @@ test("Mutabakat arayüzü Eczanem Yayınları panel desenini ve işlem alanları
   assert.doesNotMatch(sayfa, /<details/);
   assert.doesNotMatch(sayfa, /AlertDialog|bekleyenKarar|UTT kararını onaylayın|Kararı kaydet/);
   assert.doesNotMatch(sayfa, /kayit\.urun_adi\} - \{YAYIN_TURU_SUNUMU/);
-  assert.match(sayfa, /aria-pressed=\{secili\}/);
-  assert.match(sayfa, /disabled=\{islemKapali \|\| secili\}/);
-  assert.match(sayfa, /secili \? "disabled:opacity-100"/);
+  assert.match(ortakTablo, /aria-pressed=\{secili\}/);
+  assert.match(ortakTablo, /disabled=\{!kararAcik \|\| secili \|\| islemde\}/);
+  assert.match(ortakTablo, /disabled:opacity-100/);
   assert.match(sayfa, /kararKaydiSuruyor\.current/);
   assert.match(sayfa, /setEczaneIslemleri\(\(mevcut\)/);
   assert.match(sayfa, /utt_karar: sonuc\.karar/);
@@ -194,13 +215,13 @@ test("Mutabakat arayüzü Eczanem Yayınları panel desenini ve işlem alanları
   assert.match(sayfa, /role="status"/);
   assert.match(sayfa, /role="alert"/);
   assert.match(sayfa, /onaylı indirim işlemi bulunmuyor/i);
-  assert.match(sayfa, /<Popover\.Root/);
+  assert.match(ortakTablo, /<Popover\.Root/);
   assert.match(sayfa, /Mutabakat Zamanı/);
-  assert.match(sayfa, /aria-pressed=\{secili\}/);
+  assert.match(ortakTablo, /aria-pressed=\{secili\}/);
   assert.doesNotMatch(sayfa, /type="month"/);
-  assert.doesNotMatch(sayfa, /Ürün ID: \{kayit\.urun_id\}|Mutabakat ID: \{kayit\.mutabakat_id\}|Yayın ID: \{kaynak\.yayin_id\}/);
+  assert.doesNotMatch(mutabakatArayuzu, /Ürün ID: \{kayit\.urun_id\}|Mutabakat ID: \{kayit\.mutabakat_id\}|Yayın ID: \{kaynak\.yayin_id\}/);
   assert.match(sayfa, /aria-expanded=\{acikEczaneId === eczane\.eczane_id\}/);
-  assert.match(sayfa, /<MutabakatIslemSatiri/);
+  assert.match(sayfa, /<MutabakatIslemTablosu/);
 });
 
 test("onay snapshot'ı ve karar RPC'si UTT kapsamı, dönem ve tek işlem kimliğiyle korunur", () => {

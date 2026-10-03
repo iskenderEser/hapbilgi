@@ -405,7 +405,8 @@ export async function proxy(request: NextRequest) {
   // sayfa/API erişimini de sunucuda kapatır.
   //
   // İki dal — sıralama kritiktir (/eclub/store dersi): önce özel prefix
-  // /eczanem/eczane (eczacı/teknisyen, E-Club oturumu), sonra genel /eczanem
+  // /eczanem/eczane (eczacı/teknisyen, E-Club oturumu), /eczanem/utt ve
+  // /eczanem/bm ve /eczanem/tm (iç uygulama), sonra genel /eczanem
   // (müşteri). Girişsiz istisnalar: müşteri giriş sayfası/API'leri ve davet
   // kabulü — bunlar oturum ÖNCESİ akışlardır, koruma OTP mekanizmasındadır.
   if (pathname.startsWith("/eczanem")) {
@@ -419,9 +420,11 @@ export async function proxy(request: NextRequest) {
       const apiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
       const eczaneDali = pathname.startsWith("/eczanem/eczane");
       const uttDali = pathname.startsWith("/eczanem/utt") || pathname.startsWith("/eczanem/yayinlar");
-      // Eczacı ve UTT dalları iç uygulama oturumuyla (/login) girilir; müşteri
+      const bmDali = pathname.startsWith("/eczanem/bm");
+      const tmDali = pathname.startsWith("/eczanem/tm");
+      // Eczacı, UTT, BM ve TM dalları iç uygulama oturumuyla (/login) girilir; müşteri
       // dalının kendi giriş ekranı vardır (/eczanem/giris).
-      const icUygulamaDali = eczaneDali || uttDali;
+      const icUygulamaDali = eczaneDali || uttDali || bmDali || tmDali;
 
       if (!user) {
         if (apiYolu) {
@@ -454,6 +457,22 @@ export async function proxy(request: NextRequest) {
           return NextResponse.redirect(
             new URL(ECLUB_TUKETICI_ROLLERI.includes(rol) ? "/eczanem/eczane" : rol === MUSTERI_ROLU ? "/eczanem" : "/ana-sayfa", request.url)
           );
+        }
+      } else if (bmDali) {
+        if (rol !== "bm") {
+          rolUygun = false;
+          if (apiYolu) {
+            return NextResponse.json({ error: "Bu bölüm BM rolüne açıktır." }, { status: 403 });
+          }
+          return NextResponse.redirect(
+            new URL(ECLUB_TUKETICI_ROLLERI.includes(rol) ? "/eczanem/eczane" : rol === MUSTERI_ROLU ? "/eczanem" : "/ana-sayfa", request.url)
+          );
+        }
+      } else if (tmDali) {
+        if (rol !== "tm") {
+          rolUygun = false;
+          if (apiYolu) return NextResponse.json({ error: "Bu bölüm TM rolüne açıktır." }, { status: 403 });
+          return NextResponse.redirect(new URL("/ana-sayfa", request.url));
         }
       } else if (rol !== MUSTERI_ROLU) {
         rolUygun = false;

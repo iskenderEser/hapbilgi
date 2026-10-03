@@ -320,6 +320,20 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
+  "eczanem-bm-mutabakat-takip": {
+    anahtar: "eczanem-bm-mutabakat-takip",
+    baslik: "Mutabakat Takip",
+    ozet: "Bölgenizdeki UTT'lerin Eczanem indirim mutabakatlarını inceleyip TM onayına göndermenizi sağlar. UTT'nin satır kararını değiştirmez.",
+    maddeler: [],
+  },
+
+  "eczanem-tm-mutabakat-takip": {
+    anahtar: "eczanem-tm-mutabakat-takip",
+    baslik: "Mutabakat Takip",
+    ozet: "Takımınızdaki BM ve UTT kapsamından TM onayına iletilen Eczanem indirim mutabakatlarını inceleyip son onayı vermenizi sağlar.",
+    maddeler: [],
+  },
+
   // ─── 19. ÖNERİ TAKİBİ (BM / BÖLGE MÜDÜRÜ) ─────────────────────────────────
   "oneriler-bm": {
     anahtar: "oneriler-bm",
