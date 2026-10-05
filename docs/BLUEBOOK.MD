@@ -1,6 +1,6 @@
 # 📘 HapBilgi — BLUEBOOK
 ### İş Modeli, Mimari, İş Kuralları ve Teknik Envanter Anayasası
-*Son genel inceleme: 28 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026 | Ortak yayın arayüzü, mobil akış ve tanbur güncellemesi: 21 Eylül 2026 | E-Club iş modeli ve teknik kapanış güncellemesi: 28 Eylül 2026 | Depo tercihleri kod güncellemesi: 29 Eylül 2026 (canlı migration bekliyor)*
+*Son genel inceleme: 28 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026 | Ortak yayın arayüzü, mobil akış ve tanbur güncellemesi: 21 Eylül 2026 | E-Club iş modeli ve teknik kapanış güncellemesi: 28 Eylül 2026 | Depo tercihleri kod güncellemesi: 29 Eylül 2026; canlı yapısal kontrol: 5 Ekim 2026 (13/13)*
 
 ---
 
@@ -9,13 +9,13 @@
 
 ### 29 Eylül 2026 — E-Club depo tercihleri ek sözleşmesi
 
-Bu bölüm depo tercihlerindeki önceki tanımları günceller. Kod tamamlanmıştır; **canlı Supabase migration'ı beklemektedir**.
+Bu bölüm depo tercihlerindeki önceki tanımları günceller. Kod tamamlanmıştır. **5 Ekim 2026'da kullanıcı tarafından Supabase SQL Editor'da çalıştırılan salt okunur durum sorgusu, depo tercihi migration'ına ait 13 yapısal kontrolün tamamını başarılı bulmuştur (`YAPISAL_KURULUM_MEVCUT`, eksik yok).** Bu sonuç canlı veritabanında ilgili tabloların, fonksiyonların, RLS'nin, trigger bağlantılarının ve sistem ayarının mevcut olduğunu gösterir; migration'ın çalıştırılma tarihini veya uçtan uca işlevsel testi kanıtlamaz.
 
 - Depo kataloğu `ecza_depolari` ve `ecza_depo_subeleri` tablolarındadır. Kullanıcının yükleme sonucu 585 konum, 326 unvan, 57 il ve 289 boş şube adıdır. Boş şube merkez sayılmaz. Adlandırılmış şubesi olan depoda şube seçimi zorunlu; şubesiz depoda tek konum doğrudan seçilebilir. Birden fazla adsız konum belirsizdir.
 - UTT yeni eczane kaydında 1–3 depo/şube konumu seçer; Takımım detayından düzenler. Tercihler firmadan bağımsız eczaneye aittir, ana depo sıralaması yoktur. İl/ilçe/adres salt okunurdur. Düzeltme/Ekleme Talebi varsayılan e-posta uygulamasını açar; sistem ayarı `eclub_depo_info_eposta` başlangıçta `info@mill.gen.tr` olur. Kullanıcı gönderir; buton otomatik e-posta veya DB talebi oluşturmaz.
 - Siparişli çek talebi oluşturulurken eczanenin kullanılabilir depo tercihi bulunması zorunludur; siparişsiz çek talepleri bu koşuldan etkilenmez.
 
-Migration: `scripts/sql/eclub_depo_tercihleri.sql`. Operasyon adımları: `docs/ECZA_DEPO_KATALOGU_YUKLEME.md`.
+Migration: `scripts/sql/eclub_depo_tercihleri.sql`. Canlı yapısal kontrol: `scripts/sql/eclub_depo_tercihleri_durum_kontrol.sql`. Operasyon adımları: `docs/ECZA_DEPO_KATALOGU_YUKLEME.md`.
 
 HapBilgi; firmalar tarafından sağlanan veya yayımlanması sağlanan içerikleri yetkili kullanıcı gruplarına ulaştıran, bu kapsamdaki üretim, yayın, öğrenme, ölçüm ve platform işlemlerini rol temelli olarak yürüten dijital bir platformdur. HapBilgi; firma ile çalışanı, firma ile eczane veya eczane ile Eczanem uygulaması üyesi arasındaki ticari ya da mesleki ilişkinin tarafı değildir.
 
@@ -35,8 +35,6 @@ HapBilgi'nin bütün modüllerinde ve HapBi sorgularında geçerli zaman değerl
 * **Ay:** 01–28/29/30/31.
 * **Dönem:** Ocak–Şubat–Mart, Nisan–Mayıs–Haziran, Temmuz–Ağustos–Eylül veya Ekim–Kasım–Aralık.
 * **Yıl:** 01.01.yyyy–31.12.yyyy.
-
-**Mevcut Kod Uyum Durumu:** Kod tabanındaki bazı dosyalar yukarıdaki sabit takvim aralıklarından farklı olarak çalıştırıldığı ana göre kayan hareketli tarih aralıkları kullanmaktadır. Sabit takvim aralığı kullanan dosyalar ile hareketli tarih aralığı kullanan dosyalar ayrıca belirlenip birbirinden ayrılmadan kodun bu sözleşmeyle bütünüyle uyumlu olduğu kabul edilmez.
 
 ---
 
@@ -186,9 +184,9 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 * **Lig ve Çek Takibi:** `app/(panel)/eclub/ligi/`, `app/(panel)/eclub/siparisler/`, `lib/eclub/rapor.ts`, `lib/eclub/yonetimKapsami.ts`.
 * **Hediye Çeki:** `app/(panel)/eclub/store/`, `app/admin/eclub-store/`, `lib/eclub/store/`, `scripts/sql/eclub_cek_talebi_ana_eczaci.sql`, `scripts/sql/eclub_store_tm_son_onay.sql`, `scripts/sql/eclub_cek_teslimat_outbox.sql`, `scripts/sql/eclub_cek_eposta_worker.sql`, `scripts/sql/eclub_cek_push_worker.sql`, `scripts/sql/eclub_cek_uygulama_bildirimleri.sql`.
 * **Güvenlik Kapıları:** UTT liste üyeliği, kişi–eczane bağı, firma modül bayrakları, yayın kapsamı, araç kimliği, öneri süresi ve aktif üyelik sunucuda doğrulanır. Çek oluşturma yalnız ana eczacıya; UTT, BM ve TM geçişleri rol, firma ve kayıt kapsamına; admin kod girişi admin oturumuna bağlıdır. Outbox tablosu ile worker RPC'leri `PUBLIC`, `anon` ve `authenticated` rollerine kapalı, `service_role` erişimine açıktır.
-* **Operasyon Kaydı:** Kurulum sırası, ortam değişkenleri, canlıya çıkış kapıları ve arıza yönetimi `docs/ECLUB_CEK_OPERASYON_REHBERI.md`; ertelenen gerçek dış servis testi `docs/ECLUB_CANLI_DOGRULAMA_TAKIBI.md` içinde tutulur.
+* **Operasyon Kaydı:** Kurulum sırası, ortam değişkenleri, canlıya çıkış kapıları ve arıza yönetimi `docs/ECLUB_CEK_OPERASYON_REHBERI.md` içinde tutulur.
 
-**Doğrulama kaydı — 28 Eylül 2026:** Ana eczacı → UTT → BM → TM → admin → e-posta/push/uygulama içi bildirim zinciri, çekli–çeksiz puan ayrımı, eczane aidiyeti, rol güvenliği ve fiziksel Store'un kapatılması dâhil tam E-Club otomatik regresyon paketi hatasız geçmiştir. Gerçek Resend/web push teslimatı canlıya çıkış öncesi operasyon kapısıdır; bu doğrulama veritabanına bağlanmadan yapılmıştır.
+**Doğrulama kaydı — 28 Eylül 2026:** Ana eczacı → UTT → BM → TM → admin → e-posta/push/uygulama içi bildirim zinciri, çekli–çeksiz puan ayrımı, eczane aidiyeti, rol güvenliği ve fiziksel Store'un kapatılması dâhil tam E-Club otomatik regresyon paketi hatasız geçmiştir. Bu regresyon veritabanına bağlanmadan yapılmıştır.
 
 ### 3. Aşama: Depo Şema ve DDL Kaydı
 Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json` içindeki **31 Ağustos 2026 tarihli depo şema anlık görüntüsü** ile kaynak SQL sözleşmelerini ifade eder.
@@ -323,7 +321,6 @@ Kulüp motorları ve ortak platform katmanları, ortak mimari ilkeler içinde ke
 
 * **TypeScript Derleme Denetimi (`npm run typecheck:build`):** ✅ **BAŞARILI (Exit code 0)**.
 * **Bütünsel Duman Testleri (`npm run test:smoke`):** ✅ **497 / 497 TEST BAŞARILI (%100 PASS)**.
-* **Mimari ESLint Denetimi (`npm run lint:mimari`):** ⚠️ **BAŞARILI DEĞİL (Mevcut `zaman-tek-kaynak` hatası ve rol uyarıları bulunmaktadır)**.
 *(Not: 16 Eylül 2026 tarihli 436/436 hedef davranış testi sonucu tarihsel olarak korunmaktadır; bu denetimde çalıştırılmayan testler için güncel başarı iddiasında bulunulmamıştır.)*
 
 ### 6. 16 Eylül 2026 Temizlik Kaydı

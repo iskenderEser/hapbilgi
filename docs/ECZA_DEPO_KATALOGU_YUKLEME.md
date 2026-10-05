@@ -35,7 +35,7 @@ UUID'ler ilk yükleme için üretilmiş uygulama kimlikleridir; resmi ruhsat kim
 
 Excel'i doğrudan yeni tablo olarak yüklemek yerine hazırlanmış SQL önerilir: iki tablo arasındaki FK'ler, nullable şube adları, kimlikler ve UTF-8 metinler tek işlemle korunur. Supabase küçük veri kümeleri için CSV yüklemeyi de destekler: https://supabase.com/docs/guides/database/import-data
 
-RLS açık; anon/authenticated doğrudan erişimi kapalıdır. Uygulama katalogları E-Club yetkisi denetlenen sunucu API'sinden service-role ile okur. Eczane depo tercihleri için aşağıdaki ek migration gerekir.
+RLS açık; anon/authenticated doğrudan erişimi kapalıdır. Uygulama katalogları E-Club yetkisi denetlenen sunucu API'sinden service-role ile okur. Eczane depo tercihleri için ek migration aşağıda belgelenmiştir.
 
 ## Yapılan doğrulama ve sınır
 
@@ -43,8 +43,8 @@ Yerelde tüm kaynak satırlar okundu; zorunlu alan, sıra, mükerrer, depo/şube
 
 ## Eczane depo tercihlerini devreye alma
 
-1. Katalog yüklemesi tamamlandıktan sonra `scripts/sql/eclub_depo_tercihleri.sql` dosyasının **tamamını** aynı Supabase projesinin SQL Editor'ında çalıştırın. Tek transaction içinde tercih tabloları, RPC'ler ve kayıt kapıları kurulur. Script tekrar uygulanabilir; mevcut puan hesaplama RPC'lerini değiştirmez.
+1. Yeni bir ortamda katalog yüklemesi tamamlandıktan sonra `scripts/sql/eclub_depo_tercihleri.sql` dosyasının **tamamını** aynı Supabase projesinin SQL Editor'ında çalıştırın. Tek transaction içinde tercih tabloları, RPC'ler ve kayıt kapıları kurulur. Script tekrar uygulanabilir; mevcut puan hesaplama RPC'lerini değiştirmez.
 2. `sistem_ayarlari.eclub_depo_info_eposta` değeri ilk kurulumda `info@mill.gen.tr` olur; mevcut değer varsa korunur.
 3. UTT, mevcut eczanelerin Takımım detayındaki bar üzerinde **Depo ekle** aramalı listesinden 1–3 tercih kaydeder. En az üç karakterle kısa/resmi ad, şube, il veya ilçe aranır. Seçim otomatik kaydedilince ayrı tercih stat kartı oluşur; hatada kart eklenmez. Üç kayıtta liste gizlenir; karttaki × ile kaldırılınca yeniden görünür. Son tercih kaldırılamaz. Yeni kayıt formunda 1–3 seçim zorunluluğu korunur. Eski tercihsiz eczaneler silinmez; tercihleri tamamlanana kadar yeni siparişli talep ve yeni ana eczacı kaydı engellenir. Siparişsiz talep etkilenmez.
 
-Canlı yeni migration bu geliştirme oturumunda uygulanıp doğrulanmadı. Kodun yayına alınmasından önce migration tamamlanmalıdır.
+**Canlı durum kaydı — 5 Ekim 2026:** Kullanıcının Supabase SQL Editor'da çalıştırdığı `scripts/sql/eclub_depo_tercihleri_durum_kontrol.sql` sorgusu `YAPISAL_KURULUM_MEVCUT`, `13/13` ve `eksikler=[]` döndürdü. Tercih tabloları, fonksiyonlar, RLS, trigger bağlantıları ve sistem ayarı canlıda yapısal olarak mevcuttur. Migration'ın çalıştırılma tarihi ile uçtan uca işlevsel sonuç bu sorgudan belirlenemez; bu kayıttan yalnız yapısal kurulumu doğrulanmış sayın.
