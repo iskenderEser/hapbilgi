@@ -27,12 +27,20 @@ test("UTT E-Club altında kararlaştırılan yönetim alanlarını doğru sırad
   assert.equal(yayinlar?.altOglar, undefined);
 });
 
-test("BM, TM, üretici ve yönetici E-Club yönetim sayfalarını görür; video yönetimini görmez", () => {
+test("BM ve TM E-Club Takımım, Yayınları ve ligi; diğer üst roller yalnız ligi görür", () => {
   const eclub = PANEL_NAV.find((grup) => grup.baslik === "E-Club");
   const tclub = PANEL_NAV.find((grup) => grup.baslik === "T-Club");
   assert.ok(eclub);
   assert.ok(tclub);
-  for (const rolKucu of ["bm", "tm", "pm", "gm"]) {
+  assert.deepEqual(
+    eclub.oglar.filter((oge) => oge.gate({ ...uttBaglami, rolKucu: "bm" })).map((oge) => oge.etiket),
+    ["E-Club Takımım", "E-Club Yayınları", "E-Club Ligi"],
+  );
+  assert.deepEqual(
+    eclub.oglar.filter((oge) => oge.gate({ ...uttBaglami, rolKucu: "tm" })).map((oge) => oge.etiket),
+    ["E-Club Takımım", "E-Club Yayınları", "E-Club Ligi"],
+  );
+  for (const rolKucu of ["pm", "gm"]) {
     assert.deepEqual(
       eclub.oglar.filter((oge) => oge.gate({ ...uttBaglami, rolKucu })).map((oge) => oge.etiket),
       ["E-Club Ligi"],

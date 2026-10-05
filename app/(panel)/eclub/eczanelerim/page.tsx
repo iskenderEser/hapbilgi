@@ -18,8 +18,17 @@ import { glnGecerliMi, KISI_ROL_ETIKETLERI, type GlnSorguSonuc } from "../listem
 import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
 import { DepoTercihFormu } from "@/components/eclub/DepoTercihFormu";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import BmEclubTakimim from "./_components/BmEclubTakimim";
 
 export default function EclubEczanelerimPage() {
+  const { kullanici, yukleniyor } = useAuth();
+  if (yukleniyor) return <div className="flex min-h-full items-center justify-center bg-gray-50"><LoaderCircle className="size-6 animate-spin text-gray-500" /></div>;
+  if ((kullanici?.rol ?? "").toLowerCase() === "bm") return <BmEclubTakimim />;
+  if ((kullanici?.rol ?? "").toLowerCase() === "tm") return <BmEclubTakimim rol="tm" />;
+  return <UttEclubEczanelerimPage />;
+}
+
+function UttEclubEczanelerimPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();

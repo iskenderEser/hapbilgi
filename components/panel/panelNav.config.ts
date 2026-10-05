@@ -15,6 +15,7 @@
 import {
   URETICI_ROLLER,
   YONETICI_ROLLER,
+  YONLENDIRICI_ROLLER,
   IU_ROLU,
   YAYINDAKI_VIDEO_GORENLER,
   CCLIGI_GORENLERLER,
@@ -134,12 +135,12 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "E-Club",
     oglar: [
-      { etiket: "E-Club Takımım",    path: "/eclub/eczanelerim",  gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+      { etiket: "E-Club Takımım",    path: "/eclub/eczanelerim",  gate: (c) => c.eclubAcik && (YONLENDIRICI_ROLLER.includes(c.rolKucu) || ECLUB_GOREN_ROLLER.includes(c.rolKucu)) },
       {
         etiket: "E-Club Yayınları",
         path: "/eclub/yayinlar",
         badgeKey: "eclub_gonderilecek",
-        gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu),
+        gate: (c) => c.eclubAcik && (YONLENDIRICI_ROLLER.includes(c.rolKucu) || ECLUB_GOREN_ROLLER.includes(c.rolKucu)),
       },
       { etiket: "E-Club Ligi",       path: "/eclub/ligi",         gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
     ],

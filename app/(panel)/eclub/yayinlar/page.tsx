@@ -19,6 +19,7 @@ import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
 import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
+import BmEclubYayinlari from "./_components/BmEclubYayinlari";
 
 type HedefGrubu = "eczaci" | "eczane_teknisyeni" | "ortak";
 
@@ -39,6 +40,14 @@ const aliciGorunenAdi = (kisi: OneriKisi) =>
   `${eclubKisiHedefRolu(kisi.rol) === "eczane_teknisyeni" ? "Ecz.Tekn." : "Ecz."} ${kisi.ad} ${kisi.soyad}`;
 
 export default function EclubVideolarimPage() {
+  const { kullanici, yukleniyor } = useAuth();
+  if (yukleniyor) return <div className="flex min-h-full items-center justify-center bg-gray-50"><svg className="size-6 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg></div>;
+  if ((kullanici?.rol ?? "").toLowerCase() === "bm") return <BmEclubYayinlari />;
+  if ((kullanici?.rol ?? "").toLowerCase() === "tm") return <BmEclubYayinlari rol="tm" />;
+  return <UttEclubVideolarimPage />;
+}
+
+function UttEclubVideolarimPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();

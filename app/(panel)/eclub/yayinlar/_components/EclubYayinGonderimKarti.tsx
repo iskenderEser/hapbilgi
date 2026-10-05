@@ -18,15 +18,16 @@ interface Props {
   gonderimKayitlari: readonly OneriGecmisKaydi[];
   simdi: number;
   onSecim: () => void;
-  onOnizle: () => void;
+  onOnizle?: () => void;
   onGonderimDetayiAc: () => void;
   onGonderimDetayiKapat: () => void;
+  secimGoster?: boolean;
 }
 
 const bilgi = "max-w-full rounded-md border border-[#e1e9f3] bg-[#f5f8fc] px-1.5 py-0.5 text-[10px] font-normal leading-tight text-[#405976] sm:text-[8px]";
 const satisSartiBilgi = "max-w-full rounded-md border border-[#e1e9f3] bg-[#f5f8fc] px-1.5 py-0.5 text-[9px] font-normal leading-tight text-[#405976] sm:text-[7px]";
 
-export function EclubYayinGonderimKarti({ yayin, yeni, secili, secilebilir, gonderilenSayisi, hedefKisiSayisi, gonderilecekGoster, gonderimDetayiGoster, gonderimDetayiAcik, gonderimKayitlari, simdi, onSecim, onOnizle, onGonderimDetayiAc, onGonderimDetayiKapat }: Props) {
+export function EclubYayinGonderimKarti({ yayin, yeni, secili, secilebilir, gonderilenSayisi, hedefKisiSayisi, gonderilecekGoster, gonderimDetayiGoster, gonderimDetayiAcik, gonderimKayitlari, simdi, onSecim, onOnizle, onGonderimDetayiAc, onGonderimDetayiKapat, secimGoster = true }: Props) {
   const cekli = yayin.cek_karsiligi_var_mi === true;
   const incelemeTamamlandi = yayin.gonderim_incelemesi_tamamlandi;
 
@@ -35,7 +36,7 @@ export function EclubYayinGonderimKarti({ yayin, yeni, secili, secilebilir, gond
       <div className={`relative h-full transition-[transform,opacity] duration-300 motion-reduce:transition-none ${gonderimDetayiAcik ? "pointer-events-none z-0 translate-x-1.5 translate-y-1.5 opacity-100" : "z-10 translate-x-0 translate-y-0 opacity-100"}`} aria-hidden={gonderimDetayiAcik}>
       <YayinKarti
       yayin={yayin}
-      onClick={onOnizle}
+      onClick={onOnizle ? () => onOnizle() : undefined}
       ariaLabel={`${yayin.urun_adi} öğrenme içeriğini önizle`}
       className={`h-full ${secili ? "border-[#237ac8] ring-2 ring-[#237ac8]/20" : ""}`}
       durumGoster={yeni}
@@ -49,7 +50,7 @@ export function EclubYayinGonderimKarti({ yayin, yeni, secili, secilebilir, gond
       baslikSagAksiyon={yayin.talep_no != null ? <span className="shrink-0 font-mono text-xs text-[#bc2d0d] sm:text-[10px]">{talepIdGoster(yayin.firma_adi, yayin.talep_no)}</span> : undefined}
       donguGoster={false}
       thumbnailAltBant={!incelemeTamamlandi ? <span className="block w-full rounded-md bg-[#fff3f1] px-1.5 py-0.5 text-center text-[9px] font-medium leading-3 text-[#ad625c]">Göndermek için yayını tamamlayın</span> : undefined}
-      tarihSatiriSagAksiyon={(secilebilir || gonderilecekGoster) ? (
+      tarihSatiriSagAksiyon={secimGoster && (secilebilir || gonderilecekGoster) ? (
         <label onClick={(event) => event.stopPropagation()} className={`inline-flex shrink-0 items-center gap-1 text-xs font-normal sm:text-[10px] ${secili ? "text-[#1d65aa]" : "text-[#526780]"} ${secilebilir ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}>
           <input type="checkbox" checked={secili} disabled={!secilebilir} onChange={onSecim} aria-label={`${yayin.urun_adi} yayınını gönderim için seç`} className="size-3 accent-[#237ac8]" />
           Göndermek için seçin
