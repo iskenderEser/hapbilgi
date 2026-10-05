@@ -27,15 +27,21 @@ export default function CekTakipFiltreleri({
   deger,
   secenekler,
   onDegistir,
+  uttler,
+  uttId = "",
+  onUttDegistir,
 }: {
   deger: CekTakipFiltreDegerleri;
   secenekler: CekTakipFiltreSecenekleri;
   onDegistir: (deger: CekTakipFiltreDegerleri) => void;
+  uttler?: Array<{ utt_id: string; utt_adi: string }>;
+  uttId?: string;
+  onUttDegistir?: (uttId: string) => void;
 }) {
   const uyeler = deger.eczane_id
     ? secenekler.uyeler.filter((uye) => uye.eczane_id === deger.eczane_id)
     : secenekler.uyeler;
-  const filtreVar = Object.values(deger).some(Boolean);
+  const filtreVar = Object.values(deger).some(Boolean) || Boolean(uttId);
   const alanDegistir = (alan: keyof CekTakipFiltreDegerleri, yeniDeger: string) => {
     const sonraki = { ...deger, [alan]: yeniDeger };
     if (alan === "eczane_id" && deger.kisi_id && !secenekler.uyeler.some((uye) => (
@@ -48,7 +54,16 @@ export default function CekTakipFiltreleri({
 
   return (
     <section aria-label="Çek takibi filtreleri" className="rounded-2xl border border-[#dfe7f1] bg-white p-3 shadow-[0_6px_18px_rgba(31,55,90,0.035)] md:p-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 ${uttler ? "xl:grid-cols-7" : "xl:grid-cols-6"}`}>
+        {uttler && (
+          <label htmlFor="cek-takip-utt" className="min-w-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
+            UTT
+            <select id="cek-takip-utt" className={`${alanSinifi} mt-1 normal-case tracking-normal`} value={uttId} onChange={(event) => onUttDegistir?.(event.target.value)}>
+              <option value="">Tüm UTT’ler</option>
+              {uttler.map((utt) => <option key={utt.utt_id} value={utt.utt_id}>{utt.utt_adi}</option>)}
+            </select>
+          </label>
+        )}
         <label htmlFor="cek-takip-eczane" className="min-w-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
           Eczane
           <select id="cek-takip-eczane" className={`${alanSinifi} mt-1 normal-case tracking-normal`} value={deger.eczane_id} onChange={(event) => alanDegistir("eczane_id", event.target.value)}>
@@ -88,7 +103,7 @@ export default function CekTakipFiltreleri({
       </div>
       {filtreVar && (
         <div className="mt-3 flex justify-end">
-          <button type="button" onClick={() => onDegistir({ ...BOS_CEK_TAKIP_FILTRELERI })} className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold text-[#60758d] hover:bg-[#f1f5f9] hover:text-[#237ac8]">
+          <button type="button" onClick={() => { onDegistir({ ...BOS_CEK_TAKIP_FILTRELERI }); onUttDegistir?.(""); }} className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold text-[#60758d] hover:bg-[#f1f5f9] hover:text-[#237ac8]">
             <RotateCcw className="size-3.5" /> Filtreleri temizle
           </button>
         </div>

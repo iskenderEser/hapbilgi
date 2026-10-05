@@ -4,10 +4,13 @@ import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import CekTakipKarti, {
   CekTakipDurumRozeti,
   CekTakipIslemButonu,
+  CekTakipTeslimEdilen,
   CekTakipTeslimatOzeti,
+  CekTakipTeslimTarihi,
   kosulMetni,
   tarihFormatla,
 } from "./CekTakipKarti";
+import { ogrenmeAraciMetinleri } from "@/lib/ogrenmeAraci/etiketler";
 
 export interface CekTakipListeHatasi {
   tur: "yetkisiz" | "api";
@@ -64,6 +67,8 @@ export default function CekTakipListesi({
   onDahaFazla,
   onIslem,
   onYenidenDene,
+  uttGoster = false,
+  saltOkunur = false,
 }: {
   talepler: CekTakipTalebi[];
   yukleniyor: boolean;
@@ -75,8 +80,10 @@ export default function CekTakipListesi({
   onDahaFazla: () => void;
   onIslem: (talepId: string, islem: CekTakipIslemi) => void;
   onYenidenDene: () => void;
+  uttGoster?: boolean;
+  saltOkunur?: boolean;
 }) {
-  const th = "px-3 py-3 text-left text-[10px] font-extrabold uppercase tracking-[0.05em] text-[#71859d]";
+  const th = "whitespace-nowrap px-3 py-3 text-[10px] font-extrabold uppercase tracking-[0.05em] text-[#71859d]";
   const td = "px-3 py-3 align-top text-xs";
 
   if (yukleniyor) {
@@ -92,13 +99,24 @@ export default function CekTakipListesi({
   return (
     <section aria-label="Çek takip listesi" className="overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
       <div className="hidden overflow-x-auto lg:block">
-        <table className="w-full min-w-[1160px] border-collapse">
+        <table className="w-max table-auto border-collapse">
           <thead className="border-b border-[#e7edf4] bg-[#f8fafc]">
             <tr>
               {[
-                "Talep Tarihi", "Ürün / Koşul", "Eczane / Üye", "Kullanılan Puan",
-                "Çek Tutarı", "Durum", "Teslimat", "İşlem",
-              ].map((baslik) => <th key={baslik} className={th}>{baslik}</th>)}
+                ...(uttGoster ? [{ baslik: "UTT Adı", ortali: false }] : []),
+                { baslik: "Talep Tarihi", ortali: true },
+                { baslik: "Ürün Adı", ortali: false },
+                { baslik: "Öğrenme Aracı", ortali: false },
+                { baslik: "Satış Koşulu", ortali: true },
+                { baslik: "Talep Eden Eczane", ortali: false },
+                { baslik: "Kullanılan Puan", ortali: true },
+                { baslik: "Çek Tutarı", ortali: true },
+                { baslik: "Çek Talep Durumu", ortali: true },
+                { baslik: "Çek Teslimatı", ortali: true },
+                { baslik: "Teslim Tarihi", ortali: true },
+                { baslik: "Teslim Edilen", ortali: false },
+                ...(!saltOkunur ? [{ baslik: "İşlem", ortali: false }] : []),
+              ].map(({ baslik, ortali }) => <th key={baslik} className={`${th} ${ortali ? "text-center" : "text-left"}`}>{baslik}</th>)}
             </tr>
           </thead>
           <tbody className="divide-y divide-[#edf1f5]">
@@ -106,14 +124,19 @@ export default function CekTakipListesi({
               const satirKilitli = islemdekiTalepId === talep.talep_id;
               return (
               <tr key={talep.talep_id} aria-busy={satirKilitli} className={satirKilitli ? "bg-blue-50/70 opacity-70" : "hover:bg-[#fbfcfe]"}>
-                <td className={`${td} whitespace-nowrap font-bold text-[#40556d]`}>{tarihFormatla(talep.created_at)}</td>
-                <td className={`${td} min-w-[180px]`}><strong className="block text-[#203653]">{talep.urun.urun_adi}</strong><span className="mt-0.5 block text-[11px] font-semibold text-[#71859d]">{kosulMetni(talep)}</span></td>
-                <td className={`${td} min-w-[190px]`}><strong className="block text-[#40556d]">{talep.eczane.eczane_adi}</strong><span className="mt-0.5 block text-[11px] text-[#71859d]">{talep.uye.ad_soyad} · {eclubKisiRolEtiketi(talep.uye.rol)}</span></td>
-                <td className={`${td} text-right font-black tabular-nums text-[#40556d]`}>{talep.puan.kullanilan.toLocaleString("tr-TR")}</td>
-                <td className={`${td} text-right font-black tabular-nums text-emerald-700`}>{talep.cek.tutar_tl.toLocaleString("tr-TR")} TL</td>
-                <td className={td}><CekTakipDurumRozeti talep={talep} /></td>
-                <td className={`${td} min-w-[190px]`}><CekTakipTeslimatOzeti talep={talep} /></td>
-                <td className={td}><CekTakipIslemButonu talep={talep} islemde={satirKilitli} onIslem={onIslem} /></td>
+                {uttGoster && <td className={`${td} whitespace-nowrap font-extrabold text-[#40556d]`}>{talep.utt?.utt_adi ?? "—"}</td>}
+                <td className={`${td} whitespace-nowrap text-center font-bold text-[#40556d]`}>{tarihFormatla(talep.created_at)}</td>
+                <td className={`${td} max-w-[220px]`}><strong className="block break-words text-[#203653]">{talep.urun.urun_adi}</strong><span className="mt-1 block font-mono text-[10px] font-semibold text-[#71859d]">{talep.urun.gorunen_urun_id}</span></td>
+                <td className={`${td} max-w-[220px]`}><strong className="block text-[#40556d]">{ogrenmeAraciMetinleri(talep.ogrenme_araci.tur).ad}</strong><span className="mt-1 block break-words font-mono text-[10px] font-semibold text-[#71859d]">{talep.ogrenme_araci.gorunen_talep_id ?? "—"}</span></td>
+                <td className={`${td} whitespace-nowrap text-center font-bold text-[#40556d]`}>{kosulMetni(talep)}</td>
+                <td className={`${td} max-w-[220px]`}><strong className="block break-words text-[#40556d]">{talep.eczane.eczane_adi}</strong><span className="mt-0.5 block break-words text-[11px] text-[#71859d]">{talep.uye.ad_soyad} · {eclubKisiRolEtiketi(talep.uye.rol)}</span></td>
+                <td className={`${td} text-center font-black tabular-nums text-[#40556d]`}>{talep.puan.kullanilan.toLocaleString("tr-TR")}</td>
+                <td className={`${td} text-center font-black tabular-nums text-emerald-700`}>{talep.cek.tutar_tl.toLocaleString("tr-TR")} TL</td>
+                <td className={`${td} text-center`}><CekTakipDurumRozeti talep={talep} /></td>
+                <td className={`${td} text-center`}><CekTakipTeslimatOzeti talep={talep} /></td>
+                <td className={`${td} text-center`}><CekTakipTeslimTarihi talep={talep} /></td>
+                <td className={`${td} max-w-[220px]`}><CekTakipTeslimEdilen talep={talep} /></td>
+                {!saltOkunur && <td className={td}><CekTakipIslemButonu talep={talep} islemde={satirKilitli} onIslem={onIslem} /></td>}
               </tr>
               );
             })}
@@ -128,6 +151,8 @@ export default function CekTakipListesi({
             talep={talep}
             islemde={islemdekiTalepId === talep.talep_id}
             onIslem={onIslem}
+            uttAdi={uttGoster ? talep.utt?.utt_adi : undefined}
+            saltOkunur={saltOkunur}
           />
         ))}
       </div>

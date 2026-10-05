@@ -9,22 +9,34 @@ const istemci = readFileSync("app/(panel)/eclub/hediye-takip/_components/HediyeT
 const api = readFileSync("app/(panel)/eclub/hediye-takip/api/cek-takip/route.ts", "utf8");
 const okuyucu = readFileSync("lib/eclub/hediyeTakip/cekTakipListesi.ts", "utf8");
 
-test("masaüstü liste kararlaştırılan sekiz başlığı taşır", () => {
-  for (const baslik of ["Talep Tarihi", "Ürün / Koşul", "Eczane / Üye", "Kullanılan Puan", "Çek Tutarı", "Durum", "Teslimat", "İşlem"]) {
+test("masaüstü liste kararlaştırılan on iki başlığı taşır", () => {
+  for (const baslik of [
+    "Talep Tarihi", "Ürün Adı", "Öğrenme Aracı", "Satış Koşulu", "Talep Eden Eczane",
+    "Kullanılan Puan", "Çek Tutarı", "Çek Talep Durumu", "Çek Teslimatı",
+    "Teslim Tarihi", "Teslim Edilen", "İşlem",
+  ]) {
     assert.match(liste, new RegExp(`"${baslik}"`));
   }
   assert.match(liste, /hidden overflow-x-auto lg:block/);
+  assert.match(liste, /w-max table-auto border-collapse/);
+  assert.doesNotMatch(liste, /min-w-\[1960px\]/);
+  for (const baslik of ["Talep Tarihi", "Satış Koşulu", "Kullanılan Puan", "Çek Tutarı", "Çek Talep Durumu", "Çek Teslimatı", "Teslim Tarihi"]) {
+    assert.match(liste, new RegExp(`baslik: "${baslik}", ortali: true`));
+  }
 });
 
-test("mobil kart masaüstündeki teslimat ve çek ayrıntılarını kayıpsız gösterir", () => {
+test("mobil kart masaüstündeki güvenli çek ve teslimat bilgilerini kayıpsız gösterir", () => {
   assert.match(liste, /lg:hidden/);
-  for (const alan of ["Talep Tarihi", "Çek Tutarı", "Eczane \/ Üye", "Kullanılan Puan", "İşlem", "Teslimat"]) {
+  for (const alan of ["Talep Tarihi", "Çek Tutarı", "Öğrenme Aracı", "Satış Koşulu", "Talep Eden Eczane", "Kullanılan Puan", "Çek Teslimatı", "Teslim Tarihi", "Teslim Edilen", "İşlem"]) {
     assert.match(kart, new RegExp(alan));
   }
-  assert.match(kart, /Ana eczacı e-postası:/);
-  assert.match(kart, /Aktif E-Club hesapları push:/);
-  assert.match(kart, /Gönderim tarihi:/);
-  assert.match(kart, /Çek kodu:/);
+  assert.match(kart, /talep\.urun\.gorunen_urun_id/);
+  assert.match(kart, /talep\.ogrenme_araci\.gorunen_talep_id/);
+  assert.doesNotMatch(kart, /talep\.urun\.urun_id/);
+  assert.doesNotMatch(kart, /talep\.ogrenme_araci\.talep_id/);
+  assert.match(kart, /tarihFormatla\(talep\.teslimat\.basarili_eposta\?\.tamamlanma_tarihi/);
+  assert.doesNotMatch(kart, /hour:|minute:/);
+  assert.doesNotMatch(kart, /Çek kodu:/);
 });
 
 test("ilk sayfa 30 kayıt ister ve daha fazla sonuç aynı listeye eklenir", () => {

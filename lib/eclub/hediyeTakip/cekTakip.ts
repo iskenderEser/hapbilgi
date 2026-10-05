@@ -1,5 +1,6 @@
 import type { EclubKisiRol } from "@/lib/utils/roller";
 import type { CekTalepDurumu, SatisSartiTipi } from "@/lib/eclub/store/eclubStoreTipler";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 export const CEK_TAKIP_SAYFA_LIMITI = 30;
 
@@ -80,6 +81,7 @@ export interface CekTakipTeslimatKanali {
 }
 
 export interface CekTakipTalebi {
+  utt?: { utt_id: string; utt_adi: string };
   talep_id: string;
   created_at: string;
   guncellenme_at: string;
@@ -98,6 +100,11 @@ export interface CekTakipTalebi {
     yayin_id: string;
     urun_id: string;
     urun_adi: string;
+    gorunen_urun_id: string;
+  };
+  ogrenme_araci: {
+    tur: OgrenmeAraciTuru;
+    gorunen_talep_id: string | null;
   };
   odul_kosulu: {
     siparis_tipi: SatisSartiTipi;
@@ -111,8 +118,6 @@ export interface CekTakipTalebi {
   };
   cek: {
     tutar_tl: number;
-    kod: string | null;
-    gonderim_tarihi: string | null;
   };
   onay: {
     utt: CekTakipOnayAdimi;
@@ -122,18 +127,22 @@ export interface CekTakipTalebi {
   teslimat: {
     eposta: CekTakipTeslimatKanali;
     push: CekTakipTeslimatKanali;
+    basarili_eposta: {
+      tamamlanma_tarihi: string;
+      alici_ad_soyad: string;
+      alici_eposta: string;
+    } | null;
   };
   izin_verilen_islemler: CekTakipIslemi[];
 }
 
 export function cekTakipTeslimatiTamamlandiMi(
-  talep: Pick<CekTakipTalebi, "durum" | "cek" | "teslimat">,
+  talep: Pick<CekTakipTalebi, "durum" | "teslimat">,
 ): boolean {
   return talep.durum === "cek_kodlari_gonderildi"
-    && Boolean(talep.cek.kod?.trim())
-    && Boolean(talep.cek.gonderim_tarihi)
     && talep.teslimat.eposta.toplam === 1
     && talep.teslimat.eposta.tamamlanan === 1
+    && Boolean(talep.teslimat.basarili_eposta?.tamamlanma_tarihi)
     && talep.teslimat.push.toplam > 0
     && talep.teslimat.push.tamamlanan === talep.teslimat.push.toplam;
 }

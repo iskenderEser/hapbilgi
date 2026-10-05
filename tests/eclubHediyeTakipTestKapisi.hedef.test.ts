@@ -71,15 +71,19 @@ test("tekrarlanan işlem istemci ve veritabanı katmanlarında ikinci kez çalı
   assert.match(islemRotasi, /talep\.durum !== "beklemede"/);
 });
 
-test("mobil kart ve masaüstü tablo aynı sekiz bilgi grubunu gösterir", () => {
+test("mobil kart ve masaüstü tablo aynı güvenli bilgi gruplarını gösterir", () => {
   const masaustuAlanlari = [
-    "Talep Tarihi", "Ürün / Koşul", "Eczane / Üye", "Kullanılan Puan", "Çek Tutarı", "Durum", "Teslimat", "İşlem",
+    "Talep Tarihi", "Ürün Adı", "Öğrenme Aracı", "Satış Koşulu", "Talep Eden Eczane",
+    "Kullanılan Puan", "Çek Tutarı", "Çek Talep Durumu", "Çek Teslimatı",
+    "Teslim Tarihi", "Teslim Edilen", "İşlem",
   ];
   for (const alan of masaustuAlanlari) assert.match(liste, new RegExp(alan.replace("/", "\\/")));
   for (const veri of [
-    /talep\.urun\.urun_adi/, /kosulMetni\(talep\)/, /talep\.eczane\.eczane_adi/,
+    /talep\.urun\.urun_adi/, /talep\.urun\.gorunen_urun_id/, /talep\.ogrenme_araci\.gorunen_talep_id/,
+    /kosulMetni\(talep\)/, /talep\.eczane\.eczane_adi/,
     /talep\.uye\.ad_soyad/, /talep\.puan\.kullanilan/, /talep\.cek\.tutar_tl/,
-    /CekTakipDurumRozeti/, /CekTakipTeslimatOzeti/, /CekTakipIslemButonu/,
+    /CekTakipDurumRozeti/, /CekTakipTeslimatOzeti/, /CekTakipTeslimTarihi/,
+    /CekTakipTeslimEdilen/, /CekTakipIslemButonu/,
   ]) {
     assert.match(liste, veri);
     assert.match(kart, veri);

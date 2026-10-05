@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { LoaderCircle } from "lucide-react";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { CEK_TAKIP_SAYFA_LIMITI, type CekTakipApiYaniti, type CekTakipIslemi } from "@/lib/eclub/hediyeTakip/cekTakip";
 import CekTakipFiltreleri, {
   BOS_CEK_TAKIP_FILTRELERI,
@@ -11,6 +13,7 @@ import HediyeTakipToggle, { type HediyeTakipTuru } from "./HediyeTakipToggle";
 import TakipStatKartlari from "./TakipStatKartlari";
 import SiparisTakipIstemcisi from "./SiparisTakipIstemcisi";
 import type { SiparisTakipStatlari } from "@/lib/eclub/hediyeTakip/siparisTakip";
+import BmHediyeTakipIstemcisi from "./BmHediyeTakipIstemcisi";
 
 const BOS_SECENEKLER: CekTakipApiYaniti["filtre_secenekleri"] = {
   eczaneler: [],
@@ -19,6 +22,14 @@ const BOS_SECENEKLER: CekTakipApiYaniti["filtre_secenekleri"] = {
 };
 
 export default function HediyeTakipIstemcisi() {
+  const { kullanici, yukleniyor } = useAuth();
+  if (yukleniyor) return <div className="flex min-h-full items-center justify-center bg-gray-50"><LoaderCircle className="size-6 animate-spin text-gray-500" /></div>;
+  if ((kullanici?.rol ?? "").toLowerCase() === "bm") return <BmHediyeTakipIstemcisi />;
+  if ((kullanici?.rol ?? "").toLowerCase() === "tm") return <BmHediyeTakipIstemcisi rol="tm" />;
+  return <UttHediyeTakipIstemcisi />;
+}
+
+function UttHediyeTakipIstemcisi() {
   const [takipTuru, setTakipTuru] = useState<HediyeTakipTuru>("cek");
   const [cekVerisi, setCekVerisi] = useState<CekTakipApiYaniti | null>(null);
   const [cekFiltreleri, setCekFiltreleri] = useState<CekTakipFiltreDegerleri>({ ...BOS_CEK_TAKIP_FILTRELERI });

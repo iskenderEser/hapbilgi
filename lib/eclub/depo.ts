@@ -32,8 +32,9 @@ export function konumEtiketi(k: DepoKonumu): string {
 const baslikYazimi = (metin: string) => metin.toLocaleLowerCase("tr-TR").replace(/(^|\s)(\S)/g,
   (_, bosluk: string, harf: string) => bosluk + harf.toLocaleUpperCase("tr-TR"));
 
-// Yalnız özet kart etiketi; resmi katalog unvanını veya kayıt kimliğini değiştirmez.
-export function depoOzetEtiketi(k: DepoKonumu): string {
+export function depoOzetParcalari(
+  k: Pick<DepoKonumu, "depo_adi" | "sube_adi" | "il">,
+): { depo: string; sube: string | null } {
   const ad = k.depo_adi.trim().replace(/\s+/g, " ");
   const normal = ad.toLocaleUpperCase("tr-TR").replaceAll("İ", "I");
   let kisaAd: string;
@@ -46,9 +47,15 @@ export function depoOzetEtiketi(k: DepoKonumu): string {
     kisaAd = ecza ? `${baslikYazimi(ecza[1])} Ecza` : ad;
   }
   const sube = k.sube_adi?.trim();
-  if (!sube) return `${kisaAd} - ${baslikYazimi(k.il)}`;
+  if (!sube) return { depo: kisaAd, sube: null };
   const subeKoku = sube.replace(/\s+(?:ŞUBESİ|ŞUBESI|ŞUBE|ŞB\.?)[.]?$/iu, "").trim();
-  return `${kisaAd} - ${baslikYazimi(subeKoku)} Şube`;
+  return { depo: kisaAd, sube: `${baslikYazimi(subeKoku)} Şube` };
+}
+
+// Yalnız özet kart etiketi; resmi katalog unvanını veya kayıt kimliğini değiştirmez.
+export function depoOzetEtiketi(k: DepoKonumu): string {
+  const ozet = depoOzetParcalari(k);
+  return `${ozet.depo} - ${ozet.sube ?? baslikYazimi(k.il)}`;
 }
 
 export function depoTalepMailto(info: string, konum?: DepoKonumu): string {

@@ -14,6 +14,8 @@ import {
 import type { CekTalepDurumu, SatisSartiTipi } from "@/lib/eclub/store/eclubStoreTipler";
 import { ECLUB_TUKETICI_ROLLERI, type EclubKisiRol } from "@/lib/utils/roller";
 import { trGunEkle } from "@/lib/zaman/kontrol";
+import { OGRENME_ARACI_TURLERI, type OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 interface HamTalep {
   talep_id: string;
@@ -32,20 +34,29 @@ interface HamTalep {
   bm_onay_tarihi: string | null;
   tm_id: string | null;
   tm_onay_tarihi: string | null;
-  cek_kodu: string | null;
-  cek_gonderim_tarihi: string | null;
   devreden_puan: number | null;
   created_at: string;
   guncellenme_at: string;
   eclub_eczaneler: { gln: string | null } | Array<{ gln: string | null }> | null;
   eclub_kisiler: { ad: string | null; soyad: string | null; rol: string } | Array<{ ad: string | null; soyad: string | null; rol: string }> | null;
-  v_yayin_kunye: { urun_id: string | null } | Array<{ urun_id: string | null }> | null;
+  v_yayin_kunye: {
+    urun_id: string | null;
+    talep_no: number | null;
+    arac_turu: string | null;
+  } | Array<{
+    urun_id: string | null;
+    talep_no: number | null;
+    arac_turu: string | null;
+  }> | null;
 }
 
 interface HamTeslimat {
   talep_id: string;
   kanal: "eposta" | "push";
   durum: "bekliyor" | "isleniyor" | "tamamlandi" | "basarisiz";
+  alici_eposta: string | null;
+  tamamlanma_at: string | null;
+  eclub_kisiler: { ad: string | null; soyad: string | null } | Array<{ ad: string | null; soyad: string | null }> | null;
 }
 
 function tekilIliski<T>(deger: T | T[] | null): T | null {
@@ -57,6 +68,12 @@ function kisiRolu(rol: string | null | undefined): EclubKisiRol {
   return ECLUB_TUKETICI_ROLLERI.includes(normalize as EclubKisiRol)
     ? normalize as EclubKisiRol
     : "eczaci";
+}
+
+function ogrenmeAraciTuru(tur: string | null | undefined): OgrenmeAraciTuru {
+  return OGRENME_ARACI_TURLERI.includes(tur as OgrenmeAraciTuru)
+    ? tur as OgrenmeAraciTuru
+    : "video";
 }
 
 function trGunBaslangici(gun: string): string {
@@ -106,10 +123,10 @@ export async function cekTakipTalepleriniGetir(
       toplanan_puan, talep_edilen_cek_tl, siparis_tipi,
       siparis_verildi_mi, siparis_adet, siparis_mal_fazlasi,
       durum, utt_id, bm_id, bm_onay_tarihi, tm_id, tm_onay_tarihi,
-      cek_kodu, cek_gonderim_tarihi, devreden_puan, created_at, guncellenme_at,
+      devreden_puan, created_at, guncellenme_at,
       eclub_eczaneler ( gln ),
       eclub_kisiler ( ad, soyad, rol ),
-      v_yayin_kunye ( urun_id )
+      v_yayin_kunye ( urun_id, talep_no, arac_turu )
     `)
     .match(cekTakipTalepKapsami(kapsam));
 
@@ -129,6 +146,7 @@ export async function cekTakipTalepleriniGetir(
   const toplam = tumTalepler.length;
   const sayfaliHamTalepler = tumTalepler.slice(filtreler.offset, filtreler.offset + filtreler.limit);
   const talepIdler = sayfaliHamTalepler.map((talep) => talep.talep_id);
+  const yayinIdler = [...new Set(sayfaliHamTalepler.map((talep) => talep.yayin_id))];
   const urunIdler = [...new Set(sayfaliHamTalepler.flatMap((talep) => {
     const urunId = tekilIliski(talep.v_yayin_kunye)?.urun_id;
     return urunId ? [urunId] : [];
@@ -141,9 +159,12 @@ export async function cekTakipTalepleriniGetir(
     [talep.utt_id, talep.bm_id, talep.tm_id].filter((id): id is string => Boolean(id))
   )))];
 
-  const [urunSonucu, eczaneSonucu, kullaniciSonucu, teslimatSonucu] = await Promise.all([
+  const [urunSonucu, yayinSonucu, eczaneSonucu, kullaniciSonucu, teslimatSonucu] = await Promise.all([
     urunIdler.length > 0
-      ? adminSupabase.from("urunler").select("urun_id, urun_adi").in("urun_id", urunIdler)
+      ? adminSupabase.from("urunler").select("urun_id, urun_adi, gorunen_urun_id").in("urun_id", urunIdler)
+      : Promise.resolve({ data: [], error: null }),
+    yayinIdler.length > 0
+      ? adminSupabase.from("v_yayin_detay").select("yayin_id, firma_adi, talep_no").in("yayin_id", yayinIdler)
       : Promise.resolve({ data: [], error: null }),
     glnler.length > 0
       ? adminSupabase.from("eclub_eczane_master").select("gln, eczane_adi").in("gln", glnler)
@@ -152,16 +173,25 @@ export async function cekTakipTalepleriniGetir(
       ? adminSupabase.from("kullanicilar").select("kullanici_id, ad, soyad").in("kullanici_id", kullaniciIdler)
       : Promise.resolve({ data: [], error: null }),
     talepIdler.length > 0
-      ? adminSupabase.from("eclub_cek_teslimat_outbox").select("talep_id, kanal, durum").in("talep_id", talepIdler)
+      ? adminSupabase.from("eclub_cek_teslimat_outbox").select(`
+          talep_id, kanal, durum, alici_eposta, tamamlanma_at,
+          eclub_kisiler ( ad, soyad )
+        `).in("talep_id", talepIdler)
       : Promise.resolve({ data: [], error: null }),
   ]);
 
   if (urunSonucu.error) throw new Error(`Çek Takip ürünleri alınamadı: ${urunSonucu.error.message}`);
+  if (yayinSonucu.error) throw new Error(`Çek Takip görünen talep kimlikleri alınamadı: ${yayinSonucu.error.message}`);
   if (eczaneSonucu.error) throw new Error(`Çek Takip eczaneleri alınamadı: ${eczaneSonucu.error.message}`);
   if (kullaniciSonucu.error) throw new Error(`Çek Takip onay kullanıcıları alınamadı: ${kullaniciSonucu.error.message}`);
   if (teslimatSonucu.error) throw new Error(`Çek Takip teslimatları alınamadı: ${teslimatSonucu.error.message}`);
 
   const urunAdlari = new Map((urunSonucu.data ?? []).map((urun) => [urun.urun_id, urun.urun_adi]));
+  const gorunenUrunIdleri = new Map((urunSonucu.data ?? []).map((urun) => [urun.urun_id, urun.gorunen_urun_id]));
+  const gorunenTalepIdleri = new Map((yayinSonucu.data ?? []).map((yayin) => [
+    yayin.yayin_id,
+    talepIdGoster(yayin.firma_adi, yayin.talep_no),
+  ]));
   const eczaneAdlari = new Map((eczaneSonucu.data ?? []).map((eczane) => [eczane.gln, eczane.eczane_adi]));
   const kullaniciAdlari = new Map((kullaniciSonucu.data ?? []).map((kullanici) => [
     kullanici.kullanici_id,
@@ -171,6 +201,22 @@ export async function cekTakipTalepleriniGetir(
   const kanalDurumlari = (talepId: string, kanal: HamTeslimat["kanal"]) => teslimatlar
     .filter((teslimat) => teslimat.talep_id === talepId && teslimat.kanal === kanal)
     .map((teslimat) => teslimat.durum);
+  const basariliEposta = (talepId: string) => {
+    const teslimat = teslimatlar.find((kayit) => (
+      kayit.talep_id === talepId
+      && kayit.kanal === "eposta"
+      && kayit.durum === "tamamlandi"
+      && Boolean(kayit.tamamlanma_at)
+      && Boolean(kayit.alici_eposta)
+    ));
+    if (!teslimat?.tamamlanma_at || !teslimat.alici_eposta) return null;
+    const alici = tekilIliski(teslimat.eclub_kisiler);
+    return {
+      tamamlanma_tarihi: teslimat.tamamlanma_at,
+      alici_ad_soyad: `${alici?.ad ?? ""} ${alici?.soyad ?? ""}`.trim() || "Ana eczacı",
+      alici_eposta: teslimat.alici_eposta,
+    };
+  };
 
   const talepler = sayfaliHamTalepler.map<CekTakipTalebi>((talep) => {
     const eczane = tekilIliski(talep.eclub_eczaneler);
@@ -195,6 +241,11 @@ export async function cekTakipTalepleriniGetir(
         yayin_id: talep.yayin_id,
         urun_id: kunye?.urun_id ?? talep.yayin_id,
         urun_adi: (kunye?.urun_id ? urunAdlari.get(kunye.urun_id) : null) ?? "Ürün",
+        gorunen_urun_id: (kunye?.urun_id ? gorunenUrunIdleri.get(kunye.urun_id) : null) ?? "—",
+      },
+      ogrenme_araci: {
+        tur: ogrenmeAraciTuru(kunye?.arac_turu),
+        gorunen_talep_id: gorunenTalepIdleri.get(talep.yayin_id) ?? null,
       },
       odul_kosulu: {
         siparis_tipi: talep.siparis_tipi,
@@ -208,8 +259,6 @@ export async function cekTakipTalepleriniGetir(
       },
       cek: {
         tutar_tl: Number(talep.talep_edilen_cek_tl ?? 0),
-        kod: talep.cek_kodu,
-        gonderim_tarihi: talep.cek_gonderim_tarihi,
       },
       onay: {
         utt: { kullanici_id: talep.utt_id, ad_soyad: talep.utt_id ? kullaniciAdlari.get(talep.utt_id) ?? null : null, tarih: null },
@@ -219,6 +268,7 @@ export async function cekTakipTalepleriniGetir(
       teslimat: {
         eposta: cekTakipTeslimatKanaliniOzetle(kanalDurumlari(talep.talep_id, "eposta")),
         push: cekTakipTeslimatKanaliniOzetle(kanalDurumlari(talep.talep_id, "push")),
+        basarili_eposta: basariliEposta(talep.talep_id),
       },
       izin_verilen_islemler: cekTakipIzinVerilenIslemler(kapsam, talep),
     };
