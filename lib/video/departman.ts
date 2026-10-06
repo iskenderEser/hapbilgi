@@ -1,5 +1,5 @@
 // lib/video/departman.ts
-// "Yayındaki Videolar" klasörleri — üreten rolü → DEPARTMAN (müdürlük) eşlemesi.
+// Üretici katalogları — üreten rolü → DEPARTMAN (müdürlük) eşlemesi.
 // Klasör = departman; üreten kişinin rolü hangi departmana düşerse video oraya girer.
 //
 // Etiketler ŞİMDİLİK sabit (default). Firma-özel adlandırma (ör. "Medikal

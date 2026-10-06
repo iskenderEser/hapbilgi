@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { createElement, act } from "react";
 import { createRoot } from "react-dom/client";
 import { GlobalWindow } from "happy-dom";
-import YayindakiVideoBolumu from "@/app/(panel)/yayindaki-videolar/_components/YayindakiVideoBolumu";
+import YayindakiVideoBolumu from "@/components/yayin/katalog/YayindakiVideoBolumu";
 import {
   VideoListesi,
   BekleyenListesi,
@@ -27,7 +27,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 // @ts-expect-error react act flag
 win.IS_REACT_ACT_ENVIRONMENT = true;
 
-const ureticiKatalogKodu = readFileSync("app/(panel)/yayindaki-videolar/_components/UreticiYayinKatalogu.tsx", "utf8");
+const ureticiKatalogKodu = readFileSync("components/yayin/katalog/UreticiYayinKatalogu.tsx", "utf8");
 const sizinYayinlarinizKodu = readFileSync("app/(panel)/sizin-yayinlariniz/page.tsx", "utf8");
 const tumYayinlarKodu = readFileSync("app/(panel)/tum-yayinlar/page.tsx", "utf8");
 const challengeClubKodu = readFileSync("app/(panel)/challenge-club/page.tsx", "utf8");

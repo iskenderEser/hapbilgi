@@ -48,10 +48,10 @@ test("Faz 2 dağıtım ve öneri yüzeyleri ortak çözümleyici ile tür bazlı
     "app/eczanem/_components/EczanemVideoRafi.tsx",
     "app/(panel)/oneriler/page.tsx",
     "components/video/UttVideoKarti.tsx",
-    "app/(panel)/yayindaki-videolar/_components/BmOneriPaneli.tsx",
+    "components/yayin/BmEgitimYayinlari.tsx",
     "app/(panel)/yayin-yonetimi/_components/Yardimcilar.tsx",
     "app/(panel)/yayin-yonetimi/_components/YayinSatir.tsx",
-    "app/(panel)/yayindaki-videolar/_components/YayindakiVideoBolumu.tsx",
+    "components/yayin/katalog/YayindakiVideoBolumu.tsx",
     "app/(panel)/eclub/panel/_components/EclubFirmaVideoKatalogu.tsx",
   ];
 

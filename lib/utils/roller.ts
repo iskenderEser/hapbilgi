@@ -56,7 +56,7 @@ export const URETIM_HATTI_GORENLER = [
   IU_ROLU,            // iu
 ];
 
-// YAYINDAKI_VIDEO_GORENLER: "Yayındaki Videolar" pill'ini + sayfasını görebilen
+// YAYINDAKI_VIDEO_GORENLER: ortak katalog API'sini ve eğitim yayınlarını görebilen
 // roller. Yalnız-izleme (puan/soru yok). Üretici (İK dahil) + yönetici + tm/bm.
 // İçerik Üreticisi (iu) ve tüketici roller (utt/kd_utt/eczaci/eczane_teknisyeni/
 // musteri) HARİÇ — otomatik dışarıda, hiçbir alt listede yoklar.

@@ -1,5 +1,5 @@
 // lib/video/yayindakiVideolar.ts
-// "Yayındaki Videolar" sayfasına özel veri. getAnaSayfaVideolari'den FARKI:
+// Ortak yayın kataloğu verisi. getAnaSayfaVideolari'den FARKI:
 //   - Tür süzgeci YOK: yayındaki her tür gösterilir (ana sayfadaki "kendi türünü
 //     görme" dışlaması burada uygulanmaz — amaç "hepsini izleyebilmek"). İK dahil.
 //   - Her videoya üreten kişi (ad soyad) + üreten rol + favori/beğeni sayısı eklenir.

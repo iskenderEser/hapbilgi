@@ -153,7 +153,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
       if (sorguSuruyor || erisimKesildiRef.current) return;
       sorguSuruyor = true;
       try {
-        const res = await fetch(`/yayindaki-videolar/api/${video.yayin_id}`, { cache: "no-store" });
+        const res = await fetch(`/yayin-katalogu/api/${video.yayin_id}`, { cache: "no-store" });
         if (bagli && !res.ok) {
           erisimKesildiRef.current = true;
           playerRef.current?.pause();

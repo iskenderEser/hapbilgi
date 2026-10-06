@@ -168,12 +168,10 @@ export async function proxy(request: NextRequest) {
   }
   // -------------------------------------------------------------------------
 
-  // --- Yayındaki Videolar bekçisi ------------------------------------------
-  // /yayindaki-videolar (sayfa + api) yalnız YAYINDAKI_VIDEO_GORENLER rollerine
-  // açıktır (üretici + yönetici + tm/bm; iu ve tüketici roller hariç). Pill gizli
-  // olsa da URL'den doğrudan giriş burada kapanır. Sorgu YALNIZCA bu yolda çalışır.
-  if (pathname.startsWith("/yayindaki-videolar")) {
-    const yvApiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
+  // --- Yayın kataloğu bekçisi ----------------------------------------------
+  // Eğitim yayınları sayfası ile ortak katalog API'sine yalnız katalog rolleri erişir.
+  if (pathname.startsWith("/yayindaki-videolar") || pathname.startsWith("/yayin-katalogu/api")) {
+    const yvApiYolu = pathname.startsWith("/yayin-katalogu/api");
 
     if (!user) {
       if (yvApiYolu) return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
@@ -189,6 +187,9 @@ export async function proxy(request: NextRequest) {
     if (!YAYINDAKI_VIDEO_GORENLER.includes(yvRol)) {
       if (yvApiYolu) return NextResponse.json({ error: "Bu sayfaya erişim yetkiniz yok." }, { status: 403 });
       return NextResponse.redirect(new URL("/ana-sayfa", request.url));
+    }
+    if (!yvApiYolu && URETICI_ROLLER.includes(yvRol)) {
+      return NextResponse.redirect(new URL("/tum-yayinlar", request.url));
     }
   }
   // -------------------------------------------------------------------------

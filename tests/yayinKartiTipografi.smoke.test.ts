@@ -235,8 +235,8 @@ test("Eczanem: metrik başlıkları 11px (sm:text-[7px]), değerler 12px (sm:tex
   assert.match(html, /truncate text-xs font-semibold text-\[#8fa0b2\] sm:text-\[10px\]/);
 });
 
-test("Yayındaki Videolar: üreten bilgisi 12px (sm:text-[10px]), öneri düğmesi 14px (sm:text-[11px]) uygulanır", async () => {
-  const { default: YayindakiVideoBolumu } = await import("@/app/(panel)/yayindaki-videolar/_components/YayindakiVideoBolumu");
+test("Üretici kataloğu: üreten bilgisi 12px (sm:text-[10px]) uygulanır", async () => {
+  const { default: YayindakiVideoBolumu } = await import("@/components/yayin/katalog/YayindakiVideoBolumu");
   const mockVideo = {
     yayin_id: "y-1",
     urun_adi: "Ürün Yayında",
@@ -266,17 +266,12 @@ test("Yayındaki Videolar: üreten bilgisi 12px (sm:text-[10px]), öneri düğme
     createElement(YayindakiVideoBolumu, {
       videolar: [mockVideo as unknown as Parameters<typeof YayindakiVideoBolumu>[0]["videolar"][number]],
       onVideoSec: () => {},
-      oneriModu: true,
-      onOneriSec: () => {},
-      hedefRolEtiketiGoster: true,
       uretenBilgisiGoster: true,
     })
   );
 
   // 12 px üreten bilgisi
   assert.match(html, /truncate text-xs font-semibold text-gray-500 sm:text-\[10px\]/);
-  // 14 px öneri butonu
-  assert.match(html, /px-3 py-2\.5 text-sm font-extrabold.*sm:py-2 sm:text-\[11px\]/);
 });
 
 test("Challenge Club: KartMeta 12px (text-xs) ve sm:text-[10px] uygulanır", async () => {

@@ -17,8 +17,8 @@ const canliYuzeyler = [
   oku("app/(panel)/t-club-ligi/page.tsx"),
   oku("app/(panel)/cc-ligi/page.tsx"),
   oku("app/(panel)/eclub/ligi/page.tsx"),
-  oku("app/(panel)/yayindaki-videolar/page.tsx"),
-  oku("app/(panel)/yayindaki-videolar/_components/UreticiYayinKatalogu.tsx"),
+  oku("components/yayin/BmEgitimYayinlari.tsx"),
+  oku("components/yayin/katalog/UreticiYayinKatalogu.tsx"),
   oku("app/(panel)/store/page.tsx"),
   oku("app/(panel)/eclub/store/page.tsx"),
 ];
@@ -36,7 +36,7 @@ test("red: üçüncü paket tarayıcıyı yenilemez; aktif düzenleme ve çek i�
   assert.doesNotMatch(canliYuzeyler.join("\n"), /window\.location\.reload|location\.reload|router\.refresh/);
   assert.match(oku("app/(panel)/eclub/ligi/page.tsx"), /disabled=\{yenileniyor \|\| takimDuzenleniyor \|\| takimKaydediliyor\}/);
   assert.match(oku("app/(panel)/eclub/store/page.tsx"), /disabled=\{islemLoading\}/);
-  assert.match(oku("app/(panel)/yayindaki-videolar/page.tsx"), /disabled=\{oneriModu\}/);
+  assert.match(oku("components/yayin/BmEgitimYayinlari.tsx"), /onYenile=\{\(\) => setYenileTetik/);
 });
 
 test("kapsam: video oynatma ve ana sayfa yüzeylerine genel yenileme eklenmez", () => {

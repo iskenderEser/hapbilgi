@@ -6,7 +6,7 @@ import { createRoot } from "react-dom/client";
 import { GlobalWindow } from "happy-dom";
 import SahaVideoRaflari from "@/components/ana-sayfa/SahaVideoRaflari";
 import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
-import YayindakiVideoBolumu from "@/app/(panel)/yayindaki-videolar/_components/YayindakiVideoBolumu";
+import YayindakiVideoBolumu from "@/components/yayin/katalog/YayindakiVideoBolumu";
 import type { SahaAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 
@@ -27,9 +27,8 @@ win.IS_REACT_ACT_ENVIRONMENT = true;
 
 const sahaVideoRaflariKodu = readFileSync("components/ana-sayfa/SahaVideoRaflari.tsx", "utf8");
 const videoBolumuKodu = readFileSync("components/ana-sayfa/VideoBolumu.tsx", "utf8");
-const yayindakiVideoBolumuKodu = readFileSync("app/(panel)/yayindaki-videolar/_components/YayindakiVideoBolumu.tsx", "utf8");
-const klasorGridKodu = readFileSync("app/(panel)/yayindaki-videolar/_components/KlasorGrid.tsx", "utf8");
-const yayindakiVideolarPageKodu = readFileSync("app/(panel)/yayindaki-videolar/page.tsx", "utf8");
+const yayindakiVideoBolumuKodu = readFileSync("components/yayin/katalog/YayindakiVideoBolumu.tsx", "utf8");
+const bmEgitimKodu = readFileSync("components/yayin/BmEgitimYayinlari.tsx", "utf8");
 
 function ornekSahaVideoUret(id: string, urunAdi: string): SahaAnaSayfaVideo {
   return {
@@ -107,13 +106,8 @@ test("Faz 3 mimari: YayindakiVideoBolumu MobilYayinAkisi kullanır ve masaüstü
   assert.match(yayindakiVideoBolumuKodu, /<MobilYayinAkisi<YayindakiVideo>/);
 });
 
-test("Faz 3 mimari: KlasorGrid ve yayindaki-videolar page.tsx arama alanı değişimlerini sifirlamaAnahtari'na bağlar", () => {
-  // page.tsx arama alanını KlasorGrid'e iletir
-  assert.match(yayindakiVideolarPageKodu, /aramaAlani=\{liste\.arama\.alanAnahtari\}/);
-
-  // KlasorGrid aramaAlani prop'unu sifirlamaAnahtari'na ekler
-  assert.match(klasorGridKodu, /aramaAlani\?: string/);
-  assert.match(klasorGridKodu, /sifirlamaAnahtari=.*aramaAlani.*aramaMetni/);
+test("BM eğitim listesi kategori, tür ve arama değişimlerinde mobil listeyi sıfırlar", () => {
+  assert.match(bmEgitimKodu, /sifirlamaAnahtari=\{`\$\{kategoriBilgisi\.slug\}-\$\{aktifTur\}-\$\{liste\.arama\.alanAnahtari\}-\$\{liste\.arama\.aranan\}`\}/);
 });
 
 // --------------------------------------------------------------------------
@@ -240,23 +234,13 @@ test("YayindakiVideoBolumu: mobilde 2 kartla başlar, 7 karta açılır, sifirla
     ornekYayindakiVideoUret(`yayin-${i + 1}`, `Yayındaki Video ${i + 1}`),
   );
 
-  let oynaticiAcildi = false;
-  let onerilenVideoId = "";
-
   await act(async () => {
     root.render(
       createElement(YayindakiVideoBolumu, {
         videolar,
         yatayMi: true,
-        oneriModu: true,
-        secilenYayinlar: ["yayin-1"],
         sifirlamaAnahtari: "kapsam-a",
-        onVideoSec: () => {
-          oynaticiAcildi = true;
-        },
-        onOneriSec: (v) => {
-          onerilenVideoId = v.yayin_id;
-        },
+        onVideoSec: () => {},
       }),
     );
   });
@@ -266,11 +250,6 @@ test("YayindakiVideoBolumu: mobilde 2 kartla başlar, 7 karta açılır, sifirla
   assert.ok(mobilKapsayici, "Mobilde MobilYayinAkisi konteyneri bulunmalı");
   const baslangicKartlari = mobilKapsayici.querySelectorAll(".grid > div");
   assert.equal(baslangicKartlari.length, 2, "Mobilde yatayMi dayatılmamalı ve başlangıçta 2 kart olmalı");
-
-  // Seçili yayında border/ring görsel vurgusunun gerçekten uygulandığını doğrula
-  const seciliKartVurgusu = mobilKapsayici.querySelector(".ring-2");
-  assert.ok(seciliKartVurgusu, "Seçili yayında ring-2 görsel vurgusu uygulanmalı");
-  assert.match(seciliKartVurgusu.className, /border-\[#2f7fc7\]/, "Seçili yayında mavi border sınıfı bulunmalı");
 
   // Butonla 7 karta açıldığını doğrula
   const devamBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
@@ -292,34 +271,14 @@ test("YayindakiVideoBolumu: mobilde 2 kartla başlar, 7 karta açılır, sifirla
       createElement(YayindakiVideoBolumu, {
         videolar,
         yatayMi: true,
-        oneriModu: true,
-        secilenYayinlar: ["yayin-1"],
         sifirlamaAnahtari: "kapsam-b",
-        onVideoSec: () => {
-          oynaticiAcildi = true;
-        },
-        onOneriSec: (v) => {
-          onerilenVideoId = v.yayin_id;
-        },
+        onVideoSec: () => {},
       }),
     );
   });
 
   const sifirlanmisKartlar = mobilKapsayici.querySelectorAll(".grid > div");
   assert.equal(sifirlanmisKartlar.length, 2, "sifirlamaAnahtari değişince liste tekrar 2 karta dönmeli");
-
-  // Öneri butonuna tıklandığında stopPropagation ile onVideoSec açılmamalı, onOneriSec tetiklenmeli
-  const oneriBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
-    b.textContent?.includes("Öneriden Çıkar") || b.textContent?.includes("Öneriye Ekle"),
-  );
-  assert.ok(oneriBtn, "Öneri seçim butonu bulunmalı");
-
-  await act(async () => {
-    oneriBtn.click();
-  });
-
-  assert.equal(onerilenVideoId, "yayin-1", "onOneriSec callback'i tıklanan yayını iletmeli");
-  assert.equal(oynaticiAcildi, false, "Öneri seçildiğinde oynatıcı açılmamalı (stopPropagation korunmalı)");
 
   await act(async () => {
     root.unmount();
@@ -345,7 +304,7 @@ test("Yayindaki Videolar: aramaAlani değişince 7 karttan 2'ye sıfırlanır, a
     aramaAlani: string;
     aramaMetni: string;
   }) {
-    // KlasorGrid içindeki YayindakiVideoBolumu kullanımını simüle eder
+    // Ortak üretici kataloğundaki YayindakiVideoBolumu kullanımını simüle eder
     const sifirlamaAnahtari = `klasor-1-${aramaAlani}-${aramaMetni}`;
     return createElement(YayindakiVideoBolumu, {
       videolar,

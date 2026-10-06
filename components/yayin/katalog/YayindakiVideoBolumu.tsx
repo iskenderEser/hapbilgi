@@ -1,5 +1,4 @@
-// app/yayindaki-videolar/_components/YayindakiVideoBolumu.tsx
-// "Yayındaki Videolar" sayfasına ÖZEL video kart listesi. Ana sayfadaki paylaşımlı
+// Üretici katalogları için yayın kart listesi. Ana sayfadaki paylaşımlı
 // VideoBolumu'ndan AYRI tutuldu (karar: ana sayfa kartı değişmesin). Fark: puan
 // rozeti yerine ★ favori + ♥ beğeni sayısı + üreten (kısa rol + ad soyad).
 // Karta tıklama → onVideoSec → sayfada tam sayfa VideoOynatici (izleme modu).
@@ -27,23 +26,10 @@ function uretenEtiket(rol: string, adSoyad: string): string {
 interface Props {
   videolar: YayindakiVideo[];
   onVideoSec: (video: AnaSayfaVideo) => void;
-  oneriModu?: boolean;
-  secilenYayinlar?: string[];
-  onOneriSec?: (video: YayindakiVideo) => void;
-  hedefRolEtiketiGoster?: boolean;
   uretenBilgisiGoster?: boolean;
   yatayMi?: boolean;
   rafRef?: RefObject<HTMLDivElement | null>;
   sifirlamaAnahtari?: string | number;
-}
-
-function hedefKitleEtiketi(hedefRoller: string[]): string | null {
-  const eczaci = hedefRoller.includes("eczaci");
-  const teknisyen = hedefRoller.includes("eczane_teknisyeni");
-  if (eczaci && teknisyen) return "Eczacı ve Teknisyen";
-  if (eczaci) return "Eczacı";
-  if (teknisyen) return "Eczane Teknisyeni";
-  return null;
 }
 
 import { YayinKarti } from "@/components/yayin/YayinKarti";
@@ -52,10 +38,6 @@ import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 export default function YayindakiVideoBolumu({
   videolar,
   onVideoSec,
-  oneriModu = false,
-  secilenYayinlar = [],
-  onOneriSec,
-  hedefRolEtiketiGoster = false,
   uretenBilgisiGoster = true,
   yatayMi = false,
   rafRef,
@@ -64,22 +46,12 @@ export default function YayindakiVideoBolumu({
   if (videolar.length === 0) return null;
 
   const renderKartIcerigi = (v: YayindakiVideo) => {
-    const secili = secilenYayinlar.includes(v.yayin_id);
-    const hedefEtiketi = hedefRolEtiketiGoster ? hedefKitleEtiketi(v.hedef_roller) : null;
-
     return (
       <YayinKarti
         yayin={v}
         onClick={() => onVideoSec(v)}
         etkilesimAktif={false}
         donguGoster={false}
-        solUstRozet={
-          hedefEtiketi ? (
-            <span className="rounded-full bg-blue-500 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm sm:px-1.5 sm:text-[10px]">
-              {hedefEtiketi}
-            </span>
-          ) : null
-        }
         altEkIcerik={
           <>
             {uretenBilgisiGoster && (
@@ -90,25 +62,8 @@ export default function YayindakiVideoBolumu({
                 <span className="truncate text-xs font-semibold text-gray-500 sm:text-[10px]">{uretenEtiket(v.ureten_rol, v.ureten_ad_soyad)}</span>
               </div>
             )}
-            {oneriModu && (
-              <div className="mt-2 border-t border-[#edf1f6] pt-2">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOneriSec?.(v);
-                  }}
-                  aria-pressed={secili}
-                  aria-label={`${v.urun_adi} yayınını ${secili ? "öneriden çıkar" : "öneriye ekle"}`}
-                  className={`w-full rounded-lg px-3 py-2.5 text-sm font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] sm:py-2 sm:text-[11px] ${secili ? "bg-[#ecfdf5] text-[#167453] hover:bg-[#dff8ec]" : "bg-[#eef5fd] text-[#2f7fc7] hover:bg-[#e0effd]"}`}
-                >
-                  {secili ? "Öneriden Çıkar" : "Öneriye Ekle"}
-                </button>
-              </div>
-            )}
           </>
         }
-        className={secili ? "border-[#2f7fc7] ring-2 ring-[#b9d8f3]" : ""}
       />
     );
   };
@@ -141,7 +96,7 @@ export default function YayindakiVideoBolumu({
         </div>
       )}
       sayacGoster={false}
-      sifirlamaAnahtari={sifirlamaAnahtari ?? (oneriModu ? "oneri" : "normal")}
+      sifirlamaAnahtari={sifirlamaAnahtari ?? "normal"}
       masaustuIcerik={masaustuIcerik}
     />
   );

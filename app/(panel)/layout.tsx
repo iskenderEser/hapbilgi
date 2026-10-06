@@ -31,7 +31,7 @@ import YayinSonucBildirimi from "@/components/panel/YayinSonucBildirimi";
 import { STORE_ALABILEN_ROLLER, URETICI_ROLLER } from "@/lib/utils/roller";
 import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbellek";
 import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
-import { prefetchYayinKatalog } from "@/app/(panel)/yayindaki-videolar/_components/katalogOnbellek";
+import { prefetchYayinKatalog } from "@/lib/video/katalogOnbellek";
 import { prefetchUretimRaporu } from "@/app/(panel)/raporlar/yayin-raporlari/_hooks/uretimRaporuOnbellek";
 import {
   getPanelCache,

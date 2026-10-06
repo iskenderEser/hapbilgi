@@ -39,6 +39,6 @@ export async function GET(
       { status: 200, headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
-    return sunucuHatasi(error, "GET /yayindaki-videolar/api/[yayin_id]");
+    return sunucuHatasi(error, "GET /yayin-katalogu/api/[yayin_id]");
   }
 }

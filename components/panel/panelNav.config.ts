@@ -17,7 +17,6 @@ import {
   YONETICI_ROLLER,
   YONLENDIRICI_ROLLER,
   IU_ROLU,
-  YAYINDAKI_VIDEO_GORENLER,
   CCLIGI_GORENLERLER,
   STORE_ALABILEN_ROLLER,
   STORE_GENEL_GOREN_ROLLER,
@@ -86,6 +85,16 @@ export const PANEL_NAV: NavGrup[] = [
       },
       {
         etiket: "Eğitim Yayınları",
+        path: "/yayindaki-videolar",
+        gate: (c) => c.rolKucu === "tm" || c.rolKucu === "bm" || YONETICI_ROLLER.includes(c.rolKucu),
+        altOglar: UTT_VIDEO_KATEGORILERI.map((kategori) => ({
+          etiket: kategori.etiket,
+          path: `/yayindaki-videolar/${kategori.slug}`,
+          gate: (c) => c.rolKucu === "tm" || c.rolKucu === "bm" || YONETICI_ROLLER.includes(c.rolKucu),
+        })),
+      },
+      {
+        etiket: "Eğitim Yayınları",
         gate: (c: NavContext) => TUKETICI_ROLLER.includes(c.rolKucu),
         altOglar: UTT_VIDEO_KATEGORILERI.map((kategori) => ({
           etiket: kategori.etiket,
@@ -100,7 +109,6 @@ export const PANEL_NAV: NavGrup[] = [
         badgeKey: "oneri",
         gate: (c) => TUKETICI_ROLLER.includes(c.rolKucu),
       },
-      { etiket: "Yayındaki Videolar", path: "/yayindaki-videolar", gate: (c) => YAYINDAKI_VIDEO_GORENLER.includes(c.rolKucu) && !URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "T-Club Ligi",        path: "/t-club-ligi",       gate: () => true },
       {
         etiket: "T-Club Raporları",

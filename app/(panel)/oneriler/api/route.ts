@@ -454,11 +454,15 @@ export async function POST(request: NextRequest) {
 
     // Tüm kontroller geçti — INSERT döngüsü
     const kaydedilenler = [];
+    const kaydedilemeyenler: Array<{ yayin_id: string; kullanici_id: string; hata: string }> = [];
     for (const oneri of oneriler) {
       const { yayin_id, kullanici_id, oneri_baslangic, oneri_bitis } = oneri;
 
       const tarih = oneriTarihKurali(oneri_baslangic, oneri_bitis);
-      if (!tarih.gecerli) continue;
+      if (!tarih.gecerli) {
+        kaydedilemeyenler.push({ yayin_id, kullanici_id, hata: "Öneri tarihi gönderim sırasında geçersiz oldu." });
+        continue;
+      }
 
       const { data: yeniOneri, error: oneriError } = await adminSupabase
         .from("oneri_kayitlari")
@@ -475,6 +479,7 @@ export async function POST(request: NextRequest) {
 
       if (oneriError) {
         console.error("[UYARI] Öneri kaydedilemedi:", { yayin_id, kullanici_id, hata: oneriError.message });
+        kaydedilemeyenler.push({ yayin_id, kullanici_id, hata: "Öneri kaydedilemedi." });
         continue;
       }
 
@@ -491,7 +496,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ mesaj: `${kaydedilenler.length} öneri kaydedildi.`, oneriler: kaydedilenler }, { status: 201 });
+    const tamamıBasarili = kaydedilenler.length === oneriler.length;
+    return NextResponse.json({
+      mesaj: tamamıBasarili
+        ? `${kaydedilenler.length} öneri kaydedildi.`
+        : `${kaydedilenler.length} öneri kaydedildi, ${kaydedilemeyenler.length} öneri kaydedilemedi.`,
+      oneriler: kaydedilenler,
+      basarisizlar: kaydedilemeyenler,
+      ...(!kaydedilenler.length ? { hata: "Önerilerin hiçbiri kaydedilemedi." } : {}),
+    }, { status: kaydedilenler.length ? 201 : 500 });
 
   } catch (err) {
     return sunucuHatasi(err, "POST /oneriler/api");

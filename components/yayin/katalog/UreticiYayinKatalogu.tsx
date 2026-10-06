@@ -17,7 +17,7 @@ import { ListeArama, useListe } from "@/components/liste";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { YAYIN_TURU_SUNUMU, YAYIN_TURLERI } from "@/lib/ogrenmeAraci/turSunumu";
 import { YayinTuruFiltresi, type YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
-import { getKatalogOnbellek, setKatalogOnbellek } from "./katalogOnbellek";
+import { getKatalogOnbellek, setKatalogOnbellek } from "@/lib/video/katalogOnbellek";
 
 type Kapsam = "benim" | "digerleri";
 
@@ -260,7 +260,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
     if (ilkYukleme) setLoading(true);
     else setYenileniyor(true);
     try {
-      const res = await fetch(`/yayindaki-videolar/api?kapsam=${kapsam}`);
+      const res = await fetch(`/yayin-katalogu/api?kapsam=${kapsam}`);
       const data = await res.json();
       if (!res.ok) {
         hataRef.current(data.hata ?? "Yayınlar yüklenemedi.", data.adim, data.detay);

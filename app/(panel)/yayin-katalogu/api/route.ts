@@ -1,5 +1,4 @@
-// app/yayindaki-videolar/api/route.ts
-// "Yayındaki Videolar" sayfasının veri ucu. Yalnız YAYINDAKI_VIDEO_GORENLER
+// Üretici katalogları ve yönetici yayın görünümünün veri ucu. Yalnız YAYINDAKI_VIDEO_GORENLER
 // (üretici + yönetici + tm/bm; iu ve tüketici roller hariç) erişebilir — bekçi
 // proxy.ts'te de var, burada ikinci kez (savunma katmanı) uygulanır.
 // Veri: getYayindakiVideolar — tüm türler + üreten (ad soyad/rol) + favori/beğeni
@@ -36,6 +35,6 @@ export async function GET(request: NextRequest) {
     const videolar = await getYayindakiVideolar(user.id, rol, adminSupabase, kapsam);
     return NextResponse.json({ videolar }, { status: 200 });
   } catch (err) {
-    return sunucuHatasi(err, "GET /yayindaki-videolar/api");
+    return sunucuHatasi(err, "GET /yayin-katalogu/api");
   }
 }

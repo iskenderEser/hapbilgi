@@ -1,4 +1,4 @@
-import UreticiYayinKatalogu from "@/app/(panel)/yayindaki-videolar/_components/UreticiYayinKatalogu";
+import UreticiYayinKatalogu from "@/components/yayin/katalog/UreticiYayinKatalogu";
 
 export default function SizinYayinlarinizPage() {
   return <UreticiYayinKatalogu kapsam="benim" />;

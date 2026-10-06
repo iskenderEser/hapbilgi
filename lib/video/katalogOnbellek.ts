@@ -1,4 +1,4 @@
-// app/(panel)/yayindaki-videolar/_components/katalogOnbellek.ts
+// Üretici yayın katalogları için istemci önbelleği.
 //
 // Yayın kataloğu (Sizin Yayınlarınız & Tüm Yayınlar) için Stale-While-Revalidate önbelleği.
 // Sayfaya girildiğinde içeriğin ilk kareden (0.00 sn) hazır çizilmesini sağlar;
@@ -43,7 +43,7 @@ export function setKatalogOnbellek(kapsam: string, kullaniciId: string, videolar
 
 export async function prefetchYayinKatalog(kapsam: "benim" | "digerleri", kullaniciId: string): Promise<YayindakiVideo[] | null> {
   try {
-    const res = await fetch(`/yayindaki-videolar/api?kapsam=${kapsam}`);
+    const res = await fetch(`/yayin-katalogu/api?kapsam=${kapsam}`);
     if (!res.ok) return null;
     const data = await res.json();
     const videolar = (data.videolar ?? []) as YayindakiVideo[];

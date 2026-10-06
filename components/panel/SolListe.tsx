@@ -21,7 +21,7 @@ import { useEffect, useState } from "react";
 import { PANEL_NAV, type NavContext, type NavGrup, type NavOge } from "./panelNav.config";
 import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbellek";
 import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
-import { prefetchYayinKatalog } from "@/app/(panel)/yayindaki-videolar/_components/katalogOnbellek";
+import { prefetchYayinKatalog } from "@/lib/video/katalogOnbellek";
 import { prefetchUretimRaporu } from "@/app/(panel)/raporlar/yayin-raporlari/_hooks/uretimRaporuOnbellek";
 import { useAuth } from "@/app/providers/AuthProvider";
 

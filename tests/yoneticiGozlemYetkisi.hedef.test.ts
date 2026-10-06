@@ -17,7 +17,7 @@ import {
 const oku = (yol: string) => readFileSync(new URL(`../${yol}`, import.meta.url), "utf8");
 
 const katalog = oku("lib/video/yayindakiVideolar.ts");
-const sayfa = oku("app/(panel)/yayindaki-videolar/page.tsx");
+const sayfa = oku("components/yayin/BmEgitimYayinlari.tsx");
 const oynatici = oku("components/izle/VideoOynatici.tsx");
 const podcast = oku("components/ogrenme-araci/PodcastOynatici.tsx");
 const gorsel = oku("components/ogrenme-araci/GorselOynatici.tsx");
@@ -54,7 +54,7 @@ const ekipSiparisTablosu = oku("app/(panel)/store/siparisler/_components/Siparis
 const ekipSiparisApi = oku("app/(panel)/store/siparisler/api/route.ts");
 const atomikUretimSql = oku("scripts/sql/uretim_atomik_rpc.sql");
 const yoneticiRaporSql = oku("scripts/sql/get_yonetici_rapor_v2.sql");
-const yayinAktiflikApi = oku("app/(panel)/yayindaki-videolar/api/[yayin_id]/route.ts");
+const yayinAktiflikApi = oku("app/(panel)/yayin-katalogu/api/[yayin_id]/route.ts");
 const sahaLigi = oku("lib/tclub/hbligi/getSahaLig.ts");
 const uretimRaporu = oku("lib/rapor/uretim/getUretimData.ts");
 const eclubKapsami = oku("lib/eclub/yonetimKapsami.ts");
@@ -265,7 +265,7 @@ test("açık katalog yayını güncel durum, firma ve rol kapsamıyla yeniden do
 });
 
 test("pasiflenen açık yayın oynatıcıyı durdurur ve katalog ekranına döner", () => {
-  assert.match(oynatici, /fetch\(`\/yayindaki-videolar\/api\/\$\{video\.yayin_id\}`[\s\S]*?cache: "no-store"/);
+  assert.match(oynatici, /fetch\(`\/yayin-katalogu\/api\/\$\{video\.yayin_id\}`[\s\S]*?cache: "no-store"/);
   assert.match(oynatici, /if \(bagli && !res\.ok\)[\s\S]*playerRef\.current\?\.pause\(\)[\s\S]*onKapatRef\.current\(\)/);
   assert.match(oynatici, /window\.setInterval\(\(\) => void dogrula\(\), 5_000\)/);
   assert.match(sayfa, /aktifYayinDogrula/);

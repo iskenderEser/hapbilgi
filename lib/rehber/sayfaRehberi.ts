@@ -382,11 +382,11 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 25. YAYINDAKİ VİDEOLAR / ŞİRKET YAYINLARI ───────────────────────────
+  // ─── 25. EĞİTİM YAYINLARI ────────────────────────────────────────────────
   "yayindaki-videolar": {
     anahtar: "yayindaki-videolar",
-    baslik: "Şirket Yayınları",
-    ozet: "Şirket genelinde yayında olan tüm eğitim videolarını incelemenizi, izlenme ve etkileşim eğilimlerini takip etmenizi sağlar.",
+    baslik: "Eğitim Yayınları",
+    ozet: "Yayındaki eğitim içeriklerini kategori ve yayın türüne göre inceleyebilirsiniz.",
     maddeler: [],
   },
 

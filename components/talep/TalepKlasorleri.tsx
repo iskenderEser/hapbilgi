@@ -7,7 +7,7 @@
 // geldikçe uzuyordu. Onaylanmış bir talebin hangi firmaya, hangi müdürlüğe ve
 // hangi ürüne/eğitime ait olduğu listeden okunamıyordu.
 //
-// Yayındaki Videolar'daki KlasorGrid deseninin çok katlı hali: orada tek kırılım
+// Üretici rollerine göre birden fazla klasör kırılımı gösterir.
 // (departman) var ve firma kırılımı YOK — orası tek firmanın kendi videolarını
 // gösterir. Talep ekranlarında firma katı zorunlu, bu yüzden ayrı bileşen.
 //
