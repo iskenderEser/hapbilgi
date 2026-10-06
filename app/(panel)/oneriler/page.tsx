@@ -1,6 +1,8 @@
 // app/(panel)/oneriler/page.tsx — Önerilen Yayınlar & Öneri Takibi
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { HataMesajiContainer } from "@/components/HataMesaji";
 import { YayinKarti } from "@/components/yayin/YayinKarti";
@@ -35,7 +37,9 @@ function UyeOnerilerIskeleti() {
   );
 }
 
-export default function OnerilerPage() {
+function OnerilerIcerik() {
+  const searchParams = useSearchParams();
+  const bitisYaklasan = searchParams.get("gorunum") === "bitis_yaklasan";
   const {
     kullanici,
     authYukleniyor,
@@ -52,7 +56,7 @@ export default function OnerilerPage() {
     handleFavori,
     handlePeriyotDegistir,
     yenile,
-  } = useOneriler();
+  } = useOneriler(bitisYaklasan);
 
   const rolKucu = (kullanici?.rol ?? "").toLowerCase();
   const isUTT = TUKETICI_ROLLER.includes(rolKucu);
@@ -103,6 +107,7 @@ export default function OnerilerPage() {
           onPeriyotDegistir={handlePeriyotDegistir}
           yenileniyor={yenileniyor}
           onYenile={yenile}
+          bitisYaklasan={bitisYaklasan}
         />
       )}
 
@@ -139,4 +144,8 @@ export default function OnerilerPage() {
       <HataMesajiContainer mesajlar={mesajlar} />
     </div>
   );
+}
+
+export default function OnerilerPage() {
+  return <Suspense fallback={<div className="min-h-screen bg-gray-50" />}><OnerilerIcerik /></Suspense>;
 }

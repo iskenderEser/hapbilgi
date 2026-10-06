@@ -8,7 +8,7 @@ import type { TmBmKaydi, TmOneriKaydi } from "../_components/TmOneriTakibi";
 import type { Periyot } from "@/lib/utils/raporUtils";
 import { ONERI_ZAMANI_DEGISTI } from "@/lib/tclub/oneri/gorunurluk";
 
-export function useOneriler() {
+export function useOneriler(bitisYaklasan = false) {
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [oneriler, setOneriler] = useState<OneriKaydi[]>([]);
   const [tmOneriler, setTmOneriler] = useState<TmOneriKaydi[]>([]);
@@ -82,7 +82,9 @@ export function useOneriler() {
     if (!kullanici?.id) return;
     let aktif = true;
     const veriCek = async () => {
-      const url = isBM || isTM ? `/oneriler/api?periyot=${periyot}` : "/oneriler/api";
+      const url = isBM && bitisYaklasan
+        ? "/oneriler/api?gorunum=bitis_yaklasan"
+        : isBM || isTM ? `/oneriler/api?periyot=${periyot}` : "/oneriler/api";
       const res = await fetch(url);
       const data = await res.json();
       if (!aktif) return;
@@ -101,7 +103,7 @@ export function useOneriler() {
     return () => {
       aktif = false;
     };
-  }, [isBM, isTM, kullanici?.id, periyot, yenileTetik]);
+  }, [bitisYaklasan, isBM, isTM, kullanici?.id, periyot, yenileTetik]);
 
   useEffect(() => {
     if (isBM || isTM) return;

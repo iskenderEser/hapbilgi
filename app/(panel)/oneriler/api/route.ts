@@ -11,6 +11,7 @@ import { tarihAraligi } from "@/lib/utils/tarihAraligi";
 import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 import { yayinThumbnailCevabi, oneriListesiThumbnailZenginlestir } from "@/lib/ogrenmeAraci/yayinThumbnail";
 import { yayinGorunenUrunIdHaritasi } from "@/lib/urunler/gorunenId";
+import { YAKLASAN_BITIS_SAATI } from "@/lib/tclub/oneri/yaklasanBitis";
 
 const GET_ROLLERI = [...YONLENDIRICI_ROLLER, ...TUKETICI_ROLLER];
 
@@ -146,26 +147,54 @@ export async function GET(request: NextRequest) {
         }, { status: 200 });
       }
 
-      const { data: takipKayitlari, error: takipError } = await adminSupabase.rpc(
-        "get_bm_oneri_durumu_v1",
-        {
-          p_bm_id: user.id,
-          p_baslangic: baslangic,
-          p_bitis: bitis,
-        },
-      );
+      const bitisYaklasan = request.nextUrl.searchParams.get("gorunum") === "bitis_yaklasan";
+      const simdi = new Date();
+      let bmTakipKayitlari: BmOneriTakipKaydi[];
+      if (bitisYaklasan) {
+        const { data: bm, error: bmError } = await adminSupabase.from("kullanicilar")
+          .select("firma_id, takim_id, bolge_id").eq("kullanici_id", user.id)
+          .eq("aktif_mi", true).single();
+        if (bmError || !bm) return hataYaniti("BM kapsamı alınamadı.", "kullanicilar SELECT — yaklaşan öneriler", bmError);
 
-      if (takipError) {
-        return hataYaniti("Öneri takip kayıtları çekilemedi.", "get_bm_oneri_durumu_v1 RPC", takipError);
+        const { data: uttler, error: uttError } = await adminSupabase.from("kullanicilar")
+          .select("kullanici_id, ad, soyad").eq("firma_id", bm.firma_id)
+          .eq("takim_id", bm.takim_id).eq("bolge_id", bm.bolge_id)
+          .eq("aktif_mi", true).in("rol", TUKETICI_ROLLER);
+        if (uttError) return hataYaniti("UTT listesi alınamadı.", "kullanicilar SELECT — yaklaşan öneriler", uttError);
+
+        const uttHaritasi = new Map((uttler ?? []).map((utt) => [utt.kullanici_id, utt]));
+        const uttIdleri = [...uttHaritasi.keys()];
+        const bitisEsigi = new Date(simdi.getTime() + YAKLASAN_BITIS_SAATI * 60 * 60 * 1000);
+        const kayitlar: { oneri_id: string; kullanici_id: string; yayin_id: string; oneri_baslangic: string; oneri_bitis: string; created_at: string }[] = [];
+        for (let offset = 0; uttIdleri.length > 0; offset += 500) {
+          const { data, error } = await adminSupabase.from("oneri_kayitlari")
+            .select("oneri_id, kullanici_id, yayin_id, oneri_baslangic, oneri_bitis, created_at")
+            .eq("oneren_id", user.id).in("kullanici_id", uttIdleri).eq("izlendi_mi", false)
+            .lte("oneri_baslangic", simdi.toISOString()).gte("oneri_bitis", simdi.toISOString())
+            .lte("oneri_bitis", bitisEsigi.toISOString())
+            .order("oneri_id", { ascending: true }).range(offset, offset + 499);
+          if (error) return hataYaniti("Yaklaşan öneriler alınamadı.", "oneri_kayitlari SELECT", error);
+          kayitlar.push(...(data ?? []));
+          if ((data ?? []).length < 500) break;
+        }
+        bmTakipKayitlari = kayitlar.map((kayit) => {
+          const utt = uttHaritasi.get(kayit.kullanici_id)!;
+          return { ...kayit, utt_ad: utt.ad, utt_soyad: utt.soyad, urun_adi: null, teknik_adi: null, durum: "bekleyen" };
+        });
+      } else {
+        const { data: takipKayitlari, error: takipError } = await adminSupabase.rpc(
+          "get_bm_oneri_durumu_v1",
+          { p_bm_id: user.id, p_baslangic: baslangic, p_bitis: bitis },
+        );
+        if (takipError) return hataYaniti("Öneri takip kayıtları çekilemedi.", "get_bm_oneri_durumu_v1 RPC", takipError);
+        bmTakipKayitlari = (takipKayitlari ?? []) as BmOneriTakipKaydi[];
       }
-
-      const bmTakipKayitlari = (takipKayitlari ?? []) as BmOneriTakipKaydi[];
       const yayinIdleri = [...new Set(bmTakipKayitlari.map((kayit) => kayit.yayin_id).filter(Boolean))];
       const [yayinlarSonucu, yayinYonetimiSonucu] = await Promise.all([
         yayinIdleri.length > 0
           ? adminSupabase
               .from("v_yayin_detay")
-              .select("yayin_id, video_url, thumbnail_url, video_puani, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, talep_no, firma_adi, yayin_tarihi, icerik_turu")
+              .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, talep_no, firma_adi, yayin_tarihi, icerik_turu")
               .in("yayin_id", yayinIdleri)
           : Promise.resolve({ data: [], error: null }),
         yayinIdleri.length > 0
@@ -195,8 +224,8 @@ export async function GET(request: NextRequest) {
           oneri_bitis: kayit.oneri_bitis,
           izlendi_mi: kayit.durum === "tamamlanan",
           created_at: kayit.created_at,
-          urun_adi: kayit.urun_adi,
-          teknik_adi: kayit.teknik_adi,
+          urun_adi: kayit.urun_adi ?? yayin?.urun_adi ?? "",
+          teknik_adi: kayit.teknik_adi ?? yayin?.teknik_adi ?? "",
           gorunen_urun_id: gorunenUrunIdleri.get(kayit.yayin_id) ?? null,
           video_url: yayin?.video_url ?? null,
           thumbnail_url: yayin?.thumbnail_url ?? null,

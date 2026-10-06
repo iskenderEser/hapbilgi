@@ -70,6 +70,7 @@ interface Props {
   onPeriyotDegistir: (periyot: Periyot) => void;
   yenileniyor?: boolean;
   onYenile?: () => void;
+  bitisYaklasan?: boolean;
 }
 
 export default function BmOneriTakibi({
@@ -78,6 +79,7 @@ export default function BmOneriTakibi({
   onPeriyotDegistir,
   yenileniyor = false,
   onYenile,
+  bitisYaklasan = false,
 }: Props) {
   const router = useRouter();
   const [konuFiltresi, setKonuFiltresi] = useState("");
@@ -152,11 +154,18 @@ export default function BmOneriTakibi({
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
           <div className="flex items-center gap-2">
-            <RaporPeriyotSecici deger={periyot} onDegistir={onPeriyotDegistir} />
+            {!bitisYaklasan && <RaporPeriyotSecici deger={periyot} onDegistir={onPeriyotDegistir} />}
             {onYenile && <YenileButonu yenileniyor={yenileniyor} onYenile={onYenile} />}
           </div>
         </div>
       </header>
+
+      {bitisYaklasan && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#f4d89a] bg-[#fffbeb] px-3 py-2 text-xs font-semibold text-[#8a5a12]">
+          <span>Bitişine 48 saat veya daha az kalan, tamamlanmamış öneriler gösteriliyor.</span>
+          <button type="button" onClick={() => router.push("/oneriler")} className="underline underline-offset-2 hover:text-[#65400c]">Tüm önerileri göster</button>
+        </div>
+      )}
 
       <section aria-label="Öneri durumu özeti" className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
         {kartlar.map((kart) => {

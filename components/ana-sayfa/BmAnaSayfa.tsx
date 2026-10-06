@@ -99,7 +99,7 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
 
   const istat = bmVeri?.istatistikler ?? { bitis_yaklasan_oneriler: 0, cek_onay_bekleyen: 0, siparis_onay_bekleyen: 0, gelen_challenge: 0 };
   const kartlar = [
-    { label: "Bitiş Tarihi Yaklaşan Öneriler", value: istat.bitis_yaklasan_oneriler, sub: "48 saat içinde bitecek", renk: "#f59e0b", href: "/oneriler" },
+    { label: "Bitiş Tarihi Yaklaşan Öneriler", value: istat.bitis_yaklasan_oneriler, sub: "48 saat içinde bitecek", renk: "#f59e0b", href: "/oneriler?gorunum=bitis_yaklasan" },
     ...(bmVeri?.moduller.eclub ? [
       { label: "Çek Onay Takibi", value: istat.cek_onay_bekleyen, sub: "BM onayı bekliyor", renk: "#2f7fc7", href: "/eclub/hediye-takip?tur=cek&durum=bm_onayinda" },
       { label: "Sipariş Onay Takibi", value: istat.siparis_onay_bekleyen, sub: "BM onayı bekliyor", renk: "#16a34a", href: "/eclub/hediye-takip?tur=siparis&durum=utt_onayladi" },

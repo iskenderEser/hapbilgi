@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
-
-const YAKLASAN_BITIS_SAATI = 48;
+import { YAKLASAN_BITIS_SAATI } from "@/lib/tclub/oneri/yaklasanBitis";
 
 async function bmOnayiBekleyenSiparisSayisi(admin: SupabaseClient, firmaId: string, uttIdler: string[]): Promise<number> {
   if (uttIdler.length === 0) return 0;
