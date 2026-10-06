@@ -132,10 +132,6 @@ export const PANEL_NAV: NavGrup[] = [
     oglar: [
       { etiket: "Challenge Club",    path: "/challenge-club",     gate: (c) => c.ccAcik && c.rolKucu === "bm" },
       { etiket: "C-Club Ligi",       path: "/cc-ligi",            gate: (c) => c.ccAcik && CCLIGI_GORENLERLER.includes(c.rolKucu) },
-      // BM kişisel HBStore erişimi (C-Club puanlarıyla alışveriş)
-      { etiket: "HBStore",           path: "/store",              tamEslesme: true, gate: (c) => c.storeAcik && c.ccAcik && c.rolKucu === "bm" },
-      { etiket: "Siparişlerim",      path: "/store/siparislerim",                   gate: (c) => c.storeAcik && c.ccAcik && c.rolKucu === "bm" },
-      { etiket: "Adreslerim",        path: "/store/adreslerim",                     gate: (c) => c.storeAcik && c.ccAcik && c.rolKucu === "bm" },
     ],
   },
 
@@ -177,7 +173,7 @@ const mobilKisiselHbstoreGorunur = (ctx: NavContext) =>
 
 /**
  * Mobil drawer'da kişisel HBStore yollarını masaüstü gruplarından ayırır.
- * PANEL_NAV değiştirilmediği için masaüstü sidebar yerleşimi aynen korunur.
+ * Masaüstü sidebar'daki kişisel HBStore bağlantıları varsa mobilde tekrarlanmaz.
  */
 export function mobilPanelNavOlustur(gruplar: NavGrup[], ctx: NavContext): NavGrup[] {
   const temizGruplar = gruplar.map((grup) => ({

@@ -1,29 +1,41 @@
 // app/challenge-club/page.tsx
 //
-// Challenge Club ana sayfası (BM). Stat kartları + iki sekme:
-//   - Challenge Gönder   → Gönderilecek Videolar yapısı (ChallengeGonderPaneli):
-//                          tamamlanan CC videoları + çok BM'ye gönderim (atla-raporla).
-//   - Gelen Challenge'lar → BM'e gelen challenge'lar; kart düzeni İzlenecek ile aynı,
-//                          tıkla → /challenge-club/izle/[yayin_id]?challenge_id=X.
+// Challenge Club ana sayfası (BM). Dört işlem sekmesi ve her sekmede yayın türü filtresi.
+// Challenge Gönder, tamamlanan CC yayınlarını ve çok BM'ye gönderimi yönetir.
+// Gelen Challengelar kartları /challenge-club/izle/[yayin_id]?challenge_id=X adresini açar.
 
 "use client";
 
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Inbox, Send, Swords, Ticket, Video, type LucideIcon } from "lucide-react";
+import { BookOpen, Inbox, Send, Ticket, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import ChallengeGonderPaneli, { type GonderSonuc } from "@/components/challenge-club/ChallengeGonderPaneli";
+import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 import { UttVideoKarti, type UttVideo } from "@/components/video/UttVideoKarti";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
+import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
 
 const CC_RENK = "#237ac8";
 const GRI_METIN = "#737373";
-const KOYU_METIN = "#111827";
 const GRI_ZEMIN = "#f9fafb";
 
 type Tab = "izlenecek" | "gonder" | "bekleyen" | "gonderilen";
+const CC_SEKMELERI: Array<{ key: Tab; label: string; mobilLabel: string }> = [
+  { key: "izlenecek", label: "Yayınlar", mobilLabel: "Yayınlar" },
+  { key: "gonder", label: "Challenge Gönder", mobilLabel: "Gönder" },
+  { key: "gonderilen", label: "Gönderilen Challengelar", mobilLabel: "Gönderilen" },
+  { key: "bekleyen", label: "Gelen Challengelar", mobilLabel: "Gelen" },
+];
+
+function yayinTuruneGoreFiltrele<T extends { arac_turu?: string | null }>(
+  kayitlar: T[],
+  tur: YayinTuruFiltreDegeri,
+): T[] {
+  return tur === "tumu" ? kayitlar : kayitlar.filter((kayit) => (kayit.arac_turu ?? "video") === tur);
+}
 
 // UTT kartıyla ortak alt bilgiler (extra, izlenme, beğeni/favori, talep, içerik türü).
 interface KartMetrik {
@@ -112,7 +124,7 @@ function challengeyiUttKarta(c: Challenge): UttVideo {
   return {
     ...metrikTaban(c),
     yayin_id: c.yayin_id,
-    urun_adi: c.urun_adi ?? "Video",
+    urun_adi: c.urun_adi ?? "Yayın",
     teknik_adi: c.teknik_adi ?? "-",
     video_url: c.video_url ?? null,
     thumbnail_url: c.thumbnail_url ?? null,
@@ -140,6 +152,12 @@ export default function ChallengeClubPage() {
   const [rol, setRol] = useState("");
   const [loading, setLoading] = useState(true);
   const [aktifTab, setAktifTab] = useState<Tab>("izlenecek");
+  const [aktifTurler, setAktifTurler] = useState<Record<Tab, YayinTuruFiltreDegeri>>({
+    izlenecek: "tumu",
+    gonder: "tumu",
+    gonderilen: "tumu",
+    bekleyen: "tumu",
+  });
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("tab") === "bekleyen") setAktifTab("bekleyen");
@@ -193,7 +211,7 @@ export default function ChallengeClubPage() {
         setVideolar(d.videolar ?? []);
       } else {
         const d = await videoRes.json();
-        hata(d.hata ?? "Videolar yüklenemedi.", d.adim, d.detay);
+        hata(d.hata ?? "Yayınlar yüklenemedi.", d.adim, d.detay);
       }
 
       if (bekRes.ok) {
@@ -325,6 +343,16 @@ export default function ChallengeClubPage() {
 
   // Hero + stat türevleri
   const bekleyenSayisi = bekleyenler.filter((c) => c.durum === "bekliyor").length;
+  const tamamlananYayinlar = videolar.filter((yayin) => yayin.tamamlandi_mi);
+  const aktifTur = aktifTurler[aktifTab];
+  const aktifTabKayitlari: Array<{ arac_turu?: string | null }> = aktifTab === "izlenecek" ? videolar
+    : aktifTab === "gonder" ? tamamlananYayinlar
+    : aktifTab === "gonderilen" ? gonderdiklerim : bekleyenler;
+  const filtreliYayinlar = yayinTuruneGoreFiltrele(videolar, aktifTur);
+  const filtreliTamamlananlar = yayinTuruneGoreFiltrele(tamamlananYayinlar, aktifTur);
+  const filtreliGonderilenler = yayinTuruneGoreFiltrele(gonderdiklerim, aktifTur);
+  const filtreliGelenler = yayinTuruneGoreFiltrele(bekleyenler, aktifTur);
+  const filtreliKayitSayisi = yayinTuruneGoreFiltrele(aktifTabKayitlari, aktifTur).length;
 
   return (
     <div
@@ -366,12 +394,6 @@ export default function ChallengeClubPage() {
         {/* Hero başlık */}
         <header className="mb-5">
           <div className="min-w-0">
-            <div
-              className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em]"
-              style={{ color: CC_RENK }}
-            >
-              <Swords size={14} /> Challenge Club
-            </div>
             <div className="inline-flex items-center">
               <h1
                 className="m-0 text-2xl font-extrabold tracking-[-0.03em]"
@@ -382,86 +404,93 @@ export default function ChallengeClubPage() {
               <SayfaRehberi anahtar="challenge-club" className="ml-1.5 -translate-y-1" />
             </div>
             <p className="mt-1 max-w-2xl text-xs font-semibold leading-5" style={{ color: "#8190a3" }}>
-              {"BM · Diğer BM'lere video önerin, size gelen challenge'ları izleyin ve puan kazanın."}
+              Tamamladığınız yayınları diğer BM’lere challenge olarak gönderebilir, size gelenleri takip edebilirsiniz.
             </p>
           </div>
         </header>
 
         {/* Stat kartlar */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-          <StatKart ikon={Video} etiket="İzlenecek Video" deger={videolar.length} detay="Yayındaki CC videosu" renk={CC_RENK} zemin="#edf6fd" />
+          <StatKart ikon={BookOpen} etiket="Yayınlar" deger={videolar.length} detay="Challenge Club içerikleri" renk={CC_RENK} zemin="#edf6fd" />
           <StatKart ikon={Inbox} etiket="Gelen Challenge" deger={bekleyenSayisi} detay="Süresi devam eden" renk="#d78022" zemin="#fff6e8" />
-          <StatKart ikon={Send} etiket="Gönderdiğim" deger={gonderdiklerim.length} detay="Bu ay" renk="#16865f" zemin="#ebf8f2" />
-          <StatKart ikon={Ticket} etiket="Kalan Hak" deger={quota?.kalan ?? 0} detay="Aylık gönderim kotası" renk="#237ac8" zemin="#edf6fd" />
+          <StatKart ikon={Send} etiket="Gönderdiğim Challenge" deger={gonderdiklerim.length} detay="Bu ay" renk="#16865f" zemin="#ebf8f2" />
+          <StatKart ikon={Ticket} etiket="Challenge Limiti" deger={quota?.kalan ?? 0} detay="Aylık gönderim kotası" renk="#237ac8" zemin="#edf6fd" />
         </section>
 
-        {/* Tab — yatay scroll mobile */}
-        <div
-          className="flex gap-2 mb-4 overflow-x-auto pb-1"
-          style={{ WebkitOverflowScrolling: "touch" }}
-        >
-          <TabButton
-            aktif={aktifTab === "izlenecek"}
-            onClick={() => setAktifTab("izlenecek")}
-            etiket="İzlenecek Videolar"
-          />
-          <TabButton
-            aktif={aktifTab === "gonder"}
-            onClick={() => setAktifTab("gonder")}
-            etiket="Challenge Gönder"
-          />
-          <TabButton
-            aktif={aktifTab === "gonderilen"}
-            onClick={() => setAktifTab("gonderilen")}
-            etiket="Gönderilen Challenge'lar"
-          />
-          <TabButton
-            aktif={aktifTab === "bekleyen"}
-            onClick={() => setAktifTab("bekleyen")}
-            etiket="Gelen Challenge'lar"
-            rozet={bekleyenler.filter((challenge) => challenge.durum === "bekliyor").length || undefined}
+        {/* İşlem sekmeleri; yayın türü filtresi ayrı görsel düzeyde kalır. */}
+        <div className="mb-4 max-w-[68rem] border-b border-[#dfe7f1]">
+          <div className="flex max-w-full gap-4 overflow-x-auto [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden" aria-label="Challenge Club bölümü">
+            {CC_SEKMELERI.map((sekme) => {
+              const aktif = aktifTab === sekme.key;
+              return (
+                <button
+                  key={sekme.key}
+                  type="button"
+                  aria-pressed={aktif}
+                  onClick={() => setAktifTab(sekme.key)}
+                  className={`-mb-px shrink-0 cursor-pointer border-b-2 px-1 py-2 text-[13px] font-extrabold transition-colors ${aktif ? "border-[#237ac8] text-[#237ac8]" : "border-transparent text-[#70849d] hover:text-[#237ac8]"}`}
+                >
+                  <span className="sm:hidden">{sekme.mobilLabel}</span>
+                  <span className="hidden sm:inline">{sekme.label}</span>
+                  {sekme.key === "bekleyen" && bekleyenSayisi > 0 ? ` ${bekleyenSayisi}` : ""}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="mb-4 flex max-w-full">
+          <UttYayinTuruToggle
+            yayinlar={aktifTabKayitlari.map((kayit) => ({ arac_turu: kayit.arac_turu ?? "video" }))}
+            deger={aktifTur}
+            onDegistir={(tur) => setAktifTurler((mevcut) => ({ ...mevcut, [aktifTab]: tur }))}
           />
         </div>
 
         {/* Tab içerikleri */}
-        {aktifTab === "izlenecek" && (
-          <VideoListesi
-            videolar={videolar}
-            onIzle={handleVideoIzle}
-            onKilitliGecis={() => setAktifTab("bekleyen")}
-            onBegeni={handleBegeni}
-            onFavori={handleFavori}
-            sifirlamaAnahtari={aktifTab}
-          />
-        )}
+        {aktifTur !== "tumu" && filtreliKayitSayisi === 0 ? (
+          <BosDurum ikon={BookOpen} metin="Seçilen yayın türünde kayıt bulunmuyor." />
+        ) : (
+          <>
+            {aktifTab === "izlenecek" && (
+              <VideoListesi
+                videolar={filtreliYayinlar}
+                onIzle={handleVideoIzle}
+                onKilitliGecis={() => setAktifTab("bekleyen")}
+                onBegeni={handleBegeni}
+                onFavori={handleFavori}
+                sifirlamaAnahtari={`${aktifTab}-${aktifTur}`}
+              />
+            )}
 
-        {aktifTab === "gonder" && (
-          <ChallengeGonderPaneli
-            videolar={videolar.filter((v) => v.tamamlandi_mi)}
-            kalanKota={quota?.kalan ?? 0}
-            hata={hata}
-            onGonder={handleCokluGonder}
-          />
-        )}
+            {aktifTab === "gonder" && (
+              <ChallengeGonderPaneli
+                videolar={filtreliTamamlananlar}
+                kalanKota={quota?.kalan ?? 0}
+                hata={hata}
+                onGonder={handleCokluGonder}
+              />
+            )}
 
-        {aktifTab === "bekleyen" && (
-          <BekleyenListesi
-            bekleyenler={bekleyenler}
-            onIzle={handleChallengeIzle}
-            onBegeni={handleBegeni}
-            onFavori={handleFavori}
-            sifirlamaAnahtari={aktifTab}
-          />
-        )}
+            {aktifTab === "bekleyen" && (
+              <BekleyenListesi
+                bekleyenler={filtreliGelenler}
+                onIzle={handleChallengeIzle}
+                onBegeni={handleBegeni}
+                onFavori={handleFavori}
+                sifirlamaAnahtari={`${aktifTab}-${aktifTur}`}
+              />
+            )}
 
-        {aktifTab === "gonderilen" && (
-          <GonderilenListesi
-            gonderdiklerim={gonderdiklerim}
-            onIzle={handleVideoIzle}
-            onBegeni={handleBegeni}
-            onFavori={handleFavori}
-            sifirlamaAnahtari={aktifTab}
-          />
+            {aktifTab === "gonderilen" && (
+              <GonderilenListesi
+                gonderdiklerim={filtreliGonderilenler}
+                onIzle={handleVideoIzle}
+                onBegeni={handleBegeni}
+                onFavori={handleFavori}
+                sifirlamaAnahtari={`${aktifTab}-${aktifTur}`}
+              />
+            )}
+          </>
         )}
       </div>
     </div>
@@ -551,46 +580,6 @@ export function KartMeta({ children, renk }: { children: ReactNode; renk?: strin
   );
 }
 
-function TabButton({
-  aktif,
-  onClick,
-  etiket,
-  rozet,
-}: {
-  aktif: boolean;
-  onClick: () => void;
-  etiket: string;
-  rozet?: number;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-4 py-2 rounded-full text-xs font-bold cursor-pointer border whitespace-nowrap flex items-center gap-1.5 flex-shrink-0"
-      style={{
-        fontFamily: "'Nunito', sans-serif",
-        background: aktif ? CC_RENK : "white",
-        color: aktif ? "white" : KOYU_METIN,
-        borderColor: aktif ? CC_RENK : "#e5e7eb",
-      }}
-    >
-      {etiket}
-      {rozet !== undefined && (
-        <span
-          className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-          style={{
-            background: aktif ? "rgba(255,255,255,0.25)" : CC_RENK,
-            color: aktif ? "white" : "white",
-            minWidth: "18px",
-            textAlign: "center",
-          }}
-        >
-          {rozet}
-        </span>
-      )}
-    </button>
-  );
-}
-
 export function VideoListesi({
   videolar,
   onIzle,
@@ -607,7 +596,7 @@ export function VideoListesi({
   sifirlamaAnahtari?: string | number;
 }) {
   if (videolar.length === 0) {
-    return <BosDurum ikon={Video} metin="Henüz yayında olan CC videosu yok." />;
+    return <BosDurum ikon={BookOpen} metin="Henüz yayında olan Challenge Club yayını yok." />;
   }
 
   const renderKartIcerigi = (v: Video) => (
@@ -628,7 +617,7 @@ export function VideoListesi({
       </div>
       {v.kilitli ? (
         <KartMeta renk={CC_RENK}>
-          🔒 Bu video için gelen challenge var. &quot;Gelenler&quot;den izleyin.
+          🔒 Bu yayın için gelen challenge var. Gelen Challengelar bölümünden açın.
         </KartMeta>
       ) : null}
     </div>

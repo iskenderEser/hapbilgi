@@ -375,16 +375,46 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   "challenge-club": {
     anahtar: "challenge-club",
     baslik: "Challenge Club",
-    ozet: "Bölge Müdürleri arasındaki aktif meydan okumalara (challenge) katılmanızı, görevleri tamamlayarak C-Club puanı kazanmanızı sağlar.",
-    maddeler: [],
+    ozet: "Challenge Club yayınlarını tamamlayın. Diğer BM’lere challenge gönderin. Size gelenleri takip edin.",
+    maddeler: [
+      {
+        baslik: "Challenge Kime Gönderilir",
+        aciklama: "Tamamladığınız yayınlar, Challenge Gönder başlığı altında listelenecektir. Listelenen yayınlardan birini seçebilir ve uygun BM’leri tercih edebilirsiniz. Bir ay içinde aynı BM'ye bir kez gönderebilirsiniz. Aynı ay içinde toplamda en fazla 3 farklı BM'ye gönderim yapabilirsiniz.",
+      },
+      {
+        baslik: "Kimlere Challenge Gönderemezsiniz",
+        aciklama: "Seçtiğiniz yayını tamamlamış BM’yi seçemezsiniz. Tercih ettiğiniz BM’ye göndermek istediğiniz yayını başka bir BM sizden önce göndermişse, o BM’yi yeniden seçemezsiniz.",
+      },
+      {
+        baslik: "Challenge Almak Ne Kazandırır?",
+        aciklama: "Yayın tamamlama puanı ve sorulara verdiğiniz doğru cevaplarla puan kazanırsınız. İleri sarma ve yanlış cevaplar puan kaybına neden olacaktır.",
+      },
+      {
+        baslik: "Challenge Göndermek Ne Kazandırır?",
+        aciklama: "Challenge gönderdiğinizde gönderim puanı kazanırsınız. Alıcı BM yayını tamamlayıp sorularını yanıtladığında bir kez daha puan kazanırsınız.",
+      },
+    ],
   },
 
   // ─── 23. ÖNERİ TAKİBİ (TM / TAKIM MÜDÜRÜ) ─────────────────────────────────
   "oneriler-tm": {
     anahtar: "oneriler-tm",
     baslik: "Öneri Takibi",
-    ozet: "Takımınızdaki Bölge Müdürlerinin saha temsilcilerine yaptığı video önerilerini ve bu önerilerin izlenme durumlarını bölge bazında takip etmenizi sağlar.",
-    maddeler: [],
+    ozet: "Takımınızdaki BM’lerin temsilcilere gönderdiği yayın önerilerinin durumunu seçtiğiniz dönemde görebilirsiniz.",
+    maddeler: [
+      {
+        baslik: "Dönemi ve Durumu Seçin",
+        aciklama: "Haftalık, aylık, dönemlik veya yıllık görünümü seçin. Üstteki kartlardan toplam, tamamlanan, bekleyen ve süresi geçmiş önerileri inceleyin.",
+      },
+      {
+        baslik: "BM Dağılımını İnceleyin",
+        aciklama: "Bir durum kartını seçerek önerilerin BM ve bölgelere dağılımını görün. Kayıtları açmak için ilgili BM’ye tıklayın.",
+      },
+      {
+        baslik: "Önerileri İnceleyin",
+        aciklama: "Her önerinin alıcısını, başlangıç ve bitiş tarihini ve tamamlanma durumunu inceleyin.",
+      },
+    ],
   },
 
   // ─── 24. T-CLUB RAPORLARI (TM / TAKIM MÜDÜRÜ) ─────────────────────────────

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Film } from "lucide-react";
+import { BookOpen, ChevronDown } from "lucide-react";
 import { DagitimIcerikOzeti } from "@/components/ogrenme-araci/DagitimIcerikOzeti";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -44,17 +44,17 @@ export default function ChallengeGonderPaneli({ videolar, kalanKota, hata, onGon
   if (videolar.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-[#d8e2ec] bg-white px-5 py-12 text-center">
-        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1f6fa] text-[#8ba0b5]"><Film size={20} /></span>
-        <h2 className="mt-3 text-sm font-extrabold text-[#40556d]">Henüz atanmış CC videosu yok.</h2>
-        <p className="mx-auto mt-1 max-w-md text-xs font-semibold leading-5 text-[#8a99aa]">Firmanıza CC videosu atandığında burada listelenir.</p>
+        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1f6fa] text-[#8ba0b5]"><BookOpen size={20} /></span>
+        <h2 className="mt-3 text-sm font-extrabold text-[#40556d]">Henüz tamamladığınız yayın yok.</h2>
+        <p className="mx-auto mt-1 max-w-md text-xs font-semibold leading-5 text-[#8a99aa]">Bir Challenge Club yayınını tamamladığınızda burada listelenir.</p>
       </div>
     );
   }
   return (
     <section className="overflow-visible rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
       <div className="border-b border-[#e5ecf4] px-4 py-3.5">
-        <h2 className="text-base font-extrabold text-[#203653]">Gönderilecek Videolar</h2>
-        <p className="mt-0.5 text-[11px] font-semibold text-[#7b8da5]">{videolar.length} video · {kalanKota} gönderim hakkı kaldı</p>
+        <h2 className="text-base font-extrabold text-[#203653]">Gönderilecek Yayınlar</h2>
+        <p className="mt-0.5 text-[11px] font-semibold text-[#7b8da5]">{videolar.length} yayın · {kalanKota} gönderim hakkı kaldı</p>
       </div>
       {videolar.map((video) => (
         <ChallengeGonderSatiri key={video.yayin_id} video={video} hata={hata} onGonder={onGonder} />
@@ -109,7 +109,7 @@ function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; 
 
         {/* Bilgi */}
         <div className="min-w-0">
-          <span className="block text-[9px] font-bold uppercase tracking-wide text-[#8a99aa]">Video puanı</span>
+          <span className="block text-[9px] font-bold uppercase tracking-wide text-[#8a99aa]">Yayın puanı</span>
           <strong className="mt-1 block text-[11px] text-[#405976]">{video.video_puani == null ? "—" : `${video.video_puani} puan`}</strong>
         </div>
 

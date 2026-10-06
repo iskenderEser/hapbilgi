@@ -12,6 +12,8 @@ import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 import { yayinThumbnailCevabi, oneriListesiThumbnailZenginlestir } from "@/lib/ogrenmeAraci/yayinThumbnail";
 import { yayinGorunenUrunIdHaritasi } from "@/lib/urunler/gorunenId";
 import { YAKLASAN_BITIS_SAATI } from "@/lib/tclub/oneri/yaklasanBitis";
+import { isIcerikTuru } from "@/lib/video/icerikTuru";
+import { isTalepTuru, TALEP_TURU_KURALLARI } from "@/lib/uretici/yetenekler";
 
 const GET_ROLLERI = [...YONLENDIRICI_ROLLER, ...TUKETICI_ROLLER];
 
@@ -103,7 +105,7 @@ export async function GET(request: NextRequest) {
           yayinIdleri.length > 0
             ? adminSupabase
                 .from("v_yayin_detay")
-                .select("yayin_id, video_url, thumbnail_url, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
+                .select("yayin_id, icerik_turu, egitim_turu, video_url, thumbnail_url, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
                 .in("yayin_id", yayinIdleri)
             : Promise.resolve({ data: [], error: null }),
           yayinIdleri.length > 0
@@ -129,6 +131,11 @@ export async function GET(request: NextRequest) {
             thumbnail_url: yayin?.thumbnail_url ?? null,
             arac_id: yayin?.arac_id ?? null,
             arac_turu: yayin?.arac_turu ?? null,
+            icerik_turu: isIcerikTuru(yayin?.icerik_turu)
+              ? yayin.icerik_turu
+              : isTalepTuru(yayin?.egitim_turu)
+                ? TALEP_TURU_KURALLARI[yayin.egitim_turu].icerikTuru
+                : null,
             extra_puan: extraPuanHaritasi.get(kayit.yayin_id) ?? 0,
           };
         });
