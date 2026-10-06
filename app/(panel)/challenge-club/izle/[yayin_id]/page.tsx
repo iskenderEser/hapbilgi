@@ -30,6 +30,7 @@ export default function CcIzlemePage() {
   const searchParams = useSearchParams();
   const yayin_id = params?.yayin_id as string;
   const challenge_id = searchParams?.get("challenge_id") ?? null;
+  const donusYolu = searchParams?.get("donus") === "ana-sayfa" ? "/ana-sayfa" : "/challenge-club";
 
   const [yayin, setYayin] = useState<Yayin | null>(null);
   const [loading, setLoading] = useState(true);
@@ -162,7 +163,7 @@ export default function CcIzlemePage() {
         key={yayin.yayin_id}
         video={yayin}
         challenge_id={challenge_id}
-        onKapat={() => router.push("/challenge-club")}
+        onKapat={() => router.push(donusYolu)}
         onVeriYenile={async () => {}}
         hata={hata}
         basari={basari}

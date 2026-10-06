@@ -17,8 +17,8 @@ type BmSiparisYaniti = SiparisTakipApiYaniti & { uttler: UttSecenegi[] };
 const BOS_CEK_SECENEKLER: CekTakipApiYaniti["filtre_secenekleri"] = { eczaneler: [], uyeler: [], urunler: [] };
 const BOS_SIPARIS_SECENEKLER: SiparisTakipApiYaniti["filtre_secenekleri"] = { eczaneler: [], urunler: [] };
 
-export default function BmHediyeTakipIstemcisi({ rol = "bm" }: { rol?: "bm" | "tm" }) {
-  const [takipTuru, setTakipTuru] = useState<HediyeTakipTuru>("cek");
+export default function BmHediyeTakipIstemcisi({ rol = "bm", ilkTakipTuru = "cek", ilkDurum }: { rol?: "bm" | "tm"; ilkTakipTuru?: HediyeTakipTuru; ilkDurum?: string }) {
+  const [takipTuru, setTakipTuru] = useState<HediyeTakipTuru>(ilkTakipTuru);
   const [uttId, setUttId] = useState("");
   const [uttler, setUttler] = useState<UttSecenegi[]>([]);
   const [cekStatlari, setCekStatlari] = useState<CekTakipApiYaniti["statlar"]>();
@@ -37,9 +37,9 @@ export default function BmHediyeTakipIstemcisi({ rol = "bm" }: { rol?: "bm" | "t
 
         <div id={`hediye-takip-${takipTuru}-paneli`} role="tabpanel" aria-labelledby={`hediye-takip-${takipTuru}-sekmesi`} className="min-w-0">
           {takipTuru === "cek" ? (
-            <BmCekTakibi rol={rol} uttId={uttId} onUttDegistir={setUttId} uttler={uttler} onUttler={setUttler} onStatlar={setCekStatlari} />
+            <BmCekTakibi rol={rol} ilkDurum={ilkTakipTuru === "cek" && ilkDurum === "bm_onayinda" ? ilkDurum : ""} uttId={uttId} onUttDegistir={setUttId} uttler={uttler} onUttler={setUttler} onStatlar={setCekStatlari} />
           ) : (
-            <BmSiparisTakibi rol={rol} uttId={uttId} onUttDegistir={setUttId} uttler={uttler} onUttler={setUttler} onStatlar={setSiparisStatlari} />
+            <BmSiparisTakibi rol={rol} ilkDurum={ilkTakipTuru === "siparis" && ilkDurum === "utt_onayladi" ? ilkDurum : ""} uttId={uttId} onUttDegistir={setUttId} uttler={uttler} onUttler={setUttler} onStatlar={setSiparisStatlari} />
           )}
         </div>
       </main>
@@ -47,15 +47,16 @@ export default function BmHediyeTakipIstemcisi({ rol = "bm" }: { rol?: "bm" | "t
   );
 }
 
-function BmCekTakibi({ rol, uttId, onUttDegistir, uttler, onUttler, onStatlar }: {
+function BmCekTakibi({ rol, ilkDurum, uttId, onUttDegistir, uttler, onUttler, onStatlar }: {
   rol: "bm" | "tm";
+  ilkDurum: string;
   uttId: string;
   onUttDegistir: (id: string) => void;
   uttler: UttSecenegi[];
   onUttler: (uttler: UttSecenegi[]) => void;
   onStatlar: (statlar: CekTakipApiYaniti["statlar"] | undefined) => void;
 }) {
-  const [filtreler, setFiltreler] = useState<CekTakipFiltreDegerleri>({ ...BOS_CEK_TAKIP_FILTRELERI });
+  const [filtreler, setFiltreler] = useState<CekTakipFiltreDegerleri>({ ...BOS_CEK_TAKIP_FILTRELERI, durum: ilkDurum });
   const [veri, setVeri] = useState<BmCekYaniti | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [dahaYukleniyor, setDahaYukleniyor] = useState(false);
@@ -145,15 +146,16 @@ function BmCekTakibi({ rol, uttId, onUttDegistir, uttler, onUttler, onStatlar }:
   </div>;
 }
 
-function BmSiparisTakibi({ rol, uttId, onUttDegistir, uttler, onUttler, onStatlar }: {
+function BmSiparisTakibi({ rol, ilkDurum, uttId, onUttDegistir, uttler, onUttler, onStatlar }: {
   rol: "bm" | "tm";
+  ilkDurum: string;
   uttId: string;
   onUttDegistir: (id: string) => void;
   uttler: UttSecenegi[];
   onUttler: (uttler: UttSecenegi[]) => void;
   onStatlar: (statlar: SiparisTakipStatlari | undefined) => void;
 }) {
-  const [filtreler, setFiltreler] = useState<SiparisTakipFiltreDegerleri>({ ...BOS_SIPARIS_TAKIP_FILTRELERI });
+  const [filtreler, setFiltreler] = useState<SiparisTakipFiltreDegerleri>({ ...BOS_SIPARIS_TAKIP_FILTRELERI, durum: ilkDurum });
   const [veri, setVeri] = useState<BmSiparisYaniti | null>(null);
   const [secenekler, setSecenekler] = useState(BOS_SIPARIS_SECENEKLER);
   const [islemdekiId, setIslemdekiId] = useState<string | null>(null);

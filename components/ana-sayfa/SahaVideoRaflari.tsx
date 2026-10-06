@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import type { SahaAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { anaSayfaRaflari } from "@/lib/video/anaSayfaRaflari";
-import { TUR_BASLIK } from "@/lib/video/icerikTuru";
+import { TUR_BASLIK, TUR_SIRA } from "@/lib/video/icerikTuru";
 import { YayinTuruFiltresi, type YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 import { YAYIN_TURLERI } from "@/lib/ogrenmeAraci/turSunumu";
+import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
 
 import { YayinKarti } from "@/components/yayin/YayinKarti";
 import HayaletTanburSecici, { type TanburBolum } from "@/components/navigasyon/HayaletTanburSecici";
@@ -13,14 +14,22 @@ import HayaletTanburSecici, { type TanburBolum } from "@/components/navigasyon/H
 interface Props {
   videolar: SahaAnaSayfaVideo[];
   onVideoSec: (video: SahaAnaSayfaVideo) => void;
+  kapsulFiltre?: boolean;
+  bosBasliklariGoster?: boolean;
+  kisiselIzlemeBasliklari?: boolean;
+  favoriRafiGoster?: boolean;
+  onBegeni?: (event: MouseEvent, yayinId: string) => void;
+  onFavori?: (event: MouseEvent, yayinId: string) => void;
 }
 
-function SahaVideoKarti({ video, onVideoSec }: { video: SahaAnaSayfaVideo; onVideoSec: Props["onVideoSec"] }) {
+function SahaVideoKarti({ video, onVideoSec, onBegeni, onFavori }: { video: SahaAnaSayfaVideo; onVideoSec: Props["onVideoSec"]; onBegeni?: Props["onBegeni"]; onFavori?: Props["onFavori"] }) {
   return (
     <YayinKarti
       yayin={video}
       onClick={() => onVideoSec(video)}
-      etkilesimAktif={false}
+      etkilesimAktif={Boolean(onBegeni && onFavori)}
+      onBegeni={onBegeni}
+      onFavori={onFavori}
       durumGoster={false}
       donguGoster={false}
       hoverOverlay={
@@ -41,16 +50,29 @@ function KayanRaf({
   videolar,
   onVideoSec,
   sifirlamaAnahtari,
+  bosBasliklariGoster = false,
+  bosMesaj = "Henüz yayın yok.",
+  onBegeni,
+  onFavori,
 }: {
   baslik: ReactNode;
   videolar: SahaAnaSayfaVideo[];
   onVideoSec: Props["onVideoSec"];
   sifirlamaAnahtari?: string | number;
+  bosBasliklariGoster?: boolean;
+  bosMesaj?: string;
+  onBegeni?: Props["onBegeni"];
+  onFavori?: Props["onFavori"];
 }) {
   const raf = useRef<HTMLDivElement>(null);
   const kaydir = (yon: number) => raf.current?.scrollBy({ left: yon * raf.current.clientWidth * 0.85, behavior: "smooth" });
 
-  if (videolar.length === 0) return null;
+  if (videolar.length === 0) return bosBasliklariGoster ? (
+    <section className="mb-6">
+      <div className="mb-2 flex items-center gap-1">{baslik}</div>
+      <p className="text-xs font-semibold text-gray-400">{bosMesaj}</p>
+    </section>
+  ) : null;
 
   const masaustuIcerik = (
     <div className="group relative">
@@ -60,7 +82,7 @@ function KayanRaf({
       <div ref={raf} className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {videolar.map((video) => (
           <div key={video.yayin_id} className="w-40 flex-shrink-0 snap-start sm:w-44 md:w-52">
-            <SahaVideoKarti video={video} onVideoSec={onVideoSec} />
+            <SahaVideoKarti video={video} onVideoSec={onVideoSec} onBegeni={onBegeni} onFavori={onFavori} />
           </div>
         ))}
       </div>
@@ -76,7 +98,7 @@ function KayanRaf({
       kayitAnahtari={(v) => v.yayin_id}
       renderKart={(video) => (
         <div className="w-full">
-          <SahaVideoKarti video={video} onVideoSec={onVideoSec} />
+          <SahaVideoKarti video={video} onVideoSec={onVideoSec} onBegeni={onBegeni} onFavori={onFavori} />
         </div>
       )}
       baslik={baslik}
@@ -93,18 +115,31 @@ function SabitBolum({
   videolar,
   onVideoSec,
   sifirlamaAnahtari,
+  bosBasliklariGoster = false,
+  bosMesaj = "Henüz yayın yok.",
+  onBegeni,
+  onFavori,
 }: {
   baslik: string;
   videolar: SahaAnaSayfaVideo[];
   onVideoSec: Props["onVideoSec"];
   sifirlamaAnahtari?: string | number;
+  bosBasliklariGoster?: boolean;
+  bosMesaj?: string;
+  onBegeni?: Props["onBegeni"];
+  onFavori?: Props["onFavori"];
 }) {
-  if (videolar.length === 0) return null;
+  if (videolar.length === 0) return bosBasliklariGoster ? (
+    <section className="mb-6">
+      <h2 className="mb-2 text-base font-bold text-gray-900 md:text-lg">{baslik}</h2>
+      <p className="text-xs font-semibold text-gray-400">{bosMesaj}</p>
+    </section>
+  ) : null;
 
   const masaustuIcerik = (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       {videolar.map((video) => (
-        <SahaVideoKarti key={video.yayin_id} video={video} onVideoSec={onVideoSec} />
+        <SahaVideoKarti key={video.yayin_id} video={video} onVideoSec={onVideoSec} onBegeni={onBegeni} onFavori={onFavori} />
       ))}
     </div>
   );
@@ -115,7 +150,7 @@ function SabitBolum({
       kayitAnahtari={(v) => v.yayin_id}
       renderKart={(video) => (
         <div className="w-full">
-          <SahaVideoKarti video={video} onVideoSec={onVideoSec} />
+          <SahaVideoKarti video={video} onVideoSec={onVideoSec} onBegeni={onBegeni} onFavori={onFavori} />
         </div>
       )}
       baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">{baslik}</h2>}
@@ -127,19 +162,35 @@ function SabitBolum({
   );
 }
 
-export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
+export default function SahaVideoRaflari({ videolar, onVideoSec, kapsulFiltre = false, bosBasliklariGoster = false, kisiselIzlemeBasliklari = false, favoriRafiGoster = false, onBegeni, onFavori }: Props) {
   const [tohum] = useState(() => Date.now());
   const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
   const [aktifTanburBolumu, setAktifTanburBolumu] = useState<string>("tumu");
   const turSayilari = Object.fromEntries(YAYIN_TURLERI.map((tur) => [tur, videolar.filter((video) => video.arac_turu === tur).length])) as Record<NonNullable<SahaAnaSayfaVideo["arac_turu"]>, number>;
+  const yayinBosMesaji = aktifYayinTuru === "tumu" ? "Henüz yayın yok." : "Seçili türde yayın yok.";
   const filtrelenmisVideolar = useMemo(() => videolar.filter((video) => aktifYayinTuru === "tumu" || video.arac_turu === aktifYayinTuru), [videolar, aktifYayinTuru]);
   const raflar = useMemo(() => anaSayfaRaflari(filtrelenmisVideolar, tohum), [filtrelenmisVideolar, tohum]);
+  const egitimRaflari = useMemo(() => bosBasliklariGoster
+    ? TUR_SIRA.map((tur) => raflar.egitimTuruRaflari.find((raf) => raf.tur === tur) ?? { tur, videolar: [] })
+    : raflar.egitimTuruRaflari, [bosBasliklariGoster, raflar]);
   const enCokIzlenen = useMemo(
     () => [...filtrelenmisVideolar].filter((video) => video.izlenme_sayisi > 0).sort((a, b) => b.izlenme_sayisi - a.izlenme_sayisi).slice(0, 5),
     [filtrelenmisVideolar],
   );
+  const sonIzlenenler = useMemo(
+    () => kisiselIzlemeBasliklari
+      ? [...filtrelenmisVideolar].filter((video) => video.son_izleme_tarihi)
+        .sort((a, b) => new Date(b.son_izleme_tarihi ?? 0).getTime() - new Date(a.son_izleme_tarihi ?? 0).getTime())
+        .slice(0, 5)
+      : [],
+    [filtrelenmisVideolar, kisiselIzlemeBasliklari],
+  );
   const enCokBegenilen = useMemo(
     () => [...filtrelenmisVideolar].filter((video) => video.begeni_sayisi > 0).sort((a, b) => b.begeni_sayisi - a.begeni_sayisi).slice(0, 5),
+    [filtrelenmisVideolar],
+  );
+  const enCokFavorilenen = useMemo(
+    () => [...filtrelenmisVideolar].filter((video) => video.favori_sayisi > 0).sort((a, b) => b.favori_sayisi - a.favori_sayisi).slice(0, 5),
     [filtrelenmisVideolar],
   );
 
@@ -147,20 +198,26 @@ export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
     const liste: TanburBolum[] = [
       { id: "tumu", etiket: "Tüm Bölümler" },
     ];
-    if (raflar.tumuRafi.length > 0) liste.push({ id: "tumu_rafi", etiket: "Tümü", sayi: raflar.tumuRafi.length });
-    if (enCokIzlenen.length > 0) liste.push({ id: "en_cok_izlenen", etiket: "En Çok İzlenenler", sayi: enCokIzlenen.length });
-    if (enCokBegenilen.length > 0) liste.push({ id: "en_cok_begenilen", etiket: "En Çok Beğenilenler", sayi: enCokBegenilen.length });
-    raflar.egitimTuruRaflari.forEach((raf) => {
+    if (bosBasliklariGoster || raflar.tumuRafi.length > 0) liste.push({ id: "tumu_rafi", etiket: "Tümü", sayi: raflar.tumuRafi.length });
+    if (kisiselIzlemeBasliklari && (bosBasliklariGoster || sonIzlenenler.length > 0)) liste.push({ id: "son_izlediklerim", etiket: "En Son İzlediklerim", sayi: sonIzlenenler.length });
+    if (bosBasliklariGoster || enCokIzlenen.length > 0) liste.push({ id: "en_cok_izlenen", etiket: "En Çok İzlenenler", sayi: enCokIzlenen.length });
+    if (bosBasliklariGoster || enCokBegenilen.length > 0) liste.push({ id: "en_cok_begenilen", etiket: "En Çok Beğenilenler", sayi: enCokBegenilen.length });
+    if (favoriRafiGoster && (bosBasliklariGoster || enCokFavorilenen.length > 0)) liste.push({ id: "en_cok_favorilenen", etiket: "En Çok Favorilenenler", sayi: enCokFavorilenen.length });
+    egitimRaflari.forEach((raf) => {
       liste.push({ id: `tur_${raf.tur}`, etiket: TUR_BASLIK[raf.tur], sayi: raf.videolar.length });
     });
     return liste;
-  }, [raflar, enCokIzlenen, enCokBegenilen]);
+  }, [bosBasliklariGoster, kisiselIzlemeBasliklari, favoriRafiGoster, raflar, egitimRaflari, sonIzlenenler, enCokIzlenen, enCokBegenilen, enCokFavorilenen]);
 
-  if (videolar.length === 0) return null;
+  if (videolar.length === 0 && !bosBasliklariGoster) return null;
 
   return (
     <div>
-      <div className="mb-5"><YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} /></div>
+      <div className="mb-5">
+        {kapsulFiltre
+          ? <UttYayinTuruToggle yayinlar={videolar} deger={aktifYayinTuru} onDegistir={setAktifYayinTuru} />
+          : <YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} />}
+      </div>
 
       {aktifTanburBolumu !== "tumu" && (
         <div className="mb-4 flex items-center justify-between rounded-2xl border border-blue-200/80 bg-blue-50/90 px-4 py-2.5 text-xs font-bold text-blue-900 shadow-xs sm:hidden">
@@ -184,7 +241,24 @@ export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
           baslik={<><span className="text-base font-bold text-gray-900 md:text-lg">Tümü</span><span aria-hidden="true" className="text-lg text-gray-900">›</span></>}
           videolar={raflar.tumuRafi}
           onVideoSec={onVideoSec}
+          onBegeni={onBegeni}
+          onFavori={onFavori}
           sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
+          bosBasliklariGoster={bosBasliklariGoster}
+          bosMesaj={yayinBosMesaji}
+        />
+      )}
+      {kisiselIzlemeBasliklari && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "son_izlediklerim") && (
+        <KayanRaf
+          key={`son_${aktifTanburBolumu}`}
+          baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">En Son İzlediklerim</h2>}
+          videolar={sonIzlenenler}
+          onVideoSec={onVideoSec}
+          onBegeni={onBegeni}
+          onFavori={onFavori}
+          sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
+          bosBasliklariGoster={bosBasliklariGoster}
+          bosMesaj="Henüz tamamladığınız yayın yok."
         />
       )}
       {(aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_izlenen") && (
@@ -193,7 +267,11 @@ export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
           baslik="🔥 En Çok İzlenenler"
           videolar={enCokIzlenen}
           onVideoSec={onVideoSec}
+          onBegeni={onBegeni}
+          onFavori={onFavori}
           sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
+          bosBasliklariGoster={bosBasliklariGoster}
+          bosMesaj="Henüz tamamlanmış izleme yok."
         />
       )}
       {(aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_begenilen") && (
@@ -202,10 +280,27 @@ export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
           baslik="❤️ En Çok Beğenilenler"
           videolar={enCokBegenilen}
           onVideoSec={onVideoSec}
+          onBegeni={onBegeni}
+          onFavori={onFavori}
           sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
+          bosBasliklariGoster={bosBasliklariGoster}
+          bosMesaj="Henüz beğenilen yayın yok."
         />
       )}
-      {raflar.egitimTuruRaflari.map((raf) => {
+      {favoriRafiGoster && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_favorilenen") && (
+        <SabitBolum
+          key={`favori_${aktifTanburBolumu}`}
+          baslik="⭐ En Çok Favorilenenler"
+          videolar={enCokFavorilenen}
+          onVideoSec={onVideoSec}
+          onBegeni={onBegeni}
+          onFavori={onFavori}
+          sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
+          bosBasliklariGoster={bosBasliklariGoster}
+          bosMesaj="Henüz favorilenen yayın yok."
+        />
+      )}
+      {egitimRaflari.map((raf) => {
         const id = `tur_${raf.tur}`;
         if (aktifTanburBolumu !== "tumu" && aktifTanburBolumu !== id) return null;
         return (
@@ -214,7 +309,11 @@ export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
             baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">{TUR_BASLIK[raf.tur]}</h2>}
             videolar={raf.videolar}
             onVideoSec={onVideoSec}
+            onBegeni={onBegeni}
+            onFavori={onFavori}
             sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
+            bosBasliklariGoster={bosBasliklariGoster}
+            bosMesaj={yayinBosMesaji}
           />
         );
       })}

@@ -21,10 +21,10 @@ const BOS_SECENEKLER: CekTakipApiYaniti["filtre_secenekleri"] = {
   urunler: [],
 };
 
-export default function HediyeTakipIstemcisi() {
+export default function HediyeTakipIstemcisi({ ilkTakipTuru = "cek", ilkDurum }: { ilkTakipTuru?: HediyeTakipTuru; ilkDurum?: string }) {
   const { kullanici, yukleniyor } = useAuth();
   if (yukleniyor) return <div className="flex min-h-full items-center justify-center bg-gray-50"><LoaderCircle className="size-6 animate-spin text-gray-500" /></div>;
-  if ((kullanici?.rol ?? "").toLowerCase() === "bm") return <BmHediyeTakipIstemcisi />;
+  if ((kullanici?.rol ?? "").toLowerCase() === "bm") return <BmHediyeTakipIstemcisi ilkTakipTuru={ilkTakipTuru} ilkDurum={ilkDurum} />;
   if ((kullanici?.rol ?? "").toLowerCase() === "tm") return <BmHediyeTakipIstemcisi rol="tm" />;
   return <UttHediyeTakipIstemcisi />;
 }

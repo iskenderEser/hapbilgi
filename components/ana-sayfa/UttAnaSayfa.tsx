@@ -4,7 +4,7 @@
 import { ROL_ADLARI } from "@/lib/utils/roller";
 import type { AuthKullanici } from "@/types/auth";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji, type HataMesajiProps } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
@@ -187,6 +187,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategoriBilgisi, temel
   const [aktifDurumFiltresi, setAktifDurumFiltresi] = useState<VideoDurumu | null>(null);
   const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
   const [aktifTanburBolumu, setAktifTanburBolumu] = useState<string>("tumu");
+  const etkilesimKilidi = useRef(new Set<string>());
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
   const { takvim } = useHbstoreTakvim();
 
@@ -238,49 +239,38 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategoriBilgisi, temel
     if (bulunan) setAktifVideo(bulunan);
   }, [searchParams, uttVeri]);
 
-  const handleBegeni = async (e: React.MouseEvent, yayin_id: string) => {
+  const etkilesimYap = async (tur: "begeni" | "favori", e: React.MouseEvent, yayin_id: string) => {
     e.stopPropagation();
+    const kilit = `${tur}:${yayin_id}`;
+    if (etkilesimKilidi.current.has(kilit)) return;
+    etkilesimKilidi.current.add(kilit);
     try {
-      const res = await fetch("/izle/api/begeni", { 
+      const res = await fetch(`/izle/api/${tur}`, {
         method: "POST", 
         headers: { "Content-Type": "application/json" }, 
         body: JSON.stringify({ yayin_id }) 
       });
       const d = await res.json();
-      if (!res.ok) return;
+      if (!res.ok) throw new Error(d.hata ?? "İşlem tamamlanamadı.");
+      const bayrak = tur === "begeni" ? "begeni_mi" : "favori_mi";
+      const sayac = tur === "begeni" ? "begeni_sayisi" : "favori_sayisi";
+      if (typeof d[bayrak] !== "boolean") throw new Error("İşlem sonucu alınamadı.");
       setUttVeri(prev => {
         if (!prev) return prev;
         const guncelle = <T extends Video>(liste: T[]): T[] => liste.map(v => v.yayin_id === yayin_id
-          ? { ...v, begeni_mi: d.begeni_mi, begeni_sayisi: d.begeni_mi ? v.begeni_sayisi + 1 : v.begeni_sayisi - 1 }
+          ? { ...v, [bayrak]: d[bayrak], [sayac]: Math.max(0, v[sayac] + (d[bayrak] === v[bayrak] ? 0 : d[bayrak] ? 1 : -1)) }
           : v);
-        return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar), ekstra_izlediklerim: prev.ekstra_izlediklerim ? guncelle(prev.ekstra_izlediklerim) : prev.ekstra_izlediklerim };
+        return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar), son_izlediklerim: prev.son_izlediklerim ? guncelle(prev.son_izlediklerim) : prev.son_izlediklerim, ekstra_izlediklerim: prev.ekstra_izlediklerim ? guncelle(prev.ekstra_izlediklerim) : prev.ekstra_izlediklerim };
       });
-    } catch {
-      hata("Beğeni işlemi başarısız.");
+    } catch (err) {
+      hata(err instanceof Error ? err.message : "Beğeni veya favori işlemi başarısız.");
+    } finally {
+      etkilesimKilidi.current.delete(kilit);
     }
   };
 
-  const handleFavori = async (e: React.MouseEvent, yayin_id: string) => {
-    e.stopPropagation();
-    try {
-      const res = await fetch("/izle/api/favori", { 
-        method: "POST", 
-        headers: { "Content-Type": "application/json" }, 
-        body: JSON.stringify({ yayin_id }) 
-      });
-      const d = await res.json();
-      if (!res.ok) return;
-      setUttVeri(prev => {
-        if (!prev) return prev;
-        const guncelle = <T extends Video>(liste: T[]): T[] => liste.map(v => v.yayin_id === yayin_id
-          ? { ...v, favori_mi: d.favori_mi, favori_sayisi: d.favori_mi ? v.favori_sayisi + 1 : v.favori_sayisi - 1 }
-          : v);
-        return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar), ekstra_izlediklerim: prev.ekstra_izlediklerim ? guncelle(prev.ekstra_izlediklerim) : prev.ekstra_izlediklerim };
-      });
-    } catch {
-      hata("Favori işlemi başarısız.");
-    }
-  };
+  const handleBegeni = (e: React.MouseEvent, yayin_id: string) => { void etkilesimYap("begeni", e, yayin_id); };
+  const handleFavori = (e: React.MouseEvent, yayin_id: string) => { void etkilesimYap("favori", e, yayin_id); };
 
   const handleVideoClick = (video: Video) => {
     setAktifVideo(video);
@@ -579,7 +569,6 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategoriBilgisi, temel
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
-              etkilesimAktif={false}
               sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
             />
           )}
@@ -591,7 +580,6 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategoriBilgisi, temel
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
-              etkilesimAktif={false}
               sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
             />
           )}

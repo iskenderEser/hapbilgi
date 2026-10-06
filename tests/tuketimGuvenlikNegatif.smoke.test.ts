@@ -46,27 +46,35 @@ const yayin = {
   arac_turu: "podcast",
 };
 
-test("UTT etkileşimi yanlış kullanıcı, takım, hedef veya eksik öneri bağıyla açılamaz", async () => {
+test("UTT etkileşimi öneri kaydı olmadan açılır; yanlış kullanıcı, takım veya hedefle açılamaz", async () => {
   const temel: Tablolar = {
     v_yayin_detay: [yayin],
     kullanicilar: [{ kullanici_id: "utt-1", firma_id: "firma-1", takim_id: "takim-1", aktif_mi: true }],
     oneri_kayitlari: [{ oneri_id: "oneri-1", kullanici_id: "utt-1", yayin_id: "yayin-1" }],
   };
   assert.equal(await etkilesimYayinYetkisi(sahteDb(temel), { userId: "utt-1", rol: "utt", yayinId: "yayin-1" }), true);
-  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, oneri_kayitlari: [] }), { userId: "utt-1", rol: "utt", yayinId: "yayin-1" }), false);
+  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, oneri_kayitlari: [] }), { userId: "utt-1", rol: "utt", yayinId: "yayin-1" }), true);
+  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, oneri_kayitlari: [] }), { userId: "utt-1", rol: "kd_utt", yayinId: "yayin-1" }), true);
+  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, kullanicilar: [{ ...temel.kullanicilar[0], aktif_mi: false }] }), { userId: "utt-1", rol: "utt", yayinId: "yayin-1" }), false);
+  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, kullanicilar: [{ ...temel.kullanicilar[0], firma_id: "firma-2" }] }), { userId: "utt-1", rol: "utt", yayinId: "yayin-1" }), false);
+  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, v_yayin_detay: [{ ...yayin, durum: "durduruldu" }] }), { userId: "utt-1", rol: "utt", yayinId: "yayin-1" }), false);
+  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, v_yayin_detay: [{ ...yayin, takim_id: null }] }), { userId: "utt-1", rol: "utt", yayinId: "yayin-1" }), true);
   assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, kullanicilar: [{ ...temel.kullanicilar[0], takim_id: "takim-2" }] }), { userId: "utt-1", rol: "utt", yayinId: "yayin-1" }), false);
   assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, v_yayin_detay: [{ ...yayin, hedef_roller: ["bm"] }] }), { userId: "utt-1", rol: "utt", yayinId: "yayin-1" }), false);
   assert.equal(await etkilesimYayinYetkisi(sahteDb(temel), { userId: "baska-utt", rol: "utt", yayinId: "yayin-1" }), false);
 });
 
-test("BM yalnız kendisine ait challenge kaydında etkileşim kurabilir", async () => {
+test("BM aktif C-Club yayınında challenge olmadan etkileşim kurabilir; firma ve yayın sınırı korunur", async () => {
   const temel: Tablolar = {
-    v_yayin_detay: [{ ...yayin, hedef_roller: ["bm"] }],
+    v_yayin_detay: [{ ...yayin, hedef_roller: ["bm"], yayin_tarihi: "2026-01-01T00:00:00Z", durdurma_tarihi: null }],
     kullanicilar: [{ kullanici_id: "bm-1", firma_id: "firma-1", takim_id: "takim-1", aktif_mi: true }],
-    challenge_kayitlari: [{ challenge_id: "challenge-1", alan_id: "bm-1", yayin_id: "yayin-1" }],
+    firmalar: [{ firma_id: "firma-1", aktif: true, cc_aktif: true }],
   };
   assert.equal(await etkilesimYayinYetkisi(sahteDb(temel), { userId: "bm-1", rol: "bm", yayinId: "yayin-1" }), true);
-  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, challenge_kayitlari: [{ challenge_id: "c-2", alan_id: "bm-2", yayin_id: "yayin-1" }] }), { userId: "bm-1", rol: "bm", yayinId: "yayin-1" }), false);
+  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, firmalar: [{ firma_id: "firma-1", aktif: true, cc_aktif: false }] }), { userId: "bm-1", rol: "bm", yayinId: "yayin-1" }), false);
+  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, v_yayin_detay: [{ ...temel.v_yayin_detay[0], hedef_roller: ["utt"] }] }), { userId: "bm-1", rol: "bm", yayinId: "yayin-1" }), false);
+  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, v_yayin_detay: [{ ...temel.v_yayin_detay[0], yayin_tarihi: "2099-01-01T00:00:00Z" }] }), { userId: "bm-1", rol: "bm", yayinId: "yayin-1" }), false);
+  assert.equal(await etkilesimYayinYetkisi(sahteDb({ ...temel, v_yayin_detay: [{ ...temel.v_yayin_detay[0], durdurma_tarihi: "2026-01-02T00:00:00Z" }] }), { userId: "bm-1", rol: "bm", yayinId: "yayin-1" }), false);
 });
 
 test("E-Club etkileşimi aktif firma, doğru unvan hedefi ve kişiye ait öneriyi birlikte ister", async () => {

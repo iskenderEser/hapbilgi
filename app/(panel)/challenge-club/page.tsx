@@ -141,6 +141,10 @@ export default function ChallengeClubPage() {
   const [loading, setLoading] = useState(true);
   const [aktifTab, setAktifTab] = useState<Tab>("izlenecek");
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "bekleyen") setAktifTab("bekleyen");
+  }, []);
+
   const [videolar, setVideolar] = useState<Video[]>([]);
   const [bekleyenler, setBekleyenler] = useState<Challenge[]>([]);
   const [gonderdiklerim, setGonderdiklerim] = useState<Challenge[]>([]);

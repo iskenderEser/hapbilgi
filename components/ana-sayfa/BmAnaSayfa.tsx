@@ -3,10 +3,10 @@
 
 import { ROL_ADLARI } from "@/lib/utils/roller";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 import { useHataMesaji } from "@/components/HataMesaji";
-import VideoOynatici from "@/components/izle/VideoOynatici";
 import SahaVideoRaflari from "@/components/ana-sayfa/SahaVideoRaflari";
 import { SahaAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
@@ -15,11 +15,12 @@ import type { AuthKullanici } from "@/types/auth";
 
 interface BmVeri {
   istatistikler: {
-    bu_ay_gonderilen: number;
-    bekleyen: number;
-    suresi_gecmis: number;
-    utt_sayisi: number;
+    bitis_yaklasan_oneriler: number;
+    cek_onay_bekleyen: number;
+    siparis_onay_bekleyen: number;
+    gelen_challenge: number;
   };
+  moduller: { eclub: boolean; cclub: boolean };
   videolar?: SahaAnaSayfaVideo[];
 }
 
@@ -32,7 +33,7 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
   const router = useRouter();
   const [bmVeri, setBmVeri] = useState<BmVeri | null>(null);
   const [loading, setLoading] = useState(true);
-  const [aktifVideo, setAktifVideo] = useState<SahaAnaSayfaVideo | null>(null);
+  const etkilesimKilidi = useRef(new Set<string>());
   const { hata } = useHataMesaji();
   const { takvim } = useHbstoreTakvim();
 
@@ -51,6 +52,40 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
   const bugunTarih = () =>
     new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
+  const etkilesimYap = async (tur: "begeni" | "favori", event: MouseEvent, yayinId: string) => {
+    event.stopPropagation();
+    const kilit = `${tur}:${yayinId}`;
+    if (etkilesimKilidi.current.has(kilit)) return;
+    etkilesimKilidi.current.add(kilit);
+    try {
+      const yanit = await fetch(`/izle/api/${tur}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yayin_id: yayinId }),
+      });
+      const sonuc = await yanit.json();
+      if (!yanit.ok) throw new Error(sonuc.hata ?? "İşlem tamamlanamadı.");
+      const bayrak = tur === "begeni" ? "begeni_mi" : "favori_mi";
+      const sayac = tur === "begeni" ? "begeni_sayisi" : "favori_sayisi";
+      if (typeof sonuc[bayrak] !== "boolean") throw new Error("İşlem sonucu alınamadı.");
+      setBmVeri((onceki) => onceki ? {
+        ...onceki,
+        videolar: onceki.videolar?.map((video) => {
+          if (video.yayin_id !== yayinId || video[bayrak] === sonuc[bayrak]) return video;
+          return {
+            ...video,
+            [bayrak]: sonuc[bayrak],
+            [sayac]: Math.max(0, video[sayac] + (sonuc[bayrak] ? 1 : -1)),
+          };
+        }),
+      } : onceki);
+    } catch (err) {
+      hata(err instanceof Error ? err.message : "Beğeni veya favori işlemi başarısız.");
+    } finally {
+      etkilesimKilidi.current.delete(kilit);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-20">
@@ -62,25 +97,18 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
     );
   }
 
-  // Bir video seçiliyse: dashboard yerine tam sayfa oynatıcı (UTT/TM deseni; navbar üstteki sarmalayıcıdan kalır).
-  if (aktifVideo) {
-    return (
-      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
-        <VideoOynatici
-          key={aktifVideo.yayin_id}
-          video={aktifVideo}
-          tuketici={false}
-          onKapat={() => setAktifVideo(null)}
-          onVeriYenile={() => {}}
-          hata={() => {}}
-          basari={() => {}}
-          uyari={() => {}}
-        />
-      </div>
-    );
-  }
-
-  const istat = bmVeri?.istatistikler ?? { bu_ay_gonderilen: 0, bekleyen: 0, suresi_gecmis: 0, utt_sayisi: 0 };
+  const istat = bmVeri?.istatistikler ?? { bitis_yaklasan_oneriler: 0, cek_onay_bekleyen: 0, siparis_onay_bekleyen: 0, gelen_challenge: 0 };
+  const kartlar = [
+    { label: "Bitiş Tarihi Yaklaşan Öneriler", value: istat.bitis_yaklasan_oneriler, sub: "48 saat içinde bitecek", renk: "#f59e0b", href: "/oneriler" },
+    ...(bmVeri?.moduller.eclub ? [
+      { label: "Çek Onay Takibi", value: istat.cek_onay_bekleyen, sub: "BM onayı bekliyor", renk: "#2f7fc7", href: "/eclub/hediye-takip?tur=cek&durum=bm_onayinda" },
+      { label: "Sipariş Onay Takibi", value: istat.siparis_onay_bekleyen, sub: "BM onayı bekliyor", renk: "#16a34a", href: "/eclub/hediye-takip?tur=siparis&durum=utt_onayladi" },
+    ] : []),
+    ...(bmVeri?.moduller.cclub ? [
+      { label: "Gelen Challenge", value: istat.gelen_challenge, sub: "Tamamlanmamış challenge", renk: "#8b5cf6", href: "/challenge-club?tab=bekleyen" },
+    ] : []),
+  ];
+  const kartIzgaraClass = kartlar.length === 4 ? "md:grid-cols-4" : kartlar.length === 3 ? "md:grid-cols-3" : kartlar.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1";
   const ad = adSoyad.split(" ")[0] || "BM";
 
   return (
@@ -134,49 +162,49 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
       </div>
 
       {/* Stat kartlar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
-        {[
-          { label: "Bu Ay Gönderilen", value: istat.bu_ay_gonderilen, sub: "Aylık toplam öneri", renk: "#56aeff" },
-          { label: "Bekleyen Öneriler", value: istat.bekleyen, sub: "Planlanan ve izlenecek", renk: "#f59e0b" },
-          { label: "Süresi Geçmiş", value: istat.suresi_gecmis, sub: "Süresinde tamamlanmadı", renk: "#bc2d0d" },
-          { label: "Bölgedeki Aktif UTT", value: istat.utt_sayisi, sub: "Aktif temsilci sayısı", renk: "#16a34a" },
-        ].map((k, idx) => (
-          <div
-            key={idx}
-            className="bg-white border border-gray-200 rounded-xl p-3 md:p-5 transition-shadow duration-150"
-            style={{
-              borderLeft: `3px solid ${k.renk}`,
-              cursor: "default",
-            }}
+      <div className={`grid grid-cols-2 ${kartIzgaraClass} gap-2 mb-5`}>
+        {kartlar.map((k) => (
+          <button
+            key={k.label}
+            type="button"
+            onClick={() => router.push(k.href)}
+            className="bg-white border border-gray-200 rounded-xl p-3 md:p-5 text-left transition-shadow duration-150 hover:shadow-md"
+            style={{ borderLeft: `3px solid ${k.renk}` }}
           >
             <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{k.label}</div>
             <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-none">{k.value}</div>
             <div className="hidden md:block text-xs text-gray-500 mt-1.5">{k.sub}</div>
-          </div>
+          </button>
         ))}
       </div>
 
-      {/* Öneri yönlendirmeleri */}
+      {/* Yayın önerme yönlendirmesi */}
       <div className="mb-5 flex items-center justify-end gap-2">
         <button
           type="button"
-          onClick={() => router.push("/oneriler")}
-          className="flex-1 rounded-xl border border-[#c9d8e8] bg-white px-4 py-2.5 text-xs font-extrabold text-[#3f6388] transition-colors hover:border-[#9db9d5] hover:bg-[#f7fbff] sm:flex-none"
-        >
-          Öneri Takibine Git
-        </button>
-        <button
-          type="button"
           onClick={() => router.push("/yayindaki-videolar")}
-          className="flex-1 rounded-xl bg-[#2f7fc7] px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-[#256daf] sm:flex-none"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#2f7fc7] px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-[#256daf]"
         >
-          Video Öner
+          <Plus size={15} strokeWidth={2.5} aria-hidden="true" /> Yayın Öneriniz
         </button>
       </div>
 
       {/* Videolar */}
       <div>
-        <SahaVideoRaflari videolar={bmVeri?.videolar ?? []} onVideoSec={setAktifVideo} />
+        <SahaVideoRaflari
+          videolar={bmVeri?.videolar ?? []}
+          onVideoSec={(video) => {
+            const query = new URLSearchParams({ donus: "ana-sayfa" });
+            if (video.gelen_challenge_id) query.set("challenge_id", video.gelen_challenge_id);
+            router.push(`/challenge-club/izle/${video.yayin_id}?${query}`);
+          }}
+          onBegeni={(event, yayinId) => { void etkilesimYap("begeni", event, yayinId); }}
+          onFavori={(event, yayinId) => { void etkilesimYap("favori", event, yayinId); }}
+          kapsulFiltre
+          bosBasliklariGoster
+          kisiselIzlemeBasliklari
+          favoriRafiGoster
+        />
       </div>
     </div>
   );

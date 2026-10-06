@@ -114,6 +114,59 @@ test("BM eğitim listesi kategori, tür ve arama değişimlerinde mobil listeyi 
 // 2. ETKİLEŞİM VE RENDER TESTLERİ
 // --------------------------------------------------------------------------
 
+test("BM rafında beğeni ve favori kartı açmadan ilgili işlemi tetikler", async () => {
+  const container = win.document.createElement("div");
+  win.document.body.appendChild(container);
+  const root = createRoot(container);
+  const islemler: string[] = [];
+
+  await act(async () => {
+    root.render(createElement(SahaVideoRaflari, {
+      videolar: [ornekSahaVideoUret("bm-1", "BM Yayını")],
+      onVideoSec: () => islemler.push("ac"),
+      onBegeni: (_event, yayinId) => islemler.push(`begeni:${yayinId}`),
+      onFavori: (_event, yayinId) => islemler.push(`favori:${yayinId}`),
+    }));
+  });
+
+  const begeni = container.querySelector<HTMLButtonElement>('button[aria-label="Beğen"]');
+  const favori = container.querySelector<HTMLButtonElement>('button[aria-label="Favoriye ekle"]');
+  assert.ok(begeni && favori);
+  assert.equal(begeni.disabled, false);
+  assert.equal(favori.disabled, false);
+  await act(async () => {
+    begeni.click();
+    favori.click();
+  });
+  assert.deepEqual(islemler, ["begeni:bm-1", "favori:bm-1"]);
+
+  await act(async () => root.unmount());
+  container.remove();
+});
+
+test("BM ana sayfası etkileşim olmasa da beğeni ve favori raflarını gösterir", async () => {
+  const container = win.document.createElement("div");
+  win.document.body.appendChild(container);
+  const root = createRoot(container);
+  await act(async () => {
+    root.render(createElement(SahaVideoRaflari, {
+      videolar: [],
+      onVideoSec: () => {},
+      kapsulFiltre: true,
+      bosBasliklariGoster: true,
+      kisiselIzlemeBasliklari: true,
+      favoriRafiGoster: true,
+    }));
+  });
+  assert.match(container.textContent ?? "", /En Çok Beğenilenler/);
+  assert.match(container.textContent ?? "", /Henüz beğenilen yayın yok/);
+  assert.match(container.textContent ?? "", /En Çok Favorilenenler/);
+  assert.match(container.textContent ?? "", /Henüz favorilenen yayın yok/);
+  assert.ok((container.textContent ?? "").indexOf("En Çok Beğenilenler") < (container.textContent ?? "").indexOf("En Çok Favorilenenler"));
+  await act(async () => root.unmount());
+  container.remove();
+});
+
 test("SahaVideoRaflari: mobilde 2 kartla başlar, Daha Fazla Göster ile 7 karta açılır ve masaüstü rafı korunur", async () => {
   const container = win.document.createElement("div");
   win.document.body.appendChild(container);
