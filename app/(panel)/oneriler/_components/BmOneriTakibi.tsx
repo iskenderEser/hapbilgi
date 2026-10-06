@@ -2,15 +2,18 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
-import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
+import { ChevronDown, Plus, X } from "lucide-react";
 import { DahaFazlaGoster, useListe } from "@/components/liste";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
-import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import type { Periyot } from "@/lib/utils/raporUtils";
 import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import { Button } from "@/components/ui/button";
+import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
+import { YayinKarti } from "@/components/yayin/YayinKarti";
+import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 export interface OneriKaydi {
   oneri_id: string;
@@ -45,11 +48,12 @@ export interface OneriKaydi {
 type KayitDurumu = "planlandi" | "bekliyor" | "tamamlandi" | "suresi_gecmis";
 type DurumFiltresi = "tum" | "acik" | KayitDurumu;
 
-const DURUMLAR: Record<KayitDurumu, { etiket: string; renk: string; zemin: string }> = {
-  planlandi: { etiket: "Planlandı", renk: "#9a6700", zemin: "#fff8d6" },
-  bekliyor: { etiket: "Bekliyor", renk: "#476b96", zemin: "#eef5fd" },
-  tamamlandi: { etiket: "Tamamlandı", renk: "#167453", zemin: "#ecfdf5" },
-  suresi_gecmis: { etiket: "Süresi Geçti", renk: "#bc2d0d", zemin: "#fce8e3" },
+const DURUM_ACIKLAMALARI: Record<Exclude<DurumFiltresi, "tum">, string> = {
+  planlandi: "Başlangıç tarihi henüz gelmemiş öneriler.",
+  bekliyor: "Başlangıç tarihi gelmiş, süresi dolmamış ve tamamlanmamış öneriler.",
+  tamamlandi: "UTT tarafından tamamlanan öneriler.",
+  suresi_gecmis: "Bitiş tarihi geçtiği hâlde tamamlanmamış öneriler.",
+  acik: "Başlangıcı beklenen veya süresi devam eden tamamlanmamış öneriler.",
 };
 
 const kayitDurumu = (oneri: OneriKaydi): KayitDurumu => {
@@ -58,11 +62,6 @@ const kayitDurumu = (oneri: OneriKaydi): KayitDurumu => {
   if (new Date(oneri.oneri_bitis).getTime() < simdi) return "suresi_gecmis";
   if (new Date(oneri.oneri_baslangic).getTime() > simdi) return "planlandi";
   return "bekliyor";
-};
-
-const tarih = (deger: string) => {
-  const nesne = new Date(deger);
-  return Number.isNaN(nesne.getTime()) ? "—" : nesne.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 };
 
 interface Props {
@@ -84,6 +83,7 @@ export default function BmOneriTakibi({
   const [konuFiltresi, setKonuFiltresi] = useState("");
   const [uttFiltresi, setUttFiltresi] = useState("");
   const [durumFiltresi, setDurumFiltresi] = useState<DurumFiltresi>("tum");
+  const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
   const [acikVideo, setAcikVideo] = useState<string | null>(null);
 
   const sayilar = useMemo(() => {
@@ -107,7 +107,7 @@ export default function BmOneriTakibi({
     teknikler: Array.from(new Set(oneriler.map((oneri) => oneri.teknik_adi).filter(Boolean))).sort((a, b) => a.localeCompare(b, "tr")),
   }), [oneriler]);
 
-  const filtrelenmis = useMemo(() => {
+  const digerFiltrelenmis = useMemo(() => {
     return [...oneriler]
       .filter((oneri) => {
         if (konuFiltresi.startsWith("urun:")) return oneri.urun_adi === konuFiltresi.slice(5);
@@ -124,37 +124,37 @@ export default function BmOneriTakibi({
       .sort((a, b) => new Date(b.oneri_baslangic).getTime() - new Date(a.oneri_baslangic).getTime());
   }, [oneriler, konuFiltresi, uttFiltresi, durumFiltresi]);
 
+  const filtrelenmis = useMemo(() => aktifYayinTuru === "tumu"
+    ? digerFiltrelenmis
+    : digerFiltrelenmis.filter((oneri) => oneri.arac_turu === aktifYayinTuru),
+  [digerFiltrelenmis, aktifYayinTuru]);
+
   const liste = useListe({
     veri: filtrelenmis,
-    adim: 12,
   });
 
-  const kartlar: { anahtar: DurumFiltresi; etiket: string; deger: number; aciklama: string; renk: string; zemin: string }[] = [
-    { anahtar: "tum", etiket: "Toplam Öneri", deger: sayilar.toplam, aciklama: "Gönderilen bütün öneriler", renk: "#2f7fc7", zemin: "#eef6ff" },
-    { anahtar: "tamamlandi", etiket: "Tamamlanan", deger: sayilar.tamamlanan, aciklama: "UTT tarafından izlendi", renk: "#167453", zemin: "#ecfdf5" },
-    { anahtar: "acik", etiket: "Bekleyen", deger: sayilar.bekleyen, aciklama: "Planlanan ve izlenecek", renk: "#9a6700", zemin: "#fff8d6" },
-    { anahtar: "suresi_gecmis", etiket: "Süresi Geçmiş", deger: sayilar.suresiGecmis, aciklama: "Süresinde tamamlanmadı", renk: "#bc2d0d", zemin: "#fce8e3" },
+  const kartlar: { anahtar: DurumFiltresi; etiket: string; deger: number; renk: string }[] = [
+    { anahtar: "tum", etiket: "Toplam Öneri", deger: sayilar.toplam, renk: "#2f7fc7" },
+    { anahtar: "tamamlandi", etiket: "Tamamlanan", deger: sayilar.tamamlanan, renk: "#167453" },
+    { anahtar: "acik", etiket: "Bekleyen", deger: sayilar.bekleyen, renk: "#9a6700" },
+    { anahtar: "suresi_gecmis", etiket: "Süresi Geçmiş", deger: sayilar.suresiGecmis, renk: "#bc2d0d" },
   ];
 
   return (
     <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">Saha gelişim desteği</p>
           <div className="inline-flex items-center">
             <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Öneri Takibi</h1>
             <SayfaRehberi anahtar="oneriler-bm" className="ml-1.5 -translate-y-1.5" />
           </div>
-          <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Bölgenizdeki UTT’lere gönderdiğiniz video önerilerini ve izlenme durumlarını takip edin.</p>
+          <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Ekibinizdeki UTT’lere önerilen yayınların tamamlanma durumunu takip edebilirsiniz.</p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
           <div className="flex items-center gap-2">
             <RaporPeriyotSecici deger={periyot} onDegistir={onPeriyotDegistir} />
             {onYenile && <YenileButonu yenileniyor={yenileniyor} onYenile={onYenile} />}
           </div>
-          <button type="button" onClick={() => router.push("/yayindaki-videolar")} className="w-fit rounded-xl bg-[#2f7fc7] px-4 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-[#256daf]">
-            Yayındaki Videolardan Öner
-          </button>
         </div>
       </header>
 
@@ -165,103 +165,92 @@ export default function BmOneriTakibi({
             <button key={kart.anahtar} type="button" onClick={() => setDurumFiltresi(kart.anahtar)} aria-pressed={secili} className={`rounded-2xl border bg-white p-3.5 text-left shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-all hover:-translate-y-0.5 ${secili ? "ring-2 ring-[#b7d7f2]" : "border-[#dfe7f1]"}`} style={{ borderLeft: `4px solid ${kart.renk}` }}>
               <span className="block text-[10px] font-extrabold uppercase tracking-[0.1em]" style={{ color: kart.renk }}>{kart.etiket}</span>
               <strong className="mt-1 block text-2xl font-black text-[#243957]">{kart.deger}</strong>
-              <small className="mt-1 hidden text-[11px] font-semibold text-[#7b8ca5] sm:block">{kart.aciklama}</small>
             </button>
           );
         })}
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
-        <div className="flex flex-col gap-3 border-b border-[#e5ecf4] px-4 py-3.5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-base font-extrabold text-[#203653]">Öneri Takip Listesi</h2>
-            <p className="mt-0.5 text-[11px] font-semibold text-[#7b8da5]">{liste.toplam}{liste.toplam !== oneriler.length ? ` / ${oneriler.length}` : ""} kayıt gösteriliyor</p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <select value={konuFiltresi} onChange={(event) => setKonuFiltresi(event.target.value)} className="rounded-lg border border-[#d8e2ed] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#586f8a] outline-none">
-              <option value="">Öneri Konusu</option>
-              {konuSecenekleri.urunler.length > 0 && (
-                <optgroup label="Ürün / Eğitim">
-                  {konuSecenekleri.urunler.map((urun) => <option key={`urun:${urun}`} value={`urun:${urun}`}>{urun}</option>)}
-                </optgroup>
-              )}
-              {konuSecenekleri.teknikler.length > 0 && (
-                <optgroup label="Teknik">
-                  {konuSecenekleri.teknikler.map((teknik) => <option key={`teknik:${teknik}`} value={`teknik:${teknik}`}>{teknik}</option>)}
-                </optgroup>
-              )}
-            </select>
-            <select value={uttFiltresi} onChange={(event) => setUttFiltresi(event.target.value)} className="rounded-lg border border-[#d8e2ed] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#586f8a] outline-none">
-              <option value="">UTT Listesi</option>
-              {uttler.map((utt) => <option key={utt} value={utt}>{utt}</option>)}
-            </select>
-            <select value={durumFiltresi} onChange={(event) => setDurumFiltresi(event.target.value as DurumFiltresi)} className="rounded-lg border border-[#d8e2ed] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#586f8a] outline-none">
-              <option value="tum">Tüm durumlar</option>
-              <option value="planlandi">Planlandı</option>
-              <option value="bekliyor">Bekliyor</option>
-              <option value="tamamlandi">Tamamlandı</option>
-              <option value="suresi_gecmis">Süresi Geçti</option>
-            </select>
+      <div className="flex justify-end">
+        <Button type="button" onClick={() => router.push("/yayindaki-videolar")} className="rounded-xl bg-[#2f7fc7] px-5 text-xs font-extrabold shadow-sm hover:bg-[#256daf]">
+          <Plus /> Yayın Öneriniz
+        </Button>
+      </div>
+
+      <section>
+        <div className="mb-4">
+          <h2 className="text-base font-extrabold text-[#203653]">Öneri Takip Listesi</h2>
+        </div>
+
+        <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <UttYayinTuruToggle yayinlar={digerFiltrelenmis} deger={aktifYayinTuru} onDegistir={setAktifYayinTuru} className="w-fit min-w-0" />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0">
+            <div className="relative w-full sm:w-36">
+              <select value={konuFiltresi} onChange={(event) => setKonuFiltresi(event.target.value)} aria-label="Öneri Konusu" className="w-full appearance-none rounded-lg border border-[#d8e2ed] bg-white py-1.5 pl-2.5 pr-7 text-xs font-semibold text-[#586f8a] outline-none focus-visible:ring-2 focus-visible:ring-[#b7d7f2]">
+                <option value="">Öneri Konusu</option>
+                {konuSecenekleri.urunler.length > 0 && (
+                  <optgroup label="Ürün / Eğitim">
+                    {konuSecenekleri.urunler.map((urun) => <option key={`urun:${urun}`} value={`urun:${urun}`}>{urun}</option>)}
+                  </optgroup>
+                )}
+                {konuSecenekleri.teknikler.length > 0 && (
+                  <optgroup label="Teknik">
+                    {konuSecenekleri.teknikler.map((teknik) => <option key={`teknik:${teknik}`} value={`teknik:${teknik}`}>{teknik}</option>)}
+                  </optgroup>
+                )}
+              </select>
+              <ChevronDown aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-[#718198]" />
+            </div>
+            <div className="relative w-full sm:w-32">
+              <select value={uttFiltresi} onChange={(event) => setUttFiltresi(event.target.value)} aria-label="UTT Listesi" className="w-full appearance-none rounded-lg border border-[#d8e2ed] bg-white py-1.5 pl-2.5 pr-7 text-xs font-semibold text-[#586f8a] outline-none focus-visible:ring-2 focus-visible:ring-[#b7d7f2]">
+                <option value="">UTT Listesi</option>
+                {uttler.map((utt) => <option key={utt} value={utt}>{utt}</option>)}
+              </select>
+              <ChevronDown aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-[#718198]" />
+            </div>
+            <div className="relative w-full sm:w-36">
+              <select value={durumFiltresi} onChange={(event) => setDurumFiltresi(event.target.value as DurumFiltresi)} aria-label="Öneri Durumları" className="w-full appearance-none rounded-lg border border-[#d8e2ed] bg-white py-1.5 pl-2.5 pr-7 text-xs font-semibold text-[#586f8a] outline-none focus-visible:ring-2 focus-visible:ring-[#b7d7f2]">
+                <option value="tum">Öneri Durumları</option>
+                <option value="planlandi">Planlar</option>
+                <option value="bekliyor">Bekliyor</option>
+                <option value="tamamlandi">Tamamlandı</option>
+                <option value="suresi_gecmis">Süresi Geçti</option>
+              </select>
+              <ChevronDown aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-[#718198]" />
+            </div>
           </div>
         </div>
+
+        {durumFiltresi !== "tum" && (
+          <p role="status" className="mb-4 rounded-lg border border-[#dce8f4] bg-[#f3f7fb] px-3 py-1.5 text-xs font-semibold text-[#55708d]">
+            {DURUM_ACIKLAMALARI[durumFiltresi]}
+          </p>
+        )}
 
         {liste.toplam === 0 ? (
           <div className="px-4 py-14 text-center text-sm font-semibold text-[#8090a4]">Filtrelerle eşleşen öneri bulunamadı.</div>
         ) : (
           <>
-            <div className="grid gap-2.5 p-3 md:hidden">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {liste.gorunen.map((oneri) => {
-                const durum = DURUMLAR[kayitDurumu(oneri)];
-                const kapak = yayinThumbnailIstemciCoz(oneri);
                 const videoOynatilabilir = (oneri.arac_turu ?? "video") === "video" && !!oneri.video_url;
                 return (
-                  <article key={oneri.oneri_id} className="rounded-xl border border-[#e0e8f1] bg-white p-3">
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        disabled={!videoOynatilabilir}
-                        onClick={() => videoOynatilabilir && setAcikVideo(oneri.video_url!)}
-                        aria-label={videoOynatilabilir ? `${oneri.urun_adi || "Öneri"} videosunu aç` : `${oneri.urun_adi || "Öneri"} kapağı`}
-                        className="group relative h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-[#d9e8f7] disabled:cursor-default"
-                      >
-                        {kapak ? <span className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${kapak})` }} /> : <AracVarsayilanKapak aracTuru={oneri.arac_turu} urunAdi={oneri.urun_adi} kucuk />}
-                        {videoOynatilabilir && <span className="absolute inset-0 flex items-center justify-center bg-[#10233a]/25"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#10233a]/70 text-white transition-transform group-hover:scale-105"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg></span></span>}
-                      </button>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2"><strong className="truncate text-sm text-[#263e5b]">{oneri.urun_adi}</strong><span className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-extrabold" style={{ color: durum.renk, backgroundColor: durum.zemin }}>{durum.etiket}</span></div>
-                        <p className="mt-1 truncate text-[11px] font-semibold text-[#71859d]">{oneri.teknik_adi || "Teknik belirtilmedi"}</p>
-                        <p className="mt-2 text-xs font-extrabold text-[#435a76]">{oneri.kullanici_adi}</p>
-                      </div>
-                    </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <div className="rounded-lg bg-[#f7f9fc] px-2.5 py-2"><small className="block text-[9px] font-bold uppercase text-[#8a9bb0]">Başlangıç</small><strong className="text-[11px] text-[#536a84]">{tarih(oneri.oneri_baslangic)}</strong></div>
-                      <div className="rounded-lg bg-[#f7f9fc] px-2.5 py-2"><small className="block text-[9px] font-bold uppercase text-[#8a9bb0]">Bitiş</small><strong className="text-[11px] text-[#536a84]">{tarih(oneri.oneri_bitis)}</strong></div>
-                    </div>
-                  </article>
+                  <div key={oneri.oneri_id} className="min-w-0">
+                    <YayinKarti
+                      yayin={oneri}
+                      onClick={videoOynatilabilir ? () => setAcikVideo(oneri.video_url!) : undefined}
+                      etkilesimAktif={false}
+                      etkilesimGoster={false}
+                      durumGoster={false}
+                      talepNoGoster={false}
+                      baslikSagAksiyon={oneri.talep_no != null ? (
+                        <span className="shrink-0 font-mono text-xs text-[#bc2d0d] sm:text-[10px]">
+                          {talepIdGoster(oneri.firma_adi, oneri.talep_no)}
+                        </span>
+                      ) : undefined}
+                    />
+                  </div>
                 );
               })}
-            </div>
-
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[760px] text-left text-xs">
-                <thead className="bg-[#f7f9fc] text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#7d8fa5]"><tr><th className="px-4 py-3">Video</th><th className="px-4 py-3">UTT/KD_UTT</th><th className="px-4 py-3">Başlangıç</th><th className="px-4 py-3">Bitiş</th><th className="px-4 py-3">Durum</th></tr></thead>
-                <tbody>
-                  {liste.gorunen.map((oneri) => {
-                    const durum = DURUMLAR[kayitDurumu(oneri)];
-                    const kapak = yayinThumbnailIstemciCoz(oneri);
-                    const videoOynatilabilir = (oneri.arac_turu ?? "video") === "video" && !!oneri.video_url;
-                    return (
-                      <tr key={oneri.oneri_id} className="border-t border-[#edf1f6] hover:bg-[#fbfcfe]">
-                        <td className="px-4 py-3"><div className="flex min-w-[220px] items-center gap-3"><button type="button" disabled={!videoOynatilabilir} onClick={() => videoOynatilabilir && setAcikVideo(oneri.video_url!)} aria-label={videoOynatilabilir ? `${oneri.urun_adi || "Öneri"} videosunu aç` : `${oneri.urun_adi || "Öneri"} kapağı`} className="group relative h-10 w-16 shrink-0 overflow-hidden rounded-lg bg-[#d9e8f7] disabled:cursor-default">{kapak ? <span className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${kapak})` }} /> : <AracVarsayilanKapak aracTuru={oneri.arac_turu} urunAdi={oneri.urun_adi} kucuk />}{videoOynatilabilir && <span className="absolute inset-0 flex items-center justify-center bg-[#10233a]/25"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#10233a]/70 text-white transition-transform group-hover:scale-105"><svg aria-hidden="true" width="7" height="9" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg></span></span>}</button><span className="min-w-0"><strong className="block truncate text-xs text-[#2d4562]">{oneri.urun_adi}</strong><small className="mt-0.5 block truncate text-[10px] text-[#7a8da5]">{oneri.teknik_adi || "Teknik belirtilmedi"}</small></span></div></td>
-                        <td className="px-4 py-3 font-extrabold text-[#405873]">{oneri.kullanici_adi}</td>
-                        <td className="px-4 py-3 font-semibold text-[#718198]">{tarih(oneri.oneri_baslangic)}</td>
-                        <td className="px-4 py-3 font-semibold text-[#718198]">{tarih(oneri.oneri_bitis)}</td>
-                        <td className="px-4 py-3"><span className="rounded-full px-2.5 py-1 text-[10px] font-extrabold" style={{ color: durum.renk, backgroundColor: durum.zemin }}>{durum.etiket}</span></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
             </div>
             <DahaFazlaGoster dahaVar={liste.dahaVar} gorunenSayi={liste.gorunen.length} toplam={liste.toplam} onGoster={liste.dahaFazlaGoster} />
           </>

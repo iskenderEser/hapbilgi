@@ -71,15 +71,15 @@ test("Faz 2 dağıtım ve öneri yüzeyleri ortak çözümleyici ile tür bazlı
   }
 });
 
-test("BM ve TM mobil/masaüstü kartları fallback ve video oynatma kapısını birlikte uygular", () => {
-  for (const dosya of [
-    "app/(panel)/oneriler/_components/BmOneriTakibi.tsx",
-    "app/(panel)/oneriler/_components/TmOneriTakibi.tsx",
-  ]) {
-    const kaynak = oku(dosya);
-    assert.equal((kaynak.match(/<AracVarsayilanKapak/g) ?? []).length, 2);
-    assert.equal((kaynak.match(/const videoOynatilabilir/g) ?? []).length, 2);
-  }
+test("BM ortak yayın kartını, TM mevcut kartlarını video oynatma kapısıyla kullanır", () => {
+  const bm = oku("app/(panel)/oneriler/_components/BmOneriTakibi.tsx");
+  assert.match(bm, /<YayinKarti/);
+  assert.equal((bm.match(/const videoOynatilabilir/g) ?? []).length, 1);
+  assert.match(bm, /onClick=\{videoOynatilabilir \?/);
+
+  const tm = oku("app/(panel)/oneriler/_components/TmOneriTakibi.tsx");
+  assert.equal((tm.match(/<AracVarsayilanKapak/g) ?? []).length, 2);
+  assert.equal((tm.match(/const videoOynatilabilir/g) ?? []).length, 2);
 });
 
 test("Yayın yönetimi liste ve kart görünümleri resim hatasında (404) onError ile fallback kapağa geçer", () => {

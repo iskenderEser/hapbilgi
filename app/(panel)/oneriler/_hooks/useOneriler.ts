@@ -6,6 +6,7 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import type { OneriKaydi } from "../_components/BmOneriTakibi";
 import type { TmBmKaydi, TmOneriKaydi } from "../_components/TmOneriTakibi";
 import type { Periyot } from "@/lib/utils/raporUtils";
+import { ONERI_ZAMANI_DEGISTI } from "@/lib/tclub/oneri/gorunurluk";
 
 export function useOneriler() {
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
@@ -101,6 +102,20 @@ export function useOneriler() {
       aktif = false;
     };
   }, [isBM, isTM, kullanici?.id, periyot, yenileTetik]);
+
+  useEffect(() => {
+    if (isBM || isTM) return;
+    const zamaniYenile = () => setYenileTetik((deger) => deger + 1);
+    const gorunurluk = () => {
+      if (document.visibilityState === "visible") zamaniYenile();
+    };
+    window.addEventListener(ONERI_ZAMANI_DEGISTI, zamaniYenile);
+    document.addEventListener("visibilitychange", gorunurluk);
+    return () => {
+      window.removeEventListener(ONERI_ZAMANI_DEGISTI, zamaniYenile);
+      document.removeEventListener("visibilitychange", gorunurluk);
+    };
+  }, [isBM, isTM]);
 
   const yenile = () => {
     setYenileniyor(true);

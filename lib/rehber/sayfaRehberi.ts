@@ -338,8 +338,21 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   "oneriler-bm": {
     anahtar: "oneriler-bm",
     baslik: "Öneri Takibi",
-    ozet: "Bölgenizdeki saha temsilcilerine gelişim hedefleri doğrultusunda video önermenizi ve bu önerilerin izlenme durumlarını takip etmenizi sağlar.",
-    maddeler: [],
+    ozet: "Ekibinizdeki UTT’lere gönderilen yayın önerilerinin tamamlanma durumunu seçtiğiniz dönemde görebilirsiniz.",
+    maddeler: [
+      {
+        baslik: "Dönemi ve Durumu Seçin",
+        aciklama: "Haftalık, aylık, dönemlik veya yıllık görünümü seçin. Üstteki kartlardan toplam, tamamlanan, bekleyen ve süresi geçmiş önerileri inceleyin.",
+      },
+      {
+        baslik: "Önerileri İnceleyin",
+        aciklama: "Listeyi öneri konusu, UTT ve duruma göre daraltın. Her önerinin alıcısını, başlangıç ve bitiş tarihini ve tamamlanma durumunu görün.",
+      },
+      {
+        baslik: "Yayın Önerin",
+        aciklama: "“Yayın Öneriniz” düğmesiyle yayındaki uygun içerikleri açın ve ekibinizdeki UTT’lere yeni öneri gönderin.",
+      },
+    ],
   },
 
   // ─── 20. T-CLUB RAPORLARI (BM / BÖLGE MÜDÜRÜ) ─────────────────────────────

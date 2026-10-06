@@ -7,7 +7,7 @@ const bekleyenSayfa = readFileSync("app/(panel)/oneriler/page.tsx", "utf8");
 const tamamlananSayfa = readFileSync("app/(panel)/oneriler/tamamlanan/page.tsx", "utf8");
 const gorunumBileseni = readFileSync("app/(panel)/oneriler/_components/UyeOnerilerGorunumu.tsx", "utf8");
 
-test("mutlu: Önerilen Yayınlar tek menü bağlantısı ve birleşik durum seçicisi kullanır", () => {
+test("mutlu: Önerilen Yayınlar tek menü bağlantısı ve stat kartlarıyla durum seçimi kullanır", () => {
   // 1. Tek sidebar bağlantısı
   assert.match(panelNav, /etiket:\s*"Önerilen Yayınlar"[\s\S]*path:\s*"\/oneriler"[\s\S]*tamEslesme:\s*true[\s\S]*badgeKey:\s*"oneri"/);
   assert.doesNotMatch(panelNav, /etiket:\s*"Bekleyen Öneriler"/);
@@ -19,16 +19,16 @@ test("mutlu: Önerilen Yayınlar tek menü bağlantısı ve birleşik durum seç
   assert.match(bekleyenSayfa, /<UyeOnerilerGorunumu[\s\S]*varsayilanSekme="bekleyen"/);
   assert.match(tamamlananSayfa, /<UyeOnerilerGorunumu[\s\S]*varsayilanSekme="tamamlanan"/);
 
-  // 3. Stat kartları, birleşik durum ve yayın türü seçicileri
-  assert.match(gorunumBileseni, /<PeriyotButonlari/);
+  // 3. Durum seçimi stat kartlarında; yayın türü seçicisi ayrı kalır.
+  assert.doesNotMatch(gorunumBileseni, /PeriyotButonlari|DURUM_SECENEKLERI|Öneri durumuna göre filtrele/);
   assert.match(gorunumBileseni, /<UttYayinTuruToggle/);
-  assert.match(gorunumBileseni, /DURUM_SECENEKLERI/);
-  assert.match(gorunumBileseni, /Öneri durumuna göre filtrele/);
+  assert.match(gorunumBileseni, /onClick=\{\(\) => setAktifFiltre\(kart\.id\)\}/);
   assert.match(gorunumBileseni, /useState<YayinTuruFiltreDegeri>\("tumu"\)/);
   assert.doesNotMatch(gorunumBileseni, /<IcerikFiltreBari/);
   assert.doesNotMatch(gorunumBileseni, /useListe\(/);
   assert.match(gorunumBileseni, /label:\s*"Bekleyen"/);
   assert.match(gorunumBileseni, /label:\s*"Tamamlanan"/);
+  assert.match(gorunumBileseni, /label:\s*"Süresi Dolan"/);
 });
 
 test("red: Tamamlanan Öneriler rotası yetkisiz erişimi engeller", () => {

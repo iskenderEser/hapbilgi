@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
 import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER, hedefRolleriOku } from "@/lib/utils/roller";
+import { oneriIzlenebilirMi, sonrakiOneriZamanSiniri } from "@/lib/tclub/oneri/gorunurluk";
 
 const GECERLI_KAYIT_TURLERI = ["talep", "senaryo", "video", "soru_seti", "yayin", "oneri", "challenge", "cek"];
 
@@ -60,10 +61,25 @@ export async function GET() {
     const birlesikBildirimler = [...(bildirimler ?? []), ...(eclubBildirimleri ?? []).map((b) => ({ ...b, talep_id: null, gorev_id: null }))]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+    const oneriIdleri = [...new Set((bildirimler ?? [])
+      .filter((bildirim) => bildirim.kayit_turu === "oneri" && bildirim.kayit_id)
+      .map((bildirim) => bildirim.kayit_id))];
+    const { data: rozetOnerileri, error: oneriError } = oneriIdleri.length > 0
+      ? await adminSupabase.from("oneri_kayitlari")
+          .select("oneri_id, oneri_baslangic, oneri_bitis, izlendi_mi")
+          .eq("kullanici_id", user.id)
+          .in("oneri_id", oneriIdleri)
+      : { data: [], error: null };
+    if (oneriError) return hataYaniti("Öneri rozet kayıtları alınamadı.", "oneri_kayitlari SELECT — öneri rozeti", oneriError);
+    const simdi = Date.now();
+    const sonrakiOneriRozetDegisimi = sonrakiOneriZamanSiniri(rozetOnerileri ?? [], simdi);
+
     const sayilar: Record<string, number> = {};
     for (const b of birlesikBildirimler) {
+      if (b.kayit_turu === "oneri") continue;
       sayilar[b.kayit_turu] = (sayilar[b.kayit_turu] ?? 0) + 1;
     }
+    sayilar.oneri = (rozetOnerileri ?? []).filter((oneri) => oneriIzlenebilirMi(oneri, simdi)).length;
     sayilar.yayin = yayinBekleyenSayisi;
 
     const { data: kullanici, error: kullaniciError } = await adminSupabase
@@ -111,6 +127,7 @@ export async function GET() {
       bildirimler: birlesikBildirimler,
       sayilar,
       toplam: birlesikBildirimler.length,
+      sonraki_oneri_rozet_degisimi: sonrakiOneriRozetDegisimi === null ? null : new Date(sonrakiOneriRozetDegisimi).toISOString(),
     }, { status: 200 });
 
   } catch (err) {

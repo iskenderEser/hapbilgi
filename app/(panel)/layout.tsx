@@ -23,6 +23,7 @@ import MobilDrawer from "@/components/panel/MobilDrawer";
 import { PANEL_NAV, eclubKisiNavOlustur, type NavContext } from "@/components/panel/panelNav.config";
 import { HBSTORE_BAKIYE_DEGISTI } from "@/lib/tclub/store/olay";
 import { BILDIRIM_ROZETLERI_DEGISTI, bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
+import { ONERI_ZAMANI_DEGISTI } from "@/lib/tclub/oneri/gorunurluk";
 import { HapbiProvider } from "@/components/hapbi/HapbiProvider";
 import HapbiMaskot from "@/components/hapbi/HapbiMaskot";
 import HapbiChatModal from "@/components/hapbi/HapbiChatModal";
@@ -153,6 +154,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   // birleştirilir; açık oturum 30 saniyede bir tazelenir.
   useEffect(() => {
     if (!rolKucu) return;
+    let aktif = true;
+    let oneriZamanlayici: number | null = null;
     const badgelariCek = async () => {
       try {
         const adresler = isEclubKisi
@@ -161,15 +164,32 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         const yanitlar = await Promise.allSettled(adresler.map((adres) => fetch(adres, { cache: "no-store" })));
         const birlesikSayilar: Record<string, number> = {};
         let basariliYanitVar = false;
+        let oneriRozetYanitiAlindi = false;
+        let sonrakiOneriDegisimi: number | null = null;
         for (const sonuc of yanitlar) {
           if (sonuc.status !== "fulfilled") continue;
           const res = sonuc.value;
           if (!res.ok) continue;
           const data = await res.json();
           Object.assign(birlesikSayilar, data.sayilar ?? {});
+          if ("sonraki_oneri_rozet_degisimi" in data) {
+            oneriRozetYanitiAlindi = true;
+            const zaman = Date.parse(data.sonraki_oneri_rozet_degisimi ?? "");
+            sonrakiOneriDegisimi = Number.isFinite(zaman) ? zaman : null;
+          }
           basariliYanitVar = true;
         }
+        if (!aktif) return;
         if (basariliYanitVar) setBadge(birlesikSayilar);
+        if (oneriRozetYanitiAlindi) {
+          if (oneriZamanlayici !== null) window.clearTimeout(oneriZamanlayici);
+          oneriZamanlayici = sonrakiOneriDegisimi === null ? null : window.setTimeout(() => {
+            if (document.visibilityState === "visible") {
+              window.dispatchEvent(new Event(ONERI_ZAMANI_DEGISTI));
+              void badgelariCek();
+            }
+          }, Math.min(Math.max(sonrakiOneriDegisimi - Date.now() + 20, 50), 2_147_483_647));
+        }
       } catch {}
     };
     badgelariCek();
@@ -184,6 +204,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     window.addEventListener(BILDIRIM_ROZETLERI_DEGISTI, badgelariCek);
     document.addEventListener("visibilitychange", handleVisibility);
     return () => {
+      aktif = false;
+      if (oneriZamanlayici !== null) window.clearTimeout(oneriZamanlayici);
       if (zamanlayici !== null) window.clearInterval(zamanlayici);
       window.removeEventListener(BILDIRIM_ROZETLERI_DEGISTI, badgelariCek);
       document.removeEventListener("visibilitychange", handleVisibility);

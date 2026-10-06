@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
         yayinIdleri.length > 0
           ? adminSupabase
               .from("v_yayin_detay")
-              .select("yayin_id, video_url, thumbnail_url, video_puani, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
+              .select("yayin_id, video_url, thumbnail_url, video_puani, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, talep_no, firma_adi, yayin_tarihi, icerik_turu")
               .in("yayin_id", yayinIdleri)
           : Promise.resolve({ data: [], error: null }),
         yayinIdleri.length > 0
@@ -181,6 +181,7 @@ export async function GET(request: NextRequest) {
       }
 
       const yayinlar = yayinlarSonucu.data;
+      const gorunenUrunIdleri = await yayinGorunenUrunIdHaritasi(adminSupabase, yayinIdleri);
       const extraPuanHaritasi = new Map((yayinYonetimiSonucu.data ?? []).map((y) => [y.yayin_id, y.extra_puan ?? 0]));
       const yayinHaritasi = new Map((yayinlar ?? []).map((yayin) => [yayin.yayin_id, yayinThumbnailCevabi(yayin)]));
       const oneriler = bmTakipKayitlari.map((kayit) => {
@@ -196,10 +197,15 @@ export async function GET(request: NextRequest) {
           created_at: kayit.created_at,
           urun_adi: kayit.urun_adi,
           teknik_adi: kayit.teknik_adi,
+          gorunen_urun_id: gorunenUrunIdleri.get(kayit.yayin_id) ?? null,
           video_url: yayin?.video_url ?? null,
           thumbnail_url: yayin?.thumbnail_url ?? null,
           arac_id: yayin?.arac_id ?? null,
           arac_turu: yayin?.arac_turu ?? null,
+          talep_no: yayin?.talep_no ?? null,
+          firma_adi: yayin?.firma_adi ?? null,
+          yayin_tarihi: yayin?.yayin_tarihi ?? null,
+          icerik_turu: yayin?.icerik_turu ?? null,
           kullanici_adi: `${kayit.utt_ad} ${kayit.utt_soyad}`.trim(),
           video_puani: yayin?.video_puani ?? null,
           extra_puan: extraPuanHaritasi.get(kayit.yayin_id) ?? 0,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import {
   BookOpen,
@@ -11,21 +11,16 @@ import {
 import { YayinKarti } from "@/components/yayin/YayinKarti";
 import type { OneriKaydi } from "./BmOneriTakibi";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
-import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { oneriIzlenebilirMi, sonrakiOneriZamanSiniri } from "@/lib/tclub/oneri/gorunurluk";
 import {
   UttYayinListeAkisi,
   UttYayinTuruToggle,
 } from "@/components/yayin/UttYayinListeOrtaklari";
 
 type UttOneriFiltresi = "izlenecek" | "tamamlanan" | "suresi_dolan";
-
-const DURUM_SECENEKLERI: Array<{ key: Exclude<UttOneriFiltresi, "suresi_dolan">; label: string }> = [
-  { key: "izlenecek", label: "Bekleyen" },
-  { key: "tamamlanan", label: "Tamamlanan" },
-];
 
 interface Props {
   oneriler: OneriKaydi[];
@@ -49,6 +44,23 @@ export default function UyeOnerilerGorunumu({
     varsayilanSekme === "tamamlanan" ? "tamamlanan" : "izlenecek"
   );
   const [aktifTur, setAktifTur] = useState<YayinTuruFiltreDegeri>("tumu");
+  const [zamanTetik, setZamanTetik] = useState(0);
+
+  useEffect(() => {
+    const sonraki = sonrakiOneriZamanSiniri(oneriler, Date.now());
+    const zamanlayici = sonraki === null ? null : window.setTimeout(
+      () => setZamanTetik((deger) => deger + 1),
+      Math.min(Math.max(sonraki - Date.now() + 20, 50), 2_147_483_647),
+    );
+    const gorunurluk = () => {
+      if (document.visibilityState === "visible") setZamanTetik((deger) => deger + 1);
+    };
+    document.addEventListener("visibilitychange", gorunurluk);
+    return () => {
+      if (zamanlayici !== null) window.clearTimeout(zamanlayici);
+      document.removeEventListener("visibilitychange", gorunurluk);
+    };
+  }, [oneriler, zamanTetik]);
 
   const formatTarihKisa = (tarih: string) => {
     const date = new Date(tarih);
@@ -70,14 +82,15 @@ export default function UyeOnerilerGorunumu({
   };
 
   /* eslint-disable react-hooks/purity, react-hooks/exhaustive-deps */
+  const simdi = Date.now();
   const isTamamlandi = (o: OneriKaydi) => o.izlendi_mi;
-  const isSuresiGecti = (o: OneriKaydi) => !o.izlendi_mi && new Date(o.oneri_bitis).getTime() < Date.now();
-  const isHenuzBaslamadi = (o: OneriKaydi) => !o.izlendi_mi && new Date(o.oneri_baslangic).getTime() > Date.now();
-  const isIzlenecek = (o: OneriKaydi) => !o.izlendi_mi && !isSuresiGecti(o) && !isHenuzBaslamadi(o);
+  const isSuresiGecti = (o: OneriKaydi) => !o.izlendi_mi && new Date(o.oneri_bitis).getTime() < simdi;
+  const isHenuzBaslamadi = (o: OneriKaydi) => !o.izlendi_mi && new Date(o.oneri_baslangic).getTime() > simdi;
+  const isIzlenecek = (o: OneriKaydi) => oneriIzlenebilirMi(o, simdi);
 
-  const izlenecekSayisi = useMemo(() => oneriler.filter(isIzlenecek).length, [oneriler]);
+  const izlenecekSayisi = useMemo(() => oneriler.filter(isIzlenecek).length, [oneriler, zamanTetik]);
   const tamamlananSayisi = useMemo(() => oneriler.filter(isTamamlandi).length, [oneriler]);
-  const suresiDolanSayisi = useMemo(() => oneriler.filter(isSuresiGecti).length, [oneriler]);
+  const suresiDolanSayisi = useMemo(() => oneriler.filter(isSuresiGecti).length, [oneriler, zamanTetik]);
 
   // Stat / Durum filtresi uygulanmış liste
   const durumFiltreliOneriler = useMemo(() => {
@@ -85,7 +98,7 @@ export default function UyeOnerilerGorunumu({
     if (aktifFiltre === "tamamlanan") return oneriler.filter(isTamamlandi);
     if (aktifFiltre === "suresi_dolan") return oneriler.filter(isSuresiGecti);
     return oneriler.filter(isSuresiGecti);
-  }, [aktifFiltre, oneriler]);
+  }, [aktifFiltre, oneriler, zamanTetik]);
   /* eslint-enable react-hooks/purity, react-hooks/exhaustive-deps */
 
   // Tür filtresi uygulanmış liste
@@ -315,29 +328,20 @@ export default function UyeOnerilerGorunumu({
         })}
       </div>
 
-      {/* ─── 2. Katman: Durum, Yayın Türü ve Yenileme ─── */}
-      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <PeriyotButonlari
-          secenekler={DURUM_SECENEKLERI}
-          deger={aktifFiltre}
-          onDegistir={setAktifFiltre}
-          ariaLabel="Öneri durumuna göre filtrele"
-          className="w-fit flex-none"
+      {/* ─── 2. Katman: Yayın türü ve yenileme ─── */}
+      <div className="mb-5 flex min-w-0 items-center justify-end gap-2">
+        <UttYayinTuruToggle
+          yayinlar={durumFiltreliOneriler}
+          deger={aktifTur}
+          onDegistir={setAktifTur}
+          sayilariGoster={false}
+          className="min-w-0 flex-1 sm:flex-none"
         />
-        <div className="flex min-w-0 items-center justify-end gap-2">
-          <UttYayinTuruToggle
-            yayinlar={durumFiltreliOneriler}
-            deger={aktifTur}
-            onDegistir={setAktifTur}
-            sayilariGoster={false}
-            className="min-w-0 flex-1 sm:flex-none"
-          />
-          <YenileButonu
-            yenileniyor={yenileniyor}
-            onYenile={onYenile}
-            className="shrink-0"
-          />
-        </div>
+        <YenileButonu
+          yenileniyor={yenileniyor}
+          onYenile={onYenile}
+          className="shrink-0"
+        />
       </div>
       {/* ─── 3. Katman: Yayın Kartları Izgarası ─── */}
       <UttYayinListeAkisi<OneriKaydi>
