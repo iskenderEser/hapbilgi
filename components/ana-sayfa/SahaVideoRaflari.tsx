@@ -15,6 +15,9 @@ interface Props {
   videolar: SahaAnaSayfaVideo[];
   onVideoSec: (video: SahaAnaSayfaVideo) => void;
   kapsulFiltre?: boolean;
+  yayinTuruFiltresiGoster?: boolean;
+  yayinTuru?: YayinTuruFiltreDegeri;
+  onYayinTuruDegistir?: (tur: YayinTuruFiltreDegeri) => void;
   bosBasliklariGoster?: boolean;
   kisiselIzlemeBasliklari?: boolean;
   favoriRafiGoster?: boolean;
@@ -162,9 +165,14 @@ function SabitBolum({
   );
 }
 
-export default function SahaVideoRaflari({ videolar, onVideoSec, kapsulFiltre = false, bosBasliklariGoster = false, kisiselIzlemeBasliklari = false, favoriRafiGoster = false, onBegeni, onFavori }: Props) {
+export default function SahaVideoRaflari({ videolar, onVideoSec, kapsulFiltre = false, yayinTuruFiltresiGoster = true, yayinTuru, onYayinTuruDegistir, bosBasliklariGoster = false, kisiselIzlemeBasliklari = false, favoriRafiGoster = false, onBegeni, onFavori }: Props) {
   const [tohum] = useState(() => Date.now());
-  const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
+  const [yerelYayinTuru, setYerelYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
+  const aktifYayinTuru = yayinTuru ?? yerelYayinTuru;
+  const yayinTuruDegistir = (tur: YayinTuruFiltreDegeri) => {
+    if (yayinTuru === undefined) setYerelYayinTuru(tur);
+    onYayinTuruDegistir?.(tur);
+  };
   const [aktifTanburBolumu, setAktifTanburBolumu] = useState<string>("tumu");
   const turSayilari = Object.fromEntries(YAYIN_TURLERI.map((tur) => [tur, videolar.filter((video) => video.arac_turu === tur).length])) as Record<NonNullable<SahaAnaSayfaVideo["arac_turu"]>, number>;
   const yayinBosMesaji = aktifYayinTuru === "tumu" ? "Henüz yayın yok." : "Seçili türde yayın yok.";
@@ -213,11 +221,11 @@ export default function SahaVideoRaflari({ videolar, onVideoSec, kapsulFiltre = 
 
   return (
     <div>
-      <div className="mb-5">
+      {yayinTuruFiltresiGoster && <div className="mb-5">
         {kapsulFiltre
-          ? <UttYayinTuruToggle yayinlar={videolar} deger={aktifYayinTuru} onDegistir={setAktifYayinTuru} />
-          : <YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} />}
-      </div>
+          ? <UttYayinTuruToggle yayinlar={videolar} deger={aktifYayinTuru} onDegistir={yayinTuruDegistir} />
+          : <YayinTuruFiltresi secili={aktifYayinTuru} onSec={yayinTuruDegistir} sayilar={turSayilari} />}
+      </div>}
 
       {aktifTanburBolumu !== "tumu" && (
         <div className="mb-4 flex items-center justify-between rounded-2xl border border-blue-200/80 bg-blue-50/90 px-4 py-2.5 text-xs font-bold text-blue-900 shadow-xs sm:hidden">

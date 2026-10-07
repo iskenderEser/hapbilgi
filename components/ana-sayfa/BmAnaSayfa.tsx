@@ -10,17 +10,17 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import SahaVideoRaflari from "@/components/ana-sayfa/SahaVideoRaflari";
 import { SahaAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
+import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
+import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
+import type { BmStatIstatistikleri, BmStatSecimi } from "@/lib/utils/anaSayfa/bm";
+import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 
 import type { AuthKullanici } from "@/types/auth";
 
 interface BmVeri {
-  istatistikler: {
-    bitis_yaklasan_oneriler: number;
-    cek_onay_bekleyen: number;
-    siparis_onay_bekleyen: number;
-    gelen_challenge: number;
-  };
-  moduller: { eclub: boolean; cclub: boolean };
+  istatistikler: BmStatIstatistikleri;
+  secim: BmStatSecimi;
+  kullaniciId: string;
   videolar?: SahaAnaSayfaVideo[];
 }
 
@@ -33,21 +33,51 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
   const router = useRouter();
   const [bmVeri, setBmVeri] = useState<BmVeri | null>(null);
   const [loading, setLoading] = useState(true);
+  const [periyot, setPeriyot] = useState<Periyot>("bu_hafta");
+  const [aracTuru, setAracTuru] = useState<BmStatSecimi["aracTuru"]>("tumu");
+  const [veriHatasi, setVeriHatasi] = useState<string | null>(null);
   const etkilesimKilidi = useRef(new Set<string>());
   const { hata } = useHataMesaji();
   const { takvim } = useHbstoreTakvim();
 
   useEffect(() => {
+    const controller = new AbortController();
+    let aktif = true;
     const veriCek = async () => {
       setLoading(true);
-      const res = await fetch("/ana-sayfa/api");
-      const data = await res.json();
-      if (!res.ok) { hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); }
-      else { setBmVeri(data); }
-      setLoading(false);
+      setVeriHatasi(null);
+      try {
+        const query = new URLSearchParams({ periyot, arac_turu: aracTuru });
+        const res = await fetch(`/ana-sayfa/api?${query}`, { signal: controller.signal });
+        const data = await res.json();
+        if (!aktif) return;
+        if (!res.ok) {
+          const mesaj = data.hata ?? "Veriler yüklenemedi.";
+          setVeriHatasi(mesaj);
+          hata(mesaj, data.adim, data.detay);
+          return;
+        }
+        if (!data.istatistikler || data.secim?.periyot !== periyot || data.secim?.aracTuru !== aracTuru) {
+          throw new Error("Seçili dönemin istatistikleri alınamadı.");
+        }
+        setBmVeri((onceki) => ({
+          ...data,
+          kullaniciId: user.id,
+          // Zaman ve tür seçimi kataloğu yenilemez; yerel etkileşimler korunur.
+          videolar: onceki?.kullaniciId === user.id ? onceki.videolar : data.videolar,
+        }));
+      } catch (err) {
+        if (!aktif || controller.signal.aborted) return;
+        const mesaj = err instanceof Error ? err.message : "Veriler yüklenemedi.";
+        setVeriHatasi(mesaj);
+        hata(mesaj);
+      } finally {
+        if (aktif) setLoading(false);
+      }
     };
-    veriCek();
-  }, [user]);
+    void veriCek();
+    return () => { aktif = false; controller.abort(); };
+  }, [user.id, periyot, aracTuru, hata]);
 
   const bugunTarih = () =>
     new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -86,29 +116,16 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-20">
-        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
-          <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-      </div>
-    );
-  }
-
-  const istat = bmVeri?.istatistikler ?? { bitis_yaklasan_oneriler: 0, cek_onay_bekleyen: 0, siparis_onay_bekleyen: 0, gelen_challenge: 0 };
+  const gecerliVeri = bmVeri?.kullaniciId === user.id ? bmVeri : null;
+  // Yeni seçim yüklenirken son başarılı değerler ekranda kalır.
+  const istat = gecerliVeri?.istatistikler ?? null;
+  const sayi = (deger: number) => deger.toLocaleString("tr-TR");
   const kartlar = [
-    { label: "Bitiş Tarihi Yaklaşan Öneriler", value: istat.bitis_yaklasan_oneriler, sub: "48 saat içinde bitecek", renk: "#f59e0b", href: "/oneriler?gorunum=bitis_yaklasan" },
-    ...(bmVeri?.moduller.eclub ? [
-      { label: "Çek Onay Takibi", value: istat.cek_onay_bekleyen, sub: "BM onayı bekliyor", renk: "#2f7fc7", href: "/eclub/hediye-takip?tur=cek&durum=bm_onayinda" },
-      { label: "Sipariş Onay Takibi", value: istat.siparis_onay_bekleyen, sub: "BM onayı bekliyor", renk: "#16a34a", href: "/eclub/hediye-takip?tur=siparis&durum=utt_onayladi" },
-    ] : []),
-    ...(bmVeri?.moduller.cclub ? [
-      { label: "Gelen Challenge", value: istat.gelen_challenge, sub: "Tamamlanmamış challenge", renk: "#8b5cf6", href: "/challenge-club?tab=bekleyen" },
-    ] : []),
+    { label: "Öğrenmeye Katılım", value: istat ? `${sayi(istat.ogrenmeye_katilan_utt)} / ${sayi(istat.toplam_utt)}` : "—", sub: istat ? `${istat.katilim_yuzdesi === null ? "Katılım oranı hesaplanamıyor" : `%${sayi(istat.katilim_yuzdesi)} katılım`} · Aktif UTT` : "", renk: "#2f7fc7", href: "/raporlar/bm" },
+    { label: "Tamamlanan Öğrenme", value: istat ? sayi(istat.tamamlanan_ogrenme) : "—", sub: istat ? "Tamamlanan oturum · Tekrarlar dahil" : "", renk: "#16a34a", href: "/raporlar/bm" },
+    { label: "Öneri Takibi", value: istat ? `${sayi(istat.tamamlanan_oneri)} / ${sayi(istat.toplam_oneri)}` : "—", sub: istat ? `${sayi(istat.bekleyen_oneri)} bekleyen · ${sayi(istat.suresi_gecmis_oneri)} süresi geçmiş` : "", renk: "#f59e0b", href: "/oneriler" },
+    { label: "Net Saha Puanı", value: istat ? sayi(istat.net_saha_puani) : "—", sub: istat ? `${sayi(istat.kazanilan_puan)} kazanım · ${sayi(istat.kaybedilen_puan)} kayıp` : "", renk: "#8b5cf6", href: "/raporlar/bm" },
   ];
-  const kartIzgaraClass = kartlar.length === 4 ? "md:grid-cols-4" : kartlar.length === 3 ? "md:grid-cols-3" : kartlar.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1";
   const ad = adSoyad.split(" ")[0] || "BM";
 
   return (
@@ -162,7 +179,10 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
       </div>
 
       {/* Stat kartlar */}
-      <div className={`grid grid-cols-2 ${kartIzgaraClass} gap-2 mb-5`}>
+      <div role="status" aria-live="polite" className="mb-2 h-4 truncate text-xs leading-4 text-gray-500" title={veriHatasi ?? undefined}>
+        {loading ? "İstatistikler yükleniyor…" : veriHatasi ?? ""}
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5" aria-busy={loading}>
         {kartlar.map((k) => (
           <button
             key={k.label}
@@ -172,8 +192,8 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
             style={{ borderLeft: `3px solid ${k.renk}` }}
           >
             <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{k.label}</div>
-            <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-none">{k.value}</div>
-            <div className="hidden md:block text-xs text-gray-500 mt-1.5">{k.sub}</div>
+            <div className="truncate text-2xl md:text-3xl font-extrabold text-gray-900 leading-none" title={k.value}>{k.value}</div>
+            <div className="hidden md:block min-h-4 truncate text-xs text-gray-500 mt-1.5" title={k.sub || undefined}>{k.sub || "\u00a0"}</div>
           </button>
         ))}
       </div>
@@ -191,8 +211,19 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
 
       {/* Videolar */}
       <div>
+        <div className="mb-5 flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1 sm:flex-none">
+            <UttYayinTuruToggle yayinlar={gecerliVeri?.videolar ?? []} deger={aracTuru} onDegistir={setAracTuru} />
+          </div>
+          <div className="ml-auto flex min-w-0 flex-1 justify-end sm:flex-none">
+            <PeriyotButonlari secenekler={PERIYOTLAR} deger={periyot} onDegistir={setPeriyot} ariaLabel="BM istatistik dönemi" />
+          </div>
+        </div>
         <SahaVideoRaflari
-          videolar={bmVeri?.videolar ?? []}
+          videolar={gecerliVeri?.videolar ?? []}
+          yayinTuru={aracTuru}
+          onYayinTuruDegistir={setAracTuru}
+          yayinTuruFiltresiGoster={false}
           onVideoSec={(video) => {
             const query = new URLSearchParams({ donus: "ana-sayfa" });
             if (video.gelen_challenge_id) query.set("challenge_id", video.gelen_challenge_id);

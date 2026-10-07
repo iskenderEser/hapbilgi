@@ -6,8 +6,8 @@
 //  - Tür kapısı: gorunenTurler(rol) — rol hangi türleri görüyorsa onlar.
 //  - Konum: geniş roller → kendi firmalarındaki TÜM takımlar; dar roller → yalnız kendi takımı.
 //    (Çok-firmalı yapı: başka firmanın videosu sızmaz.)
-//  - BM ana sayfası kendi rolüne hedeflenen yayınları; TM saha görünümü UTT'ye
-//    hedeflenen yayınları kendi takımı + firma geneli kapsamında gösterir.
+//  - BM ana sayfası kendi rolüne hedeflenen yayınları gösterir. TM, T Club
+//    sekmesinde UTT takım + firma geneli; C Club sekmesinde BM firma kapsamını kullanır.
 //
 // Varsayılan ortak çağrıda firma-geneli (takim_id NULL) içerik dışarıdadır;
 // yalnız bunu açıkça isteyen rol çağrıları firma sınırı korunarak dahil eder.
@@ -48,6 +48,11 @@ export interface SahaAnaSayfaVideo extends AnaSayfaVideo {
   favori_mi?: boolean;
   son_izleme_tarihi?: string | null;
   gelen_challenge_id?: string | null;
+}
+
+export interface TmAnaSayfaYayinlari {
+  temsilciler: SahaAnaSayfaVideo[];
+  bolgeMudurleri: SahaAnaSayfaVideo[];
 }
 
 interface AnaSayfaVideoSecenekleri {
@@ -183,8 +188,10 @@ export async function getSahaAnaSayfaVideolari(
   userId: string,
   rol: "bm" | "tm",
   adminSupabase: SupabaseClient,
+  hedefRol: "bm" | "utt" = rol === "bm" ? "bm" : "utt",
 ): Promise<SahaAnaSayfaVideo[]> {
-  if (rol === "bm") {
+  const bmYayinlari = hedefRol === "bm";
+  if (bmYayinlari) {
     const { data: kullanici, error: kullaniciHatasi } = await adminSupabase.from("kullanicilar")
       .select("firma_id").eq("kullanici_id", userId).single();
     if (kullaniciHatasi || !kullanici?.firma_id) throw new Error("BM firma kapsamı alınamadı.");
@@ -194,9 +201,9 @@ export async function getSahaAnaSayfaVideolari(
     if (!firma.aktif || !firma.cc_aktif) return [];
   }
   const videolar = await getAnaSayfaVideolari(userId, rol, adminSupabase, {
-    hedefRol: rol === "bm" ? "bm" : "utt",
+    hedefRol,
     firmaGeneliDahil: true,
-    tumFirmaTakimlariDahil: rol === "bm",
+    tumFirmaTakimlariDahil: bmYayinlari,
   });
   if (videolar.length === 0) return [];
 
@@ -210,7 +217,7 @@ export async function getSahaAnaSayfaVideolari(
       .from("video_favoriler")
       .select("yayin_id")
       .in("yayin_id", yayinIdler),
-    rol === "bm"
+    bmYayinlari
       ? adminSupabase.from("cc_izleme_kayitlari")
         .select("yayin_id, bm_id, izleme_bitis, izleme_baslangic")
         .in("yayin_id", yayinIdler).eq("tamamlandi_mi", true)
@@ -276,4 +283,16 @@ export async function getSahaAnaSayfaVideolari(
     son_izleme_tarihi: benimSonIzlemem.get(video.yayin_id) ?? null,
     gelen_challenge_id: gelenChallenge.get(video.yayin_id) ?? null,
   }));
+}
+
+/** TM'nin rol sekmeleri: kişisel öğrenme ve challenge kayıtları taşınmaz. */
+export async function getTmAnaSayfaYayinlari(
+  userId: string,
+  adminSupabase: SupabaseClient,
+): Promise<TmAnaSayfaYayinlari> {
+  const [temsilciler, bolgeMudurleri] = await Promise.all([
+    getSahaAnaSayfaVideolari(userId, "tm", adminSupabase, "utt"),
+    getSahaAnaSayfaVideolari(userId, "tm", adminSupabase, "bm"),
+  ]);
+  return { temsilciler, bolgeMudurleri };
 }
