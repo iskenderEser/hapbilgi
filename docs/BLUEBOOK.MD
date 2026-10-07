@@ -28,9 +28,7 @@ BLUEBOOK kayıtları aşağıdaki doğrulama kaynakları birlikte değerlendiril
 Bluebook'taki güncellik ve doğrulama ifadeleri son incelenen sürüm ve belirtilen kontrol tarihi için geçerlidir. Tarihsel test sonuçları güncel sonuç gibi kullanılmaz; canlı ortamda doğrulanmamış bir durum canlıda tamamlanmış veya üretime hazır olarak kaydedilmez.
 
 ### Kanonik Zaman Değerleri
-HapBilgi'nin bütün modüllerinde ve HapBi sorgularında geçerli zaman değerleri yalnızca aşağıdakilerdir. Bütün başlangıç ve bitişler Türkiye saatine göre değerlendirilir:
-
-* **Gün:** 00:00–23:59.
+HapBilgi'de günlük ölçüm yoktur. Kullanıcıya sunulan ölçüm zamanı seçenekleri yalnızca **Haftalık, Aylık, Dönemlik ve Yıllık** değerleridir; ortak kaynak `lib/utils/raporUtils.ts` içindeki `PERIYOTLAR` listesidir. BM ve TM ana sayfaları haftalık seçimle başlar. Bütün başlangıç ve bitişler Türkiye saatine göre değerlendirilir. Teknik tarih hesaplarında kullanılan gün sınırı (00:00–23:59), bir ölçüm seçeneği değildir.
 * **Hafta:** Pazartesi–Pazar.
 * **Ay:** 01–28/29/30/31.
 * **Dönem:** Ocak–Şubat–Mart, Nisan–Mayıs–Haziran, Temmuz–Ağustos–Eylül veya Ekim–Kasım–Aralık.

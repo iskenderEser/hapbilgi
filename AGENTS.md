@@ -35,3 +35,7 @@ Hediye Takibi görünüm testi için oluşturulan test verileri henüz silinmemi
 1. **DB Saklama Kuralı (GUID)**: `ogrenme_araclari.dosya_yolu`, `videolar.video_url` veya `talepler.hazir_video_url` alanlarında tam URL (`https://player.mediadelivery.net/...`) DEĞİL, yalnızca 36 karakterlik ham Bunny GUID (`fcae5775-cf9b-4283-9ec8-deb1f3b62b7c`) saklanır.
 2. **Kütüphane ve Ortam Bağımsızlığı**: Bunny kütüphane numarası (`LIBRARY_ID: 707975`) ortam değişkenindedir. Veritabanına tam link yazmak veriyi ortama bağımlı kılar ve ileride token authentication/domain restriction geçişlerini imkansızlaştırır.
 3. **Dinamik Çözümleme**: İstemci veya oynatıcı iframe'ine verilecek tam oynatma adresi (`https://player.mediadelivery.net/embed/{LIBRARY_ID}/{GUID}`) her zaman API / sunucu katmanında çalışma anında dinamik olarak çözümlenerek üretilir; DB'ye statik olarak yazılmaz.
+
+## Zorunlu ölçüm zamanı standardı
+
+HapBilgi’de günlük ölçüm yoktur. Kullanıcıya sunulan ölçüm zamanı seçenekleri yalnızca **Haftalık, Aylık, Dönemlik ve Yıllık** olabilir. Ana sayfa, rapor ve takip ekranlarında `lib/utils/raporUtils.ts` içindeki `PERIYOTLAR` ortak kaynağını kullan; ayrı bir günlük seçenek listesi oluşturma. BM ve TM ana sayfaları haftalık seçimle başlar. Teknik tarih hesaplarında gün sınırının bulunması, günlük ölçüm seçeneği sunulmasına gerekçe değildir. Yeni geliştirmelerde ve incelemelerde bu kuralı uygula.
