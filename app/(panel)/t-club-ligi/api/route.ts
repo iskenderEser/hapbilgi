@@ -125,13 +125,12 @@ export async function GET(request: NextRequest) {
         ? await getUreticiEtkiLigi(adminSupabase, sonuc, kullanici.kullanici_id, periyot, firmaLigi)
         : { ...sonuc, bakis: "genel" as const };
 
-      if (gorunum !== "bm" && gorunum !== "uretici") {
-        const takimKapsamli = gorunum === "tm";
+      if (gorunum !== "bm" && gorunum !== "tm" && gorunum !== "uretici") {
         gosterilecekSonuc.bm_performans = await getBmPerformans(
           adminSupabase,
           {
             firma_id: gorunum === "admin" ? null : kullanici.firma_id,
-            takim_id: takimKapsamli ? kullanici.takim_id : null,
+            takim_id: null,
           },
           periyot,
         );

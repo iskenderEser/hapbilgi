@@ -6,6 +6,8 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
 import LeaguePage from "@/components/hbligi/league/LeaguePage";
+import BmLeaguePage from "@/components/hbligi/league/BmLeaguePage";
+import TmLeaguePage from "@/components/hbligi/league/TmLeaguePage";
 import FieldLeaguePage from "@/components/hbligi/field/FieldLeaguePage";
 import ProducerLeaguePage, { type UreticiLigBakisi } from "@/components/hbligi/producer/ProducerLeaguePage";
 import type { SahaLigSonuc } from "@/lib/tclub/hbligi/getSahaLig";
@@ -56,7 +58,7 @@ type HBLigiVeri = {
 } | SahaLigSonuc;
 
 const LIG_ONBELLEK_SURESI = 60_000;
-const LIG_OTURUM_ONBELLEK_PREFIXI = "hb_tclub_lig_cache_";
+const LIG_OTURUM_ONBELLEK_PREFIXI = "hb_tclub_lig_cache_v4_";
 const ligOnbellegi = new Map<string, { veri: HBLigiVeri; zaman: number }>();
 const devamEdenLigIstekleri = new Map<string, { promise: Promise<HBLigiVeri>; controller: AbortController }>();
 
@@ -269,7 +271,7 @@ export default function HBLigiPage() {
 
   if (veri.tip === "utt") {
     return (
-      <div className="h-full min-h-0 overflow-y-auto bg-[linear-gradient(135deg,#f8fbff_0%,#f6f8fb_48%,#fbfcfe_100%)]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+      <div className="h-full min-h-0 overflow-y-auto md:overflow-hidden bg-[linear-gradient(135deg,#f8fbff_0%,#f6f8fb_48%,#fbfcfe_100%)]" style={{ fontFamily: "'Nunito', sans-serif" }}>
         <div className="mx-auto min-h-full max-w-[1440px] px-3 py-3 md:h-full md:min-h-0 md:px-5 md:py-3">
           <LeaguePage
             ligler={veri.ligler ?? { bolge: veri.lig, takim: veri.lig, firma: veri.lig }}
@@ -297,6 +299,19 @@ export default function HBLigiPage() {
             onBakisDegistir={setUreticiBakisi}
             periyotSecici={periyotSecici}
           />
+        </div>
+      </div>
+    );
+  }
+
+  if (veri.gorunum === "bm" || veri.gorunum === "tm") {
+    return (
+      <div className="h-full min-h-0 overflow-y-auto md:overflow-hidden bg-[linear-gradient(135deg,#f8fbff_0%,#f6f8fb_48%,#fbfcfe_100%)]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+        <div className="mx-auto min-h-full max-w-[1440px] px-3 py-3 md:flex md:h-full md:min-h-0 md:flex-col md:px-5 md:py-3">
+          {hata && <p role="status" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">{hata} Mevcut veriler gösterilmeye devam ediyor.</p>}
+          {veri.gorunum === "bm"
+            ? <BmLeaguePage key={veri.kapsam_adi} veri={veri} periyotSecici={periyotSecici} />
+            : <TmLeaguePage key={veri.kapsam_adi} veri={veri} periyotSecici={periyotSecici} />}
         </div>
       </div>
     );

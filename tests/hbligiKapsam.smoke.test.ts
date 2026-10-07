@@ -36,9 +36,11 @@ test("HBLigi üst rol kapsamları firma ve takım sınırını korur", async () 
     kapsam("bm"), kapsam("tm"), kapsam("uretici"), kapsam("yonetici"), kapsam("admin"),
   ]);
 
-  assert.deepEqual(bm.lig.map((r) => r.kullanici_id), ["u1", "u2"]);
+  assert.deepEqual(bm.lig.map((r) => r.kullanici_id), ["u1"]);
+  assert.deepEqual(bm.bolge_toplamlari?.map((r) => r.bolge_id), ["b1", "b2"]);
   assert.equal(bm.odak_birim_id, "b1");
-  assert.deepEqual(tm.lig.map((r) => r.kullanici_id), ["u1", "u2", "u3"]);
+  assert.deepEqual(tm.lig.map((r) => r.kullanici_id), ["u1", "u2"]);
+  assert.deepEqual(tm.takim_toplamlari?.map((r) => r.takim_id), ["t1", "t2"]);
   assert.equal(tm.odak_birim_id, "t1");
   assert.deepEqual(uretici.lig.map((r) => r.kullanici_id), ["u1", "u2"]);
   assert.equal(uretici.yetki_kapsami, "takim");
@@ -47,6 +49,87 @@ test("HBLigi üst rol kapsamları firma ve takım sınırını korur", async () 
   assert.deepEqual(yonetici.lig.map((r) => r.kullanici_id), ["u1", "u2", "u3"]);
   assert.equal(admin.lig.length, 4);
   assert.ok(tm.lig.every((r) => r.firma_id === "f1"));
+});
+
+test("BM diğer bölgelerin yalnız toplamlarını alır; kürsü ve ayrıntı kendi bölgesinde kalır", async () => {
+  for (const zaman of ["hafta", "ay", "donem", "yil"] as const) {
+    const db = {
+      rpc: async () => ({ data: HAM_SATIRLAR.map((r) => ({
+        ...r, izleme_puani: 20, cevaplama_puani: 3, oneri_puani: 4,
+        extra_puani: 5, eclub_puani: 6, ileri_sarma_kaybi: 2,
+        yanlis_cevap_kaybi: 1, oneri_kaybi: 3, toplam_puan: 32,
+      })), error: null }),
+    } as unknown as SupabaseClient;
+    const sonuc = await getSahaLig(db, {
+      gorunum: "bm", firma_id: "f1", takim_id: "t1", bolge_id: "b1",
+    }, { ...PERIYOT, periyot: zaman }, new Date("2026-10-07T12:00:00+03:00"));
+    assert.deepEqual(sonuc.lig.map((r) => r.kullanici_id), ["u1"]);
+    assert.equal(sonuc.lig[0].eclub_puani, 6);
+    assert.deepEqual(sonuc.bolge_toplamlari, [
+      { bolge_id: "b1", bolge: "İzmir", toplam_utt: 1, kazanilan: 38, kaybedilen: 6, net: 32 },
+      { bolge_id: "b2", bolge: "Muğla", toplam_utt: 1, kazanilan: 38, kaybedilen: 6, net: 32 },
+    ]);
+    assert.equal(sonuc.aylik_kursu?.ay_adi, "Eylül");
+    assert.deepEqual(sonuc.aylik_kursu?.sirket_top3.map((r) => r.kullanici_id), ["u1"]);
+    const json = JSON.stringify(sonuc);
+    for (const gizli of ["u2", "u3", "u4", "Can Özkan", "Deniz Acar", "Ece Ak"])
+      assert.equal(json.includes(gizli), false, `${gizli} BM yanıtında olmamalı`);
+  }
+});
+
+test("TM tüm kendi takım temsilcilerini görür; diğer takımlar yalnız toplu değer olarak çıkar", async () => {
+  for (const zaman of ["hafta", "ay", "donem", "yil"] as const) {
+    const db = {
+      rpc: async () => ({ data: HAM_SATIRLAR.map((r) => ({
+        ...r, izleme_puani: 20, cevaplama_puani: 3, oneri_puani: 4,
+        extra_puani: 5, eclub_puani: 6, ileri_sarma_kaybi: 2,
+        yanlis_cevap_kaybi: 1, oneri_kaybi: 3, toplam_puan: 32,
+      })), error: null }),
+    } as unknown as SupabaseClient;
+    const sonuc = await getSahaLig(db, {
+      gorunum: "tm", firma_id: "f1", takim_id: "t1", bolge_id: null,
+    }, { ...PERIYOT, periyot: zaman }, new Date("2026-10-07T12:00:00+03:00"));
+    assert.deepEqual(sonuc.lig.map((r) => r.kullanici_id), ["u1", "u2"]);
+    assert.deepEqual(sonuc.lig.map((r) => r.bolge_id), ["b1", "b2"]);
+    assert.deepEqual(sonuc.takim_toplamlari, [
+      { takim_id: "t1", takim: "Şimşek", toplam_utt: 2, kazanilan: 76, kaybedilen: 12, net: 64 },
+      { takim_id: "t2", takim: "Yıldız", toplam_utt: 1, kazanilan: 38, kaybedilen: 6, net: 32 },
+    ]);
+    assert.equal(sonuc.aylik_kursu?.ay_adi, "Eylül");
+    assert.deepEqual(sonuc.aylik_kursu?.sirket_top3.map((r) => r.kullanici_id), ["u1", "u2"]);
+    for (const gizli of ["u3", "u4", "Deniz Acar", "Ece Ak"])
+      assert.equal(JSON.stringify(sonuc).includes(gizli), false, `${gizli} TM yanıtında olmamalı`);
+  }
+});
+
+test("TM ligindeki BM adları yalnız kendi firmasının aktif takım yöneticilerinden okunur", async () => {
+  const bmler = [
+    { kullanici_id: "bm1", ad: "Selin", soyad: "Yılmaz", bolge_id: "b1", rol: "bm", aktif_mi: true, firma_id: "f1", takim_id: "t1" },
+    { kullanici_id: "bm2", ad: "Deniz", soyad: "Çetin", bolge_id: "b2", rol: "bm", aktif_mi: true, firma_id: "f1", takim_id: "t1" },
+    { kullanici_id: "bm3", ad: "Başka", soyad: "Takım", bolge_id: "b3", rol: "bm", aktif_mi: true, firma_id: "f1", takim_id: "t2" },
+    { kullanici_id: "bm4", ad: "Başka", soyad: "Firma", bolge_id: "b4", rol: "bm", aktif_mi: true, firma_id: "f2", takim_id: "t1" },
+    { kullanici_id: "bm5", ad: "Pasif", soyad: "BM", bolge_id: "b1", rol: "bm", aktif_mi: false, firma_id: "f1", takim_id: "t1" },
+  ];
+  const db = {
+    rpc: async () => ({ data: HAM_SATIRLAR, error: null }),
+    from: () => {
+      const filtreler: Array<[string, unknown]> = [];
+      const sorgu = {
+        select: () => sorgu,
+        in: async () => ({ data: [], error: null }),
+        eq: (alan: string, deger: unknown) => { filtreler.push([alan, deger]); return sorgu; },
+        then: (resolve: (value: unknown) => unknown) => Promise.resolve({
+          data: bmler.filter((bm) => filtreler.every(([alan, deger]) => (bm as Record<string, unknown>)[alan] === deger)), error: null,
+        }).then(resolve),
+      };
+      return sorgu;
+    },
+  } as unknown as SupabaseClient;
+  const sonuc = await getSahaLig(db, { gorunum: "tm", firma_id: "f1", takim_id: "t1", bolge_id: null }, PERIYOT);
+  assert.deepEqual(sonuc.bolge_yoneticileri, [
+    { bm_id: "bm1", bm_adi: "Selin Yılmaz", bolge_id: "b1" },
+    { bm_id: "bm2", bm_adi: "Deniz Çetin", bolge_id: "b2" },
+  ]);
 });
 
 test("Takıma bağlı üretici yalnız takımını, takım bağımsız üretici tüm firmayı görür", async () => {

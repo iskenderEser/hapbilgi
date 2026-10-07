@@ -71,7 +71,7 @@ export default function LeaguePage({
     return (
       <TooltipProvider delayDuration={200}>
         <div className={styles.shell} style={{ fontFamily: "'Nunito', sans-serif" }}>
-          <div className={styles.dashboard}>
+          <div className={`${styles.dashboard} ${styles.fixedDashboard}`}>
             <div className="shrink-0">
               <LeagueHeader periyotSecici={null} />
             </div>
@@ -107,13 +107,13 @@ export default function LeaguePage({
   return (
     <TooltipProvider delayDuration={200}>
       <div className={styles.shell} style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <div className={styles.dashboard}>
+        <div className={`${styles.dashboard} ${styles.fixedDashboard}`}>
         <div className="shrink-0">
           <LeagueHeader periyotSecici={null} />
         </div>
         <MonthlyLeaders top3={sirketTop3} ayAdi={aylikKursu?.ay_adi} />
         <div className="flex flex-wrap items-center justify-end gap-2">{filtreler}</div>
-        <div className="min-h-0 overflow-hidden">
+        <div className={styles.listViewport}>
           <CompetitorComparison
             satirlar={sirali}
             benimId={userId}

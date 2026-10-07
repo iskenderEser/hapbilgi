@@ -24,7 +24,7 @@ export default function MonthlyLeaders({
         <h2 className={styles.leadersBannerTitle}>
           {baslikKelimeleri.map((kelime, index) => (
             <span key={`${kelime}-${index}`}>
-              {kelime}{index < baslikKelimeleri.length - 1 ? "\u00a0" : ""}
+              {kelime}{index < baslikKelimeleri.length - 1 ? " " : ""}
             </span>
           ))}
         </h2>

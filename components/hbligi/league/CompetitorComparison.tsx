@@ -2,7 +2,7 @@
 
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -31,11 +31,30 @@ function SiraRozeti({ sira }: { sira: number }) {
 
 function PuanKalemi({ etiket, deger, kayip = false }: { etiket: string; deger: number; kayip?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-[#e8edf4] bg-white px-3 py-2">
-      <span className="text-[11px] font-semibold text-[#52647c]">{etiket}</span>
-      <strong className={`text-xs tabular-nums ${kayip ? "text-rose-600" : "text-emerald-700"}`}>
+    <div className="flex min-h-6 items-center justify-between gap-2 border-b border-[#e2eaf3] py-1">
+      <span className="min-w-0 text-[10px] leading-4 font-semibold whitespace-normal text-[#52647c] [overflow-wrap:anywhere] sm:text-[11px]">{etiket}</span>
+      <strong className={`shrink-0 text-[11px] tabular-nums sm:text-xs ${kayip ? "text-rose-600" : "text-emerald-700"}`}>
         {deger > 0 ? (kayip ? "−" : "+") : ""}{deger.toLocaleString("tr-TR")}
       </strong>
+    </div>
+  );
+}
+
+function PuanAyrintisi({ satir }: { satir: SiraliSatir }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-start gap-x-5 whitespace-normal sm:gap-x-8">
+      <div className="min-w-0">
+        <PuanKalemi etiket="Öğrenme Tamamlama" deger={satir.izleme_puani} />
+        <PuanKalemi etiket="Cevaplama" deger={satir.cevaplama_puani} />
+        <PuanKalemi etiket="Öneri" deger={satir.oneri_puani} />
+        <PuanKalemi etiket="Extra" deger={satir.extra_puani} />
+        <PuanKalemi etiket="E-Club" deger={satir.eclub_puani ?? 0} />
+      </div>
+      <div className="min-w-0">
+        <PuanKalemi etiket="İleri sarma" deger={satir.ileri_sarma_kaybi} kayip />
+        <PuanKalemi etiket="Yanlış cevap" deger={satir.yanlis_cevap_kaybi} kayip />
+        <PuanKalemi etiket="Öneri kaybı" deger={satir.oneri_kaybi} kayip />
+      </div>
     </div>
   );
 }
@@ -48,16 +67,95 @@ function puanToplamlari(satir: SiraliSatir) {
   return { toplamKazanc, toplamKayip };
 }
 
+function KapsulLigListesi({ satirlar, benimId, ayrintiGoster, ayrintiIcerigi }: {
+  satirlar: SiraliSatir[]; benimId: string; ayrintiGoster: boolean;
+  ayrintiIcerigi?: (satir: SiraliSatir) => ReactNode;
+}) {
+  const [acikId, setAcikId] = useState<string | null>(null);
+  return (
+    <div className={`${styles.capsuleList} space-y-2`}>
+      {satirlar.map((satir) => {
+        const benim = satir.benim || satir.kullanici_id === benimId;
+        const detay = ayrintiGoster && satir.detay_gorulebilir !== false;
+        const acik = detay && acikId === satir.kullanici_id;
+        const { toplamKazanc, toplamKayip } = puanToplamlari(satir);
+        const ayrintiId = `lig-kapsul-ayrinti-${satir.kullanici_id}`;
+        return (
+          <article key={satir.kullanici_id} className={`overflow-hidden rounded-2xl border ${benim ? "border-[#8fc7f4] bg-[#f4f9ff]" : "border-[#e3eaf2] bg-[#f8fafc]"}`}>
+            <button
+              type="button"
+              disabled={!detay}
+              onClick={() => setAcikId(acik ? null : satir.kullanici_id)}
+              aria-expanded={detay ? acik : undefined}
+              aria-controls={detay ? ayrintiId : undefined}
+              aria-label={ayrintiGoster ? `${satir.ad} puan ayrıntısını ${detay ? (acik ? "kapat" : "aç") : "görüntüleyemezsiniz"}` : `${satir.ad} toplam puanları`}
+              className={`${styles.capsuleColumns} w-full items-center p-3 text-left outline-none enabled:cursor-pointer enabled:hover:bg-[#edf6ff] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#237ac8]`}
+            >
+              <span className={styles.capsuleRank}><SiraRozeti sira={satir.rank} /></span>
+              <span className={`${styles.capsuleName} flex min-h-14 min-w-0 flex-col justify-center rounded-xl border border-[#e3eaf2] bg-white px-3 py-2`}>
+                <span className="flex min-w-0 items-center gap-1.5 text-xs font-bold text-[#253750]">
+                  <span className="truncate">{satir.ad}</span>
+                  {benim && <span className="shrink-0 rounded-md bg-[#edf6ff] px-1.5 py-0.5 text-[9px] text-[#237ac8]">Sen</span>}
+                </span>
+                <span className="truncate text-[10px] text-[#8493a7]">{satir.bolge}</span>
+              </span>
+              <span className={`${styles.capsuleGain} flex min-h-14 flex-col justify-center rounded-xl border border-emerald-100 bg-white px-3 py-2`}>
+                <span className="text-[9px] font-bold uppercase tracking-wide text-[#8493a7]">Kazanılan</span>
+                <strong className="text-sm tabular-nums text-emerald-700">+{toplamKazanc.toLocaleString("tr-TR")}</strong>
+              </span>
+              <span className={`${styles.capsuleLoss} flex min-h-14 flex-col justify-center rounded-xl border border-rose-100 bg-white px-3 py-2`}>
+                <span className="text-[9px] font-bold uppercase tracking-wide text-[#8493a7]">Kaybedilen</span>
+                <strong className="text-sm tabular-nums text-rose-600">{toplamKayip > 0 ? `−${toplamKayip.toLocaleString("tr-TR")}` : "0"}</strong>
+              </span>
+              <span className={`${styles.capsuleNet} flex min-h-14 flex-col justify-center rounded-xl border border-blue-100 bg-[#edf6ff] px-3 py-2`}>
+                <span className="text-[9px] font-bold uppercase tracking-wide text-[#8493a7]">Net Puan</span>
+                <strong className="text-base tabular-nums text-[#237ac8]">{satir.toplam_puan.toLocaleString("tr-TR")}</strong>
+              </span>
+              <span className={`${styles.capsuleArrow} flex justify-center text-[#60728f]`}>
+                {ayrintiGoster && (detay ? (acik ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />) : <LockKeyhole className="h-3.5 w-3.5" />)}
+              </span>
+            </button>
+            {acik && (ayrintiIcerigi ? (
+              <div id={ayrintiId} className="border-t border-[#e3eaf2] bg-[#f8fbff] p-2 sm:p-3">
+                {ayrintiIcerigi(satir)}
+              </div>
+            ) : (
+              <div id={ayrintiId} className={`${styles.capsuleColumns} items-start border-t border-[#e3eaf2] bg-[#f8fbff] p-3`}>
+                <div className={`${styles.capsuleGain} min-w-0 rounded-xl border border-emerald-100 bg-white px-3 py-1`}>
+                  <PuanKalemi etiket="Öğrenme Tamamlama" deger={satir.izleme_puani} />
+                  <PuanKalemi etiket="Cevaplama" deger={satir.cevaplama_puani} />
+                  <PuanKalemi etiket="Öneri" deger={satir.oneri_puani} />
+                  <PuanKalemi etiket="Extra" deger={satir.extra_puani} />
+                  <PuanKalemi etiket="E-Club" deger={satir.eclub_puani ?? 0} />
+                </div>
+                <div className={`${styles.capsuleLoss} min-w-0 rounded-xl border border-rose-100 bg-white px-3 py-1`}>
+                  <PuanKalemi etiket="İleri sarma" deger={satir.ileri_sarma_kaybi} kayip />
+                  <PuanKalemi etiket="Yanlış cevap" deger={satir.yanlis_cevap_kaybi} kayip />
+                  <PuanKalemi etiket="Öneri kaybı" deger={satir.oneri_kaybi} kayip />
+                </div>
+              </div>
+            ))}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function CompetitorComparison({
   satirlar,
   benimId,
   baslik,
   organizasyonFiltresi,
+  ayrintiGoster = true,
+  ayrintiIcerigi,
 }: {
   satirlar: SiraliSatir[];
   benimId: string;
   baslik: string;
   organizasyonFiltresi?: OrganizasyonTabloFiltresi;
+  ayrintiGoster?: boolean;
+  ayrintiIcerigi?: (satir: SiraliSatir) => ReactNode;
 }) {
   const [acikKullanici, setAcikKullanici] = useState<string | null>(null);
 
@@ -96,7 +194,9 @@ export default function CompetitorComparison({
         </div>
       )}
 
-      <div className="space-y-2 md:hidden">
+      {!organizasyonFiltresi && <KapsulLigListesi satirlar={satirlar} benimId={benimId} ayrintiGoster={ayrintiGoster} ayrintiIcerigi={ayrintiIcerigi} />}
+
+      {organizasyonFiltresi && <><div className="space-y-2 md:hidden">
         {satirlar.map((satir) => {
           const benim = satir.benim || satir.kullanici_id === benimId;
           const detayGorulebilir = satir.detay_gorulebilir !== false;
@@ -137,17 +237,8 @@ export default function CompetitorComparison({
                 <div className="flex min-h-11 items-center justify-center gap-1.5 border-t border-[#edf1f5] text-[10px] font-bold text-[#94a0b1]"><LockKeyhole className="h-3.5 w-3.5" /> Ayrıntılar gizli</div>
               )}
               {acik && detayGorulebilir && (
-                <div id={ayrintiId} className="space-y-3 border-t border-[#dfe8f2] bg-[#f8fbff] p-3">
-                  <div className="grid gap-2">
-                    <PuanKalemi etiket="Öğrenme Tamamlama" deger={satir.izleme_puani} />
-                    <PuanKalemi etiket="Cevaplama" deger={satir.cevaplama_puani} />
-                    <PuanKalemi etiket="Öneri" deger={satir.oneri_puani} />
-                    <PuanKalemi etiket="Extra" deger={satir.extra_puani} />
-                    <PuanKalemi etiket="E-Club" deger={satir.eclub_puani ?? 0} />
-                    <PuanKalemi etiket="İleri sarma" deger={satir.ileri_sarma_kaybi} kayip />
-                    <PuanKalemi etiket="Yanlış cevap" deger={satir.yanlis_cevap_kaybi} kayip />
-                    <PuanKalemi etiket="Öneri kaybı" deger={satir.oneri_kaybi} kayip />
-                  </div>
+                <div id={ayrintiId} className="border-t border-[#dfe8f2] bg-[#f8fbff] p-3">
+                  <PuanAyrintisi satir={satir} />
                 </div>
               )}
             </article>
@@ -267,36 +358,7 @@ export default function CompetitorComparison({
                   {acik && detayGorulebilir && (
                     <TableRow id={ayrintiId} className="border-[#dfe8f2] bg-[#f8fbff] hover:bg-[#f8fbff]">
                       <TableCell colSpan={organizasyonFiltresi ? 8 : 6} className="h-auto whitespace-normal px-4 py-3">
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <div>
-                            <div className="mb-2 flex items-center justify-between">
-                              <strong className="text-[11px] font-extrabold uppercase tracking-wide text-emerald-700">Kazançlar</strong>
-                              <span className="text-xs font-black tabular-nums text-emerald-700">+{toplamKazanc.toLocaleString("tr-TR")}</span>
-                            </div>
-                            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                              <PuanKalemi etiket="Öğrenme Tamamlama" deger={satir.izleme_puani} />
-                              <PuanKalemi etiket="Cevaplama" deger={satir.cevaplama_puani} />
-                              <PuanKalemi etiket="Öneri" deger={satir.oneri_puani} />
-                              <PuanKalemi etiket="Extra" deger={satir.extra_puani} />
-                              <PuanKalemi etiket="E-Club" deger={satir.eclub_puani ?? 0} />
-                            </div>
-                          </div>
-                          <div>
-                            <div className="mb-2 flex items-center justify-between">
-                              <strong className="text-[11px] font-extrabold uppercase tracking-wide text-rose-700">Kayıplar</strong>
-                              <span className="text-xs font-black tabular-nums text-rose-700">−{toplamKayip.toLocaleString("tr-TR")}</span>
-                            </div>
-                            <div className="grid gap-2 sm:grid-cols-3">
-                              <PuanKalemi etiket="İleri sarma" deger={satir.ileri_sarma_kaybi} kayip />
-                              <PuanKalemi etiket="Yanlış cevap" deger={satir.yanlis_cevap_kaybi} kayip />
-                              <PuanKalemi etiket="Öneri kaybı" deger={satir.oneri_kaybi} kayip />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="mt-3 flex flex-wrap justify-end border-t border-[#e2eaf3] pt-2 text-[11px] font-bold text-[#52647c]">
-                          {toplamKazanc.toLocaleString("tr-TR")} − {toplamKayip.toLocaleString("tr-TR")} =
-                          <strong className="ml-1 text-[#2f80ed]">{satir.toplam_puan.toLocaleString("tr-TR")} net puan</strong>
-                        </div>
+                        <PuanAyrintisi satir={satir} />
                       </TableCell>
                     </TableRow>
                   )}
@@ -306,6 +368,7 @@ export default function CompetitorComparison({
           </TableBody>
         </Table>
       </div>
+      </>}
     </section>
   );
 }

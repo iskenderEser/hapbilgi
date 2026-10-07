@@ -63,6 +63,23 @@ export interface SahaLigSonuc {
   ana_birim: SahaBirimTuru;
   odak_birim_id: string | null;
   lig: SahaLigKullanici[];
+  bolge_toplamlari?: Array<{
+    bolge_id: string;
+    bolge: string;
+    toplam_utt: number;
+    kazanilan: number;
+    kaybedilen: number;
+    net: number;
+  }>;
+  takim_toplamlari?: Array<{
+    takim_id: string;
+    takim: string;
+    toplam_utt: number;
+    kazanilan: number;
+    kaybedilen: number;
+    net: number;
+  }>;
+  bolge_yoneticileri?: Array<{ bm_id: string; bm_adi: string; bolge_id: string | null }>;
   yetki_kapsami?: "takim" | "firma";
   organizasyon?: {
     takimlar: Array<{ id: string; ad: string }>;
@@ -244,7 +261,7 @@ export async function getSahaLig(
   let oncekiAy: LigPeriyot | null = null;
   let oncekiAyHamSatirlar: Awaited<ReturnType<typeof ligRpcCagir>> = [];
   let ikiOncekiAyHamSatirlar: Awaited<ReturnType<typeof ligRpcCagir>> = [];
-  if (kapsam.gorunum === "uretici") {
+  if (kapsam.gorunum === "uretici" || kapsam.gorunum === "bm" || kapsam.gorunum === "tm") {
     const buAy: LigPeriyot = { periyot: "ay", ...aktifPeriyot(simdi) };
     oncekiAy = oncekiLigPeriyodu(buAy);
     const ikiOncekiAy = oncekiLigPeriyodu(oncekiAy);
@@ -332,6 +349,39 @@ export async function getSahaLig(
   }
 
   if (kapsam.gorunum === "tm") {
+    let bolgeYoneticileri: NonNullable<SahaLigSonuc["bolge_yoneticileri"]> = [];
+    if (typeof supabase.from === "function") {
+      const { data, error } = await supabase.from("kullanicilar")
+        .select("kullanici_id, ad, soyad, bolge_id")
+        .eq("rol", "bm").eq("aktif_mi", true)
+        .eq("firma_id", kapsam.firma_id).eq("takim_id", kapsam.takim_id);
+      if (error) throw new Error(`Lig bölge yöneticileri alınamadı: ${error.message}`);
+      bolgeYoneticileri = (data ?? []).map((bm) => ({
+        bm_id: String(bm.kullanici_id), bm_adi: `${bm.ad ?? ""} ${bm.soyad ?? ""}`.trim(),
+        bolge_id: bm.bolge_id ? String(bm.bolge_id) : null,
+      }));
+    }
+    // Firma karşılaştırmasında diğer takımların yalnız toplu değerleri çıkar.
+    const takimlar = new Map<string, NonNullable<SahaLigSonuc["takim_toplamlari"]>[number]>();
+    for (const satir of firmaSatirlari) {
+      if (!satir.takim_id) continue;
+      const toplam = takimlar.get(satir.takim_id) ?? {
+        takim_id: satir.takim_id, takim: satir.takim, toplam_utt: 0,
+        kazanilan: 0, kaybedilen: 0, net: 0,
+      };
+      toplam.toplam_utt += 1;
+      toplam.kazanilan += satir.izleme_puani + satir.cevaplama_puani + satir.oneri_puani
+        + satir.extra_puani + (satir.eclub_puani ?? 0);
+      toplam.kaybedilen += satir.ileri_sarma_kaybi + satir.yanlis_cevap_kaybi + satir.oneri_kaybi;
+      toplam.net += satir.toplam_puan;
+      takimlar.set(satir.takim_id, toplam);
+    }
+    const kendiTakimi = (satir: SahaLigKullanici) => satir.firma_id === kapsam.firma_id
+      && satir.takim_id === kapsam.takim_id;
+    const tmKursu = oncekiAy ? aylikKursuOlustur(
+      oncekiAySatirlari.filter(kendiTakimi), ikiOncekiAySatirlari.filter(kendiTakimi),
+      kapsam.firma_id, oncekiAy,
+    ) : undefined;
     return {
       tip: "saha",
       gorunum: "tm",
@@ -339,7 +389,10 @@ export async function getSahaLig(
       kapsam_aciklamasi: "Firma takımları içinde kendi takımının konumu",
       ana_birim: "takim",
       odak_birim_id: kapsam.takim_id,
-      lig: firmaSatirlari,
+      lig: takimSatirlari,
+      takim_toplamlari: [...takimlar.values()],
+      bolge_yoneticileri: bolgeYoneticileri,
+      aylik_kursu: tmKursu,
     };
   }
 
@@ -363,6 +416,28 @@ export async function getSahaLig(
     throw new Error("BM HBLigi görünümü için bölge ataması gerekli.");
   }
 
+  // Başka bölgelerin kişi kayıtları ve puan bileşenleri istemciye çıkmaz.
+  const bolgeler = new Map<string, NonNullable<SahaLigSonuc["bolge_toplamlari"]>[number]>();
+  for (const satir of takimSatirlari) {
+    if (!satir.bolge_id) continue;
+    const toplam = bolgeler.get(satir.bolge_id) ?? {
+      bolge_id: satir.bolge_id, bolge: satir.bolge, toplam_utt: 0,
+      kazanilan: 0, kaybedilen: 0, net: 0,
+    };
+    toplam.toplam_utt += 1;
+    toplam.kazanilan += satir.izleme_puani + satir.cevaplama_puani + satir.oneri_puani
+      + satir.extra_puani + (satir.eclub_puani ?? 0);
+    toplam.kaybedilen += satir.ileri_sarma_kaybi + satir.yanlis_cevap_kaybi + satir.oneri_kaybi;
+    toplam.net += satir.toplam_puan;
+    bolgeler.set(satir.bolge_id, toplam);
+  }
+  const kendiBolgesi = (satir: SahaLigKullanici) => satir.firma_id === kapsam.firma_id
+    && satir.takim_id === kapsam.takim_id && satir.bolge_id === kapsam.bolge_id;
+  const bmKursu = oncekiAy ? aylikKursuOlustur(
+    oncekiAySatirlari.filter(kendiBolgesi), ikiOncekiAySatirlari.filter(kendiBolgesi),
+    kapsam.firma_id, oncekiAy,
+  ) : undefined;
+
   return {
     tip: "saha",
     gorunum: "bm",
@@ -370,6 +445,8 @@ export async function getSahaLig(
     kapsam_aciklamasi: "Takım bölgeleri içinde kendi bölgesinin konumu",
     ana_birim: "bolge",
     odak_birim_id: kapsam.bolge_id,
-    lig: takimSatirlari,
+    lig: bolgeSatirlari,
+    bolge_toplamlari: [...bolgeler.values()],
+    aylik_kursu: bmKursu,
   };
 }
