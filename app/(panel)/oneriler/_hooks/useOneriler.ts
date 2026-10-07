@@ -81,27 +81,38 @@ export function useOneriler(bitisYaklasan = false) {
   useEffect(() => {
     if (!kullanici?.id) return;
     let aktif = true;
+    const controller = new AbortController();
     const veriCek = async () => {
       const url = isBM && bitisYaklasan
         ? "/oneriler/api?gorunum=bitis_yaklasan"
         : isBM || isTM ? `/oneriler/api?periyot=${periyot}` : "/oneriler/api";
-      const res = await fetch(url);
-      const data = await res.json();
-      if (!aktif) return;
-      if (!res.ok) {
-        hataRef.current(data.hata ?? "Öneri listesi yüklenemedi.", data.adim, data.detay);
-      } else if (isTM) {
-        setTmOneriler(data.oneriler ?? []);
-        setTmBmler(data.bm_listesi ?? []);
-      } else {
-        setOneriler(data.oneriler ?? []);
+      try {
+        const res = await fetch(url, { signal: controller.signal });
+        const data = await res.json();
+        if (!aktif) return;
+        if (!res.ok) {
+          hataRef.current(data.hata ?? "Öneri listesi yüklenemedi.", data.adim, data.detay);
+        } else if (isTM) {
+          setTmOneriler(data.oneriler ?? []);
+          setTmBmler(data.bm_listesi ?? []);
+        } else {
+          setOneriler(data.oneriler ?? []);
+        }
+      } catch {
+        if (aktif && !controller.signal.aborted) {
+          hataRef.current("Öneri listesi yüklenemedi. Lütfen tekrar deneyin.");
+        }
+      } finally {
+        if (aktif) {
+          setLoading(false);
+          setYenileniyor(false);
+        }
       }
-      setLoading(false);
-      setYenileniyor(false);
     };
     void veriCek();
     return () => {
       aktif = false;
+      controller.abort();
     };
   }, [bitisYaklasan, isBM, isTM, kullanici?.id, periyot, yenileTetik]);
 
@@ -126,7 +137,8 @@ export function useOneriler(bitisYaklasan = false) {
 
   const handlePeriyotDegistir = (yeniPeriyot: Periyot) => {
     if (yeniPeriyot === periyot) return;
-    setLoading(true);
+    if (isTM) setYenileniyor(true);
+    else setLoading(true);
     setPeriyot(yeniPeriyot);
   };
 

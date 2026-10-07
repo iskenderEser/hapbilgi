@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Popover } from "radix-ui";
 import { CheckCircle2, ChevronDown, Clock3, Send, TriangleAlert, X } from "lucide-react";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import type { Periyot } from "@/lib/utils/raporUtils";
@@ -92,6 +93,47 @@ const kategoriAdi = (icerikTuru: string | null | undefined) =>
 const ogrenmeAraciAdi = (aracTuru: string | null | undefined) =>
   YAYIN_TURU_SUNUMU[aracTuru as OgrenmeAraciTuru]?.etiket ?? "—";
 
+interface TemsilciSecenegi {
+  id: string;
+  ad: string;
+}
+
+function TemsilciFiltresi({ temsilciler, deger, onDegistir }: {
+  temsilciler: TemsilciSecenegi[];
+  deger: string;
+  onDegistir: (id: string) => void;
+}) {
+  const [acik, setAcik] = useState(false);
+  const [arama, setArama] = useState("");
+  const secili = temsilciler.find((temsilci) => temsilci.id === deger);
+  const sonuclar = temsilciler.filter((temsilci) => temsilci.ad.toLocaleLowerCase("tr-TR").includes(arama.trim().toLocaleLowerCase("tr-TR")));
+  const sec = (id: string) => {
+    onDegistir(id);
+    setAcik(false);
+    setArama("");
+  };
+
+  return (
+    <Popover.Root open={acik} onOpenChange={(sonraki) => { setAcik(sonraki); setArama(""); }}>
+      <Popover.Trigger asChild>
+        <button type="button" aria-label={`Temsilci filtresi: ${secili?.ad ?? "Tüm Temsilciler"}`} title={secili?.ad ?? "Tüm Temsilciler"} className="flex w-[140px] max-w-full min-w-0 items-center justify-between gap-1 rounded-lg border border-[#d8e2ed] bg-white px-2 py-1.5 text-left text-[10px] font-semibold normal-case tracking-normal text-[#586f8a] hover:bg-[#f8fbfe]">
+          <span className="truncate">{secili?.ad ?? "Tüm Temsilciler"}</span><ChevronDown size={12} className="shrink-0" />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content aria-label="Temsilci seçimi" align="start" sideOffset={5} className="z-50 w-[min(280px,calc(100vw-24px))] rounded-xl border border-[#dbe5ef] bg-white p-2 shadow-lg">
+          <input aria-label="Temsilci adı ara" value={arama} onChange={(event) => setArama(event.target.value)} placeholder="Temsilci adı ara…" className="mb-2 w-full rounded-lg border border-[#d8e2ed] px-2.5 py-2 text-xs text-[#405873] outline-none focus:border-[#237ac8]" />
+          <div className="max-h-60 overflow-y-auto">
+            <button type="button" aria-pressed={!deger} onClick={() => sec("")} className="block w-full rounded-lg px-2.5 py-2 text-left text-xs font-bold text-[#237ac8] hover:bg-[#eef6ff]">Tüm Temsilciler</button>
+            {sonuclar.map((temsilci) => <button key={temsilci.id} type="button" aria-pressed={deger === temsilci.id} onClick={() => sec(temsilci.id)} className={`block w-full rounded-lg px-2.5 py-2 text-left text-xs font-semibold ${deger === temsilci.id ? "bg-[#eef6ff] text-[#237ac8]" : "text-[#405873] hover:bg-[#f8fbfe]"}`}>{temsilci.ad}</button>)}
+            {sonuclar.length === 0 && <p className="px-2.5 py-3 text-xs text-[#7b8da5]">Eşleşen temsilci bulunamadı.</p>}
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+
 export default function TmOneriTakibi({
   oneriler,
   bmler,
@@ -102,6 +144,7 @@ export default function TmOneriTakibi({
 }: Props) {
   const [acikDurum, setAcikDurum] = useState<TmOneriSecimi>("toplam");
   const [acikBm, setAcikBm] = useState<string | null>(null);
+  const [temsilciSecimi, setTemsilciSecimi] = useState<{ bmId: string; uttId: string } | null>(null);
   const [acikVideo, setAcikVideo] = useState<string | null>(null);
 
   const sayilar = useMemo(() => {
@@ -130,7 +173,7 @@ export default function TmOneriTakibi({
       value: sayilar.toplam,
       renk: "#2f7fc7",
       icon: Send,
-      aciklama: "Takımdaki tüm video önerileri",
+      aciklama: "Takımdaki tüm öğrenme aracı önerileri",
     },
     {
       key: "tamamlanan",
@@ -138,7 +181,7 @@ export default function TmOneriTakibi({
       value: sayilar.tamamlanan,
       renk: "#167453",
       icon: CheckCircle2,
-      aciklama: "UTT’lerin izleyip tamamladığı",
+      aciklama: "UTT’lerin tamamladığı öneriler",
     },
     {
       key: "bekleyen",
@@ -154,7 +197,7 @@ export default function TmOneriTakibi({
       value: sayilar.suresiGecmis,
       renk: "#bc2d0d",
       icon: TriangleAlert,
-      aciklama: "Süre bitimine kadar izlenmeyen",
+      aciklama: "Süre bitimine kadar tamamlanmayan",
     },
   ];
 
@@ -172,10 +215,20 @@ export default function TmOneriTakibi({
     }))
     .sort((a, b) => b.oneriler.length - a.oneriler.length || a.bm_adi.localeCompare(b.bm_adi, "tr")), [bmler, seciliOneriler]);
 
+  const temsilciSecenekleri = useMemo(() => {
+    const gruplar = new Map<string, Map<string, TemsilciSecenegi>>();
+    for (const oneri of oneriler) {
+      const temsilciler = gruplar.get(oneri.bm_id) ?? new Map<string, TemsilciSecenegi>();
+      temsilciler.set(oneri.kullanici_id, { id: oneri.kullanici_id, ad: `${oneri.utt_ad} ${oneri.utt_soyad}`.trim() });
+      gruplar.set(oneri.bm_id, temsilciler);
+    }
+    return new Map([...gruplar].map(([bmId, temsilciler]) => [bmId, [...temsilciler.values()].sort((a, b) => a.ad.localeCompare(b.ad, "tr"))]));
+  }, [oneriler]);
+
   const seciliBaslik = kartlar.find((kart) => kart.key === acikDurum)?.label;
 
   return (
-    <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
+    <div aria-busy={yenileniyor} className="mx-auto flex max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="inline-flex items-center">
@@ -200,6 +253,7 @@ export default function TmOneriTakibi({
               onClick={() => {
                 setAcikDurum(kart.key);
                 setAcikBm(null);
+                setTemsilciSecimi(null);
               }}
               aria-pressed={acik}
               aria-controls="tm-oneri-detayi"
@@ -218,18 +272,17 @@ export default function TmOneriTakibi({
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
-        <div className="flex flex-col gap-3 border-b border-[#e5ecf4] px-4 py-3.5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-base font-extrabold text-[#203653]">Öneri Takip Listesi</h2>
-            <p className="mt-0.5 text-[11px] font-semibold text-[#7b8da5]">{seciliOneriler.length}{seciliOneriler.length !== oneriler.length ? ` / ${oneriler.length}` : ""} kayıt gösteriliyor</p>
-          </div>
-          <span className="w-fit rounded-full bg-[#eef6ff] px-2.5 py-1 text-[10px] font-extrabold text-[#2f7fc7]">{seciliBaslik}</span>
+        <div className="border-b border-[#e5ecf4] px-4 py-3.5">
+          <h2 className="text-base font-extrabold text-[#203653]">Öneri Takip Listesi</h2>
         </div>
 
         <div id="tm-oneri-detayi">
             <div className="grid gap-2.5 p-3 md:hidden">
               {seciliBmOnerileri.map((bm) => {
                 const bmAcik = acikBm === bm.bm_id;
+                const temsilciler = temsilciSecenekleri.get(bm.bm_id) ?? [];
+                const seciliTemsilciId = temsilciSecimi?.bmId === bm.bm_id && temsilciler.some((temsilci) => temsilci.id === temsilciSecimi.uttId) ? temsilciSecimi.uttId : "";
+                const gorunenOneriler = seciliTemsilciId ? bm.oneriler.filter((oneri) => oneri.kullanici_id === seciliTemsilciId) : bm.oneriler;
                 const basHarfler = bm.bm_adi.split(" ").filter(Boolean).slice(0, 2).map((parca) => parca.charAt(0)).join("");
                 return (
                   <article key={bm.bm_id} className="overflow-hidden rounded-xl border border-[#e0e8f1] bg-white">
@@ -238,6 +291,7 @@ export default function TmOneriTakibi({
                       className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-[#fbfcfe]"
                       onClick={() => {
                         setAcikBm(bmAcik ? null : bm.bm_id);
+                        setTemsilciSecimi(null);
                       }}
                       aria-expanded={bmAcik}
                       aria-controls={`tm-oneri-bm-mobil-${bm.bm_id}`}
@@ -253,7 +307,8 @@ export default function TmOneriTakibi({
 
                     {bmAcik && (
                       <div id={`tm-oneri-bm-mobil-${bm.bm_id}`} className="grid gap-2.5 border-t border-[#e5ecf4] bg-[#f7f9fc] p-2.5">
-                          {bm.oneriler.length > 0 ? bm.oneriler.map((oneri) => {
+                          <div className="rounded-lg bg-white px-2.5 py-2"><TemsilciFiltresi temsilciler={temsilciler} deger={seciliTemsilciId} onDegistir={(uttId) => setTemsilciSecimi({ bmId: bm.bm_id, uttId })} /></div>
+                          {gorunenOneriler.length > 0 ? gorunenOneriler.map((oneri) => {
                           const kayitDurumuDegeri = kayitDurumu(oneri);
                           const durum = DURUM_GORUNUMU[kayitDurumuDegeri];
                           const kapak = yayinThumbnailIstemciCoz(oneri);
@@ -279,13 +334,14 @@ export default function TmOneriTakibi({
                                 </span>
                               </div>
                               <div className="mt-3 grid grid-cols-2 gap-2">
-                                <div className="rounded-lg bg-[#f7f9fc] px-2.5 py-2"><small className="block text-[9px] font-bold uppercase text-[#8a9bb0]">Gönderi Tarihi</small><strong className="text-[11px] text-[#536a84]">{tarihMetni(oneri.created_at)}</strong></div>
-                                <div className="rounded-lg bg-[#f7f9fc] px-2.5 py-2"><small className="block text-[9px] font-bold uppercase text-[#8a9bb0]">Öneri Aralığı</small><strong className="block text-[11px] text-[#536a84]">{tarihMetni(oneri.oneri_baslangic)}</strong><strong className="block text-[11px] text-[#536a84]">{tarihMetni(oneri.oneri_bitis)}</strong></div>
+                                <div className="col-span-2 rounded-lg bg-[#f7f9fc] px-2.5 py-2"><small className="block text-[9px] font-bold uppercase text-[#8a9bb0]">Gönderi Tarihi</small><strong className="text-[11px] text-[#536a84]">{tarihMetni(oneri.created_at)}</strong></div>
+                                <div className="rounded-lg bg-[#f7f9fc] px-2.5 py-2"><small className="block text-[9px] font-bold uppercase text-[#8a9bb0]">Başlangıç Tarihi</small><strong className="block text-[11px] text-[#536a84]">{tarihMetni(oneri.oneri_baslangic)}</strong></div>
+                                <div className="rounded-lg bg-[#f7f9fc] px-2.5 py-2"><small className="block text-[9px] font-bold uppercase text-[#8a9bb0]">Bitiş Tarihi</small><strong className="block text-[11px] text-[#536a84]">{tarihMetni(oneri.oneri_bitis)}</strong></div>
                               </div>
                               <div className="mt-2 flex items-center gap-2"><span className="rounded-full px-2 py-0.5 text-[9px] font-extrabold" style={{ color: durum.renk, backgroundColor: durum.zemin }}>{DURUM_ETIKETI[kayitDurumuDegeri]}</span>{kayitDurumuDegeri === "tamamlanan" && <small className="text-[10px] text-[#71859d]">{tarihMetni(oneri.izleme_tarihi)}</small>}</div>
                             </article>
                           );
-                        }) : <div className="px-3 py-8 text-center text-xs font-semibold text-[#8090a4]">Bu BM için {seciliBaslik?.toLocaleLowerCase("tr-TR")} bulunmuyor.</div>}
+                        }) : <div className="px-3 py-8 text-center text-xs font-semibold text-[#8090a4]">{seciliTemsilciId ? "Seçili temsilci" : "Bu BM"} için {seciliBaslik?.toLocaleLowerCase("tr-TR")} bulunmuyor.</div>}
                       </div>
                     )}
                   </article>
@@ -300,6 +356,9 @@ export default function TmOneriTakibi({
                 </div>
                 {seciliBmOnerileri.map((bm) => {
                   const bmAcik = acikBm === bm.bm_id;
+                  const temsilciler = temsilciSecenekleri.get(bm.bm_id) ?? [];
+                  const seciliTemsilciId = temsilciSecimi?.bmId === bm.bm_id && temsilciler.some((temsilci) => temsilci.id === temsilciSecimi.uttId) ? temsilciSecimi.uttId : "";
+                  const gorunenOneriler = seciliTemsilciId ? bm.oneriler.filter((oneri) => oneri.kullanici_id === seciliTemsilciId) : bm.oneriler;
                   const basHarfler = bm.bm_adi.split(" ").filter(Boolean).slice(0, 2).map((parca) => parca.charAt(0)).join("");
                   return (
                     <article key={bm.bm_id} className="border-t border-[#edf1f6]">
@@ -308,6 +367,7 @@ export default function TmOneriTakibi({
                         className="grid w-full grid-cols-[minmax(260px,1fr)_minmax(150px,.55fr)_120px_44px] items-center text-left transition-colors hover:bg-[#fbfcfe]"
                         onClick={() => {
                           setAcikBm(bmAcik ? null : bm.bm_id);
+                          setTemsilciSecimi(null);
                         }}
                         aria-expanded={bmAcik}
                         aria-controls={`tm-oneri-bm-masaustu-${bm.bm_id}`}
@@ -320,18 +380,18 @@ export default function TmOneriTakibi({
 
                       {bmAcik && (
                         <div id={`tm-oneri-bm-masaustu-${bm.bm_id}`} className="border-t border-[#e5ecf4] bg-[#f7f9fc] p-3">
-                          {bm.oneriler.length > 0 ? (
+                          {bm.oneriler.length > 0 || seciliTemsilciId ? (
                             <div className="mx-auto w-full max-w-[1280px] overflow-x-auto rounded-xl border border-[#e0e8f1] bg-white">
-                              <div className="grid min-w-[1000px] grid-cols-[110px_200px_48px_repeat(5,minmax(120px,1fr))] bg-[#f7f9fc] pr-8 text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#7d8fa5]">
-                                <span className="px-3 py-2.5">Temsilci</span><span className="px-3 py-2.5">Yayın</span><span aria-hidden="true" /><span className="px-3 py-2.5">Kategori</span><span className="px-3 py-2.5">Öğrenme Aracı</span><span className="px-3 py-2.5">Gönderi Tarihi</span><span className="px-3 py-2.5">Öneri Aralığı</span><span className="px-3 py-2.5">Durum</span>
+                              <div className="grid min-w-[1120px] grid-cols-[180px_200px_repeat(6,minmax(120px,1fr))] items-center bg-[#f7f9fc] text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#7d8fa5]">
+                                <div className="px-3 py-2.5"><TemsilciFiltresi temsilciler={temsilciler} deger={seciliTemsilciId} onDegistir={(uttId) => setTemsilciSecimi({ bmId: bm.bm_id, uttId })} /></div><span className="px-3 py-2.5">Yayın</span><span className="px-3 py-2.5">Kategori</span><span className="px-3 py-2.5">Öğrenme Aracı</span><span className="px-3 py-2.5">Gönderi Tarihi</span><span className="px-3 py-2.5">Başlangıç Tarihi</span><span className="px-3 py-2.5">Bitiş Tarihi</span><span className="px-3 py-2.5">Durum</span>
                               </div>
-                              {bm.oneriler.map((oneri) => {
+                              {gorunenOneriler.map((oneri) => {
                                 const kayitDurumuDegeri = kayitDurumu(oneri);
                                 const durum = DURUM_GORUNUMU[kayitDurumuDegeri];
                                 const kapak = yayinThumbnailIstemciCoz(oneri);
                                 const videoOynatilabilir = (oneri.arac_turu ?? "video") === "video" && !!oneri.video_url;
                                 return (
-                                  <div key={oneri.oneri_id} className="grid min-w-[1000px] grid-cols-[110px_200px_48px_repeat(5,minmax(120px,1fr))] items-center border-t border-[#edf1f6] pr-8 hover:bg-[#fbfcfe]">
+                                  <div key={oneri.oneri_id} className="grid min-w-[1120px] grid-cols-[180px_200px_repeat(6,minmax(120px,1fr))] items-center border-t border-[#edf1f6] hover:bg-[#fbfcfe]">
                                     <strong className="px-3 py-3 text-xs text-[#405873]">{oneri.utt_ad} {oneri.utt_soyad}</strong>
                                     <button
                                       type="button"
@@ -346,17 +406,18 @@ export default function TmOneriTakibi({
                                       </span>
                                       <span className="min-w-0"><strong className="block truncate text-xs text-[#2d4562]">{oneri.urun_adi ?? "Ürün dışı eğitim"}</strong><small className="mt-0.5 block truncate text-[10px] text-[#7a8da5]">{oneri.teknik_adi ?? "Teknik belirtilmemiş"}</small></span>
                                     </button>
-                                    <span aria-hidden="true" />
                                     <span className="px-3 py-3 text-[10px] font-semibold text-[#718198]">{kategoriAdi(oneri.icerik_turu)}</span>
                                     <span className="px-3 py-3 text-[10px] font-semibold text-[#718198]">{ogrenmeAraciAdi(oneri.arac_turu)}</span>
                                     <span className="px-3 py-3 text-[10px] font-semibold text-[#718198]">{tarihMetni(oneri.created_at)}</span>
-                                    <span className="px-3 py-3 text-[10px] font-semibold text-[#718198]"><span className="block">{tarihMetni(oneri.oneri_baslangic)}</span><span className="block">{tarihMetni(oneri.oneri_bitis)}</span></span>
+                                    <span className="px-3 py-3 text-[10px] font-semibold text-[#718198]">{tarihMetni(oneri.oneri_baslangic)}</span>
+                                    <span className="px-3 py-3 text-[10px] font-semibold text-[#718198]">{tarihMetni(oneri.oneri_bitis)}</span>
                                     <span className="px-3 py-3"><span className="rounded-full px-2.5 py-1 text-[10px] font-extrabold" style={{ color: durum.renk, backgroundColor: durum.zemin }}>{DURUM_ETIKETI[kayitDurumuDegeri]}</span>{kayitDurumuDegeri === "tamamlanan" && <small className="mt-1 block text-[10px] text-[#718198]">{tarihMetni(oneri.izleme_tarihi)}</small>}</span>
                                   </div>
                                 );
                               })}
+                              {gorunenOneriler.length === 0 && <div className="px-3 py-8 text-center text-xs font-semibold text-[#8090a4]">Seçili temsilci için {seciliBaslik?.toLocaleLowerCase("tr-TR")} bulunmuyor.</div>}
                             </div>
-                          ) : <div className="px-3 py-8 text-center text-xs font-semibold text-[#8090a4]">Bu BM için {seciliBaslik?.toLocaleLowerCase("tr-TR")} bulunmuyor.</div>}
+                          ) : <div className="px-3 py-8 text-center text-xs font-semibold text-[#8090a4]">{seciliTemsilciId ? "Seçili temsilci" : "Bu BM"} için {seciliBaslik?.toLocaleLowerCase("tr-TR")} bulunmuyor.</div>}
                         </div>
                       )}
                     </article>
