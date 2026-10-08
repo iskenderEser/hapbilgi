@@ -1,6 +1,6 @@
 # 📘 HapBilgi — BLUEBOOK
 ### İş Modeli, Mimari, İş Kuralları ve Teknik Envanter Anayasası
-*Son genel inceleme: 28 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026 | Ortak yayın arayüzü, mobil akış ve tanbur güncellemesi: 21 Eylül 2026 | E-Club iş modeli ve teknik kapanış güncellemesi: 28 Eylül 2026 | Depo tercihleri kod güncellemesi: 29 Eylül 2026; canlı yapısal kontrol: 5 Ekim 2026 (13/13)*
+*Son genel inceleme: 28 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026 | Ortak yayın arayüzü, mobil akış ve tanbur güncellemesi: 21 Eylül 2026 | E-Club iş modeli ve teknik kapanış güncellemesi: 28 Eylül 2026 | Depo tercihleri kod güncellemesi: 29 Eylül 2026; canlı yapısal kontrol: 5 Ekim 2026 (13/13) | Zorunlu Sade Kontrol Aileleri kararı: 8 Ekim 2026*
 
 ---
 
@@ -26,6 +26,10 @@ BLUEBOOK kayıtları aşağıdaki doğrulama kaynakları birlikte değerlendiril
 4. **Doğrulama Kayıtları:** Commit geçmişi, otomatik testler, tip ve mimari denetimler, üretim derlemesi ile gerçekleştirildiği açıkça belirtilen canlı veya fiziksel kontroller.
 
 Bluebook'taki güncellik ve doğrulama ifadeleri son incelenen sürüm ve belirtilen kontrol tarihi için geçerlidir. Tarihsel test sonuçları güncel sonuç gibi kullanılmaz; canlı ortamda doğrulanmamış bir durum canlıda tamamlanmış veya üretime hazır olarak kaydedilmez.
+
+### Zorunlu arayüz standardı — Sade Kontrol Aileleri
+
+**8 Ekim 2026 kullanıcı kararı:** Bütün sayfa yapılandırmaları, rol ve modül ayrımı olmaksızın, §13'te tanımlanan **Sade Kontrol Aileleri** tasarım ve etkileşim sözleşmesine uymak zorundadır. Onaylı [etkileşimli tasarım referansı](tasarim/SADE_KONTROL_AILELERI.html) bu sözleşmenin parçasıdır. Önceki sayfalarda bulunan farklı seçim, kapsül veya sekme tasarımları yeni çalışmalar için örnek alınamaz. Bu kararın kaydı, mevcut bütün ekranların standarda taşındığı anlamına gelmez.
 
 ### Kanonik Zaman Değerleri
 HapBilgi'de günlük ölçüm yoktur. Kullanıcıya sunulan ölçüm zamanı seçenekleri yalnızca **Haftalık, Aylık, Dönemlik ve Yıllık** değerleridir; ortak kaynak `lib/utils/raporUtils.ts` içindeki `PERIYOTLAR` listesidir. BM ve TM ana sayfaları haftalık seçimle başlar. Bütün başlangıç ve bitişler Türkiye saatine göre değerlendirilir. Teknik tarih hesaplarında kullanılan gün sınırı (00:00–23:59), bir ölçüm seçeneği değildir.
@@ -3105,6 +3109,46 @@ Video tamamlanıp izleme puanı ve soru indeksleri yazıldıktan sonra kullanıc
 * **Kilit:** dört `/sorular` ve dört cevap yolu bu kapıyı denetler; kapalıysa eski `izleme_id` ile soru alınamaz veya cevap yazılamaz (atomik; eşzamanlı ikinci isteği keser).
 * **BM challenge:** `challenge_kayitlari.izlendi_mi` artık video tamamlanınca açılır; referral yalnız cevap başarıyla kaydedilince verilir.
 * **Not:** Mevcut `soru_hakki_var_mi` (UTT/E-Club) ve `cevaplandi_mi` (BM/müşteri) alanları korunur; tek-kaynağa indirgeme teknik borcu REDBOOK §6.4 TB-01'de.
+
+---
+
+## 13. ZORUNLU SADE KONTROL AİLELERİ — TASARIM VE ETKİLEŞİM SÖZLEŞMESİ
+
+*Karar ve yürürlük tarihi: 8 Ekim 2026 | Durum: Kullanıcı tarafından onaylandı, tüm sayfa yapılandırmaları için zorunlu*
+
+**Onaylı aile: Sade kapsül.** Etiketli dış kapsülün içinde ikinci bir seçim butonu bulunan alternatif onaylanmamıştır. Kalıcı, açılıp seçim yapılabilen görsel referans: [Sade Kontrol Aileleri](tasarim/SADE_KONTROL_AILELERI.html). Referanstaki kişi adları ve seçenekler gösterim örneğidir; gerçek kapsam ve veriler ilgili sayfanın iş kurallarından gelir.
+
+### 13.1. Kapsam ve uygulama zorunluluğu
+
+Bu sözleşme ana sayfalar, eğitim yayınları, ligler, raporlar, öneri ve işlem takipleri, Store, E-Club, C-Club, Eczanem, üretim, yönetim ve admin ekranları dahil **tüm sayfalarda**, **tüm rollerde**, masaüstü ve mobil görünümlerde geçerlidir. Yeni sayfa, yeni kontrol ve mevcut sayfa/kontrol yeniden yapılandırılırken uygun kontrol ailesi kullanılır. Aynı işlev için sayfaya veya role özel yeni bir tasarım oluşturulamaz.
+
+Ortak görünüm ve etkileşim ortak bileşenlerden sağlanır. Sayfalarda aynı kontrolün kopyası çizilmez; boyut, font, renk, köşe ve gölge sayfaya özel sınıflarla rastgele değiştirilmez. Tablo içi küçük sürüm gibi farklılıklar, bu sözleşmedeki açık varyantlar üzerinden uygulanır. Standart değişikliği kullanıcı kararı ve BLUEBOOK kaydı gerektirir.
+
+### 13.2. Altı kontrol ailesi
+
+| Kontrol ailesi | Kullanım | Zorunlu sade tasarım ve davranış |
+|---|---|---|
+| **Kişi ve kapsam seçimi** | BM, UTT, firma, takım, bölge, eczane ve benzeri tekli seçimler | Tek kapsül, 40 px yükseklik, 14 px köşe, 13 px kalın Nunito yazı, beyaz yüzey, ince kenarlık, mavi seçim metni, sağda aşağı ok. Uzun kişi/listelerde açılan menünün üstünde arama; seçili öğede onay işareti. BM adı `BM` ön ekiyle, mevcutsa altında bölge iliyle gösterilir. Dış kapsül içinde ikinci çerçeveli buton kullanılmaz. |
+| **Tablo içi seçim** | Sütun başlığındaki kişi veya kapsam filtresi | Aynı seçim ailesinin küçük sürümü: 32 px yükseklik, 10 px köşe, 12 px yazı. Arama, seçili öğe ve açılıp kapanma davranışı büyük sürümle aynı kalır. Tabloya sığdırmak için metin aşırı küçültülmez. |
+| **Kapsül filtre** | Ölçüm zamanı, yayın türü ve kısa kapsam seçenekleri | Tek ortak kapsül içinde seçenekler; 14 px dış ve 10 px iç köşe, 4 px iç boşluk, 30 px iç buton, 11 px kalın yazı. Aktif seçenek mavi zemin/beyaz metin; diğerleri sade metin. Birbirinden kopuk ayrı yayın türü pilleri çizilmez. |
+| **Altı çizgili sekme** | Sayfa içeriği veya görünümü değiştiren sekmeler | 13 px kalın yazı; altta ince ortak ayraç; seçili sekmede mavi metin ve 2 px mavi çizgi. Dolgulu kapsül filtreyle karıştırılmaz. İçerik değişimi seçili sekmeyle eşleşir. |
+| **Çoklu alıcı seçimi** | Gönderim için birden fazla kişi/eczane seçimi | Sade tek kapsül ve aşağı ok; kapsülde seçili alıcı sayısı. Açılan listede arama ve onay kutuları. Her seçimde liste kapanmaz; seçili sayısı anında güncellenir. Tekli kişi seçimiyle aynı yüzey, font, kenarlık ve menü dili kullanılır. |
+| **Form alanı** | Veri girişindeki unvan, durum ve benzeri seçenekler | Alan etiketi üstte; tek giriş alanı; 40 px yükseklik, 12 px köşe ve 13 px yazı. Seçili değer açıkça görünür. Form etiketi, butonu içine alan ikinci bir kapsüle dönüştürülmez. |
+
+### 13.3. Ortak etkileşim ve mobil davranışı
+
+- Tekli seçimde menü kapanır, seçili değer kapsüle yansır ve odak seçim butonuna döner. Arama Türkçe adlarla çalışır; sonuç yoksa anlaşılır boş durum gösterilir.
+- Menüler dışarı tıklama ve `Escape` ile kapanır. Açık/kapalı, seçili ve devre dışı durumları erişilebilirlik özellikleriyle bildirilir. Klavye ile açma, arama, seçim ve kapatma kullanılabilir; sekmeler uygun klavye gezintisini destekler.
+- Sekme ve filtre değişiklikleri gereksiz sayfa atlaması oluşturmaz. Veri yükleme sırasında seçilen kapsam anlaşılır kalır; geç gelen eski yanıt yeni seçimin üzerine yazılmaz.
+- Mobilde kontroller sıkıştırılarak okunamaz hale getirilmez; uygun satır düzeni veya yatay kapsül kaydırması kullanılır. Açılan menü ekran dışına taşmaz. Dokunmatik hedef gerektiğinde büyütülür; tablo içi küçük varyant okunabilirliğini korur.
+- Kişi seçimleri, ilişkili kapsam zincirine göre çalışır. Kullanıcı yalnız rolünün izin verdiği seçenekleri görür; üst kapsam değiştiğinde geçersiz alt seçim korunmaz. `Tümü`, `Tüm Bölge` ve benzeri toplam seçenekleri yalnız sayfanın gerçekten desteklediği kapsamı ifade eder.
+- Ölçüm zamanı seçenekleri yalnız **Haftalık, Aylık, Dönemlik, Yıllık**; ortak kaynak `lib/utils/raporUtils.ts` içindeki `PERIYOTLAR` listesidir. İşlem ayı seçimi gibi ayrı işlevler günlük ölçüm seçeneğine dönüştürülemez.
+
+### 13.4. İş kurallarının korunması ve mevcut durum
+
+Görünümün ortaklaştırılması rol yetkisini, firma/modül sınırını, veri kapsamını, puan hesabını, gönderim hakkını veya kayıt davranışını değiştirmez. Üretim durumunu anlatan renkler, çoklu seçim, depo/şube kayıt kuralları ve özel işlem dönemleri kendi işlevlerini korur; uygun aileye bağlanırken ortak tasarım dili uygulanır. Onaylı örnekteki her seçenek her sayfaya eklenmez.
+
+**Bu bölüm bağlayıcı tasarım kararını kaydeder.** Etkileşimli örnek repoya alınmıştır; bütün uygulama ekranlarının ortak bileşenlere taşınması bu kayıt işlemiyle tamamlanmış sayılmaz. Mevcut dağınık kullanımların dönüştürülmesi ayrıca yürütülecek geliştirme işidir. Önceki envanterdeki farklı tasarımlar bu standardı geçersiz kılamaz.
 
 ---
 
