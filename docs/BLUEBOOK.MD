@@ -3126,17 +3126,20 @@ Ortak görünüm ve etkileşim ortak bileşenlerden sağlanır. Sayfalarda aynı
 
 ### 13.2. Altı kontrol ailesi
 
+**8 Ekim 2026 — Kullanıcı tarafından onaylanan düzeltme:** Açılır seçimler toggle iç butonuyla aynı 30 px yüksekliğe ve 11 px / 800 yazı biçimine getirildi; ok hizaları ve form alanlarının sağ ok boşluğu eşitlendi. BM adının altındaki bölge satırı kaldırıldı. Bu düzeltmeler kalıcı tasarım referansına işlendi. Dokunmatik cihazlarda form seçim metninin 16 px olması erişilebilirlik istisnası olarak korunur.
+
 | Kontrol ailesi | Kullanım | Zorunlu sade tasarım ve davranış |
 |---|---|---|
-| **Kişi ve kapsam seçimi** | BM, UTT, firma, takım, bölge, eczane ve benzeri tekli seçimler | Tek kapsül, 40 px yükseklik, 14 px köşe, 13 px kalın Nunito yazı, beyaz yüzey, ince kenarlık, mavi seçim metni, sağda aşağı ok. Uzun kişi/listelerde açılan menünün üstünde arama; seçili öğede onay işareti. BM adı `BM` ön ekiyle, mevcutsa altında bölge iliyle gösterilir. Dış kapsül içinde ikinci çerçeveli buton kullanılmaz. |
-| **Tablo içi seçim** | Sütun başlığındaki kişi veya kapsam filtresi | Aynı seçim ailesinin küçük sürümü: 32 px yükseklik, 10 px köşe, 12 px yazı. Arama, seçili öğe ve açılıp kapanma davranışı büyük sürümle aynı kalır. Tabloya sığdırmak için metin aşırı küçültülmez. |
-| **Kapsül filtre** | Ölçüm zamanı, yayın türü ve kısa kapsam seçenekleri | Tek ortak kapsül içinde seçenekler; 14 px dış ve 10 px iç köşe, 4 px iç boşluk, 30 px iç buton, 11 px kalın yazı. Aktif seçenek mavi zemin/beyaz metin; diğerleri sade metin. Birbirinden kopuk ayrı yayın türü pilleri çizilmez. |
+| **Kişi ve kapsam seçimi** | BM, UTT, firma, takım, bölge, eczane ve benzeri tekli seçimler | Tek kapsül, 30 px yükseklik, 14 px köşe, 11 px Nunito yazı ve 800 yazı kalınlığı, beyaz yüzey, ince kenarlık, mavi seçim metni, sağda aşağı ok. Uzun kişi/listelerde açılan menünün üstünde arama; seçili öğede onay işareti. BM adı yalnız `BM` ön eki ve kişi adıyla gösterilir; altında bölge adı veya ili gösterilmez. Dış kapsül içinde ikinci çerçeveli buton kullanılmaz. |
+| **Tablo içi seçim** | Sütun başlığındaki kişi veya kapsam filtresi | Aynı seçim ailesinin tablo sürümü: 30 px yükseklik, 10 px köşe, 11 px yazı ve 800 yazı kalınlığı. Arama, seçili öğe ve açılıp kapanma davranışı kişi ve kapsam seçimiyle aynı kalır. Tabloya sığdırmak için metin aşırı küçültülmez. |
+| **Kapsül filtre** | Ölçüm zamanı, yayın türü ve kısa kapsam seçenekleri | Tek ortak kapsül içinde seçenekler; 14 px dış ve 10 px iç köşe, 4 px iç boşluk, 30 px iç buton, 11 px yazı ve 800 yazı kalınlığı. Dış kapsülün toplam yüksekliği kenarlıklarla 40 px olur; açılır seçimler bu kapsülün iç buton yüksekliğiyle eşleşir. Aktif seçenek mavi zemin/beyaz metin; diğerleri sade metin. Birbirinden kopuk ayrı yayın türü pilleri çizilmez. |
 | **Altı çizgili sekme** | Sayfa içeriği veya görünümü değiştiren sekmeler | 13 px kalın yazı; altta ince ortak ayraç; seçili sekmede mavi metin ve 2 px mavi çizgi. Dolgulu kapsül filtreyle karıştırılmaz. İçerik değişimi seçili sekmeyle eşleşir. |
-| **Çoklu alıcı seçimi** | Gönderim için birden fazla kişi/eczane seçimi | Sade tek kapsül ve aşağı ok; kapsülde seçili alıcı sayısı. Açılan listede arama ve onay kutuları. Her seçimde liste kapanmaz; seçili sayısı anında güncellenir. Tekli kişi seçimiyle aynı yüzey, font, kenarlık ve menü dili kullanılır. |
-| **Form alanı** | Veri girişindeki unvan, durum ve benzeri seçenekler | Alan etiketi üstte; tek giriş alanı; 40 px yükseklik, 12 px köşe ve 13 px yazı. Seçili değer açıkça görünür. Form etiketi, butonu içine alan ikinci bir kapsüle dönüştürülmez. |
+| **Çoklu alıcı seçimi** | Gönderim için birden fazla kişi/eczane seçimi | Sade tek kapsül, 30 px yükseklik, 11 px yazı ve 800 yazı kalınlığı; sağda aşağı ok, kapsülde seçili alıcı sayısı. Açılan listede arama ve onay kutuları. Her seçimde liste kapanmaz; seçili sayısı anında güncellenir. Tekli kişi seçimiyle aynı yüzey, font, kenarlık ve menü dili kullanılır. |
+| **Form alanı** | Veri girişindeki unvan, durum ve benzeri seçenekler | Alan etiketi üstte; tek giriş alanı; 30 px yükseklik, 12 px köşe, 11 px yazı ve 800 yazı kalınlığı. Seçili değer açıkça görünür. Form etiketi, butonu içine alan ikinci bir kapsüle dönüştürülmez. |
 
 ### 13.3. Ortak etkileşim ve mobil davranışı
 
+- Açılır seçimlerin aşağı okları metin taban çizgisinden bağımsız, kontrolün dikey merkezine hizalanır. Kişi/kapsam, tablo içi, çoklu alıcı ve form seçimleri aynı ok biçimini kullanır. Form alanı oklarının sağ kenar boşluğu tablo içi seçimle aynıdır: kenarlık hariç 12 px (dış kenardan 13 px); metin ok alanına taşmaz.
 - Tekli seçimde menü kapanır, seçili değer kapsüle yansır ve odak seçim butonuna döner. Arama Türkçe adlarla çalışır; sonuç yoksa anlaşılır boş durum gösterilir.
 - Menüler dışarı tıklama ve `Escape` ile kapanır. Açık/kapalı, seçili ve devre dışı durumları erişilebilirlik özellikleriyle bildirilir. Klavye ile açma, arama, seçim ve kapatma kullanılabilir; sekmeler uygun klavye gezintisini destekler.
 - Sekme ve filtre değişiklikleri gereksiz sayfa atlaması oluşturmaz. Veri yükleme sırasında seçilen kapsam anlaşılır kalır; geç gelen eski yanıt yeni seçimin üzerine yazılmaz.
@@ -3149,6 +3152,9 @@ Ortak görünüm ve etkileşim ortak bileşenlerden sağlanır. Sayfalarda aynı
 Görünümün ortaklaştırılması rol yetkisini, firma/modül sınırını, veri kapsamını, puan hesabını, gönderim hakkını veya kayıt davranışını değiştirmez. Üretim durumunu anlatan renkler, çoklu seçim, depo/şube kayıt kuralları ve özel işlem dönemleri kendi işlevlerini korur; uygun aileye bağlanırken ortak tasarım dili uygulanır. Onaylı örnekteki her seçenek her sayfaya eklenmez.
 
 **Bu bölüm bağlayıcı tasarım kararını kaydeder.** Etkileşimli örnek repoya alınmıştır; bütün uygulama ekranlarının ortak bileşenlere taşınması bu kayıt işlemiyle tamamlanmış sayılmaz. Mevcut dağınık kullanımların dönüştürülmesi ayrıca yürütülecek geliştirme işidir. Önceki envanterdeki farklı tasarımlar bu standardı geçersiz kılamaz.
+
+**8 Ekim 2026 — Ortak kontrol geliştirmesi:** Altı standart kontrolün ortak uygulaması `components/kontrol/SadeKontroller.tsx`, ortak görünümü `components/kontrol/sade-kontroller.module.css` dosyalarında hazırlandı. Kişi/kapsam ve tablo seçimi, kapsül filtre ve zaman toggle’u, altı çizgili sekme, çoklu alıcı seçimi ve form seçimi bu kaynaktan sağlanır. Mevcut `PeriyotButonlari`, `TemsilciSecici`, `YayinTuruFiltresi` ve `Select` ortak yapıya bağlandı; bunları kullanan ekranlar değişiklikten etkilenir. Liglerin zaman etiketleri `PERIYOTLAR` kaynağından alınırken mevcut API değerleri korunur. Sayfalarda ayrı tanımlanmış kontrollerin geçişi ve sayfa bazında görsel doğrulama sonraki adımdır; tüm ekranların dönüşümü tamamlanmış değildir. İşlem butonu için bu bölümde ayrı standart bulunmadığından `Button` değiştirilmedi.
+
 
 ---
 

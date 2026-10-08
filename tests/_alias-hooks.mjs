@@ -53,6 +53,10 @@ export async function resolve(specifier, context, nextResolve) {
 }
 
 export async function load(url, context, nextLoad) {
+  // DOM testleri CSS Modules'ı sınıf adlarıyla yükler; gerçek görünüm tarayıcıda denetlenir.
+  if (url.endsWith(".module.css")) {
+    return { format: "module", source: "export default new Proxy({}, { get: (_, key) => String(key) });", shortCircuit: true };
+  }
   if (url.endsWith(".tsx")) {
     const { readFile } = await import("node:fs/promises");
     const ts = (await import("typescript")).default;

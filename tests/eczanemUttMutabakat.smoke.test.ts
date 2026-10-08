@@ -141,9 +141,11 @@ test("mutabakat ekranı eczaneleri gruplar ve seçilen eczanenin işlemlerini ay
   assert.match(urunFiltresiSql, /p_urun_id IS NULL OR o\.urun_id = p_urun_id/g);
   assert.match(urunFiltresiSql, /LIMIT p_limit OFFSET p_offset/);
   assert.match(urunFiltresiSql, /'urun_secenekleri', v_urun_secenekleri/);
-  assert.match(ortakTablo, /aria-label=\{`\$\{kayit\.urun_adi\}: ürün adına göre filtrele`\}/);
-  assert.match(ortakTablo, /aria-pressed=\{seciliUrunId === null\}/);
-  assert.match(ortakTablo, /onUrunDegistir\(urun\.urun_id\)/);
+  assert.match(ortakTablo, /etiket=\{`\$\{kayit\.urun_adi\}: ürün adına göre filtrele`\}/);
+  assert.match(ortakTablo, /gorunenEtiket=\{kayit\.urun_adi\}/);
+  assert.match(ortakTablo, /deger=\{seciliUrunId \?\? ""\}/);
+  assert.match(ortakTablo, /deger: urun\.urun_id/);
+  assert.match(ortakTablo, /onUrunDegistir\(id \|\| null\)/);
   assert.doesNotMatch(ortakTablo, /<select aria-label="Ürün adına göre filtrele"/);
   assert.match(sayfa, /setIslemSayfa\(0\)/);
 });
@@ -215,8 +217,8 @@ test("Mutabakat arayüzü Eczanem Yayınları panel desenini ve işlem alanları
   assert.match(sayfa, /role="status"/);
   assert.match(sayfa, /role="alert"/);
   assert.match(sayfa, /onaylı indirim işlemi bulunmuyor/i);
-  assert.match(ortakTablo, /<Popover\.Root/);
-  assert.match(sayfa, /Mutabakat Zamanı/);
+  assert.match(ortakTablo, /<SadeTabloSecimi/);
+  assert.match(sayfa, /<SadeAySecimi/);
   assert.match(ortakTablo, /aria-pressed=\{secili\}/);
   assert.doesNotMatch(sayfa, /type="month"/);
   assert.doesNotMatch(mutabakatArayuzu, /Ürün ID: \{kayit\.urun_id\}|Mutabakat ID: \{kayit\.mutabakat_id\}|Yayın ID: \{kaynak\.yayin_id\}/);
