@@ -181,7 +181,7 @@ export default function ProducerLeaguePage({
   const kapsamNet = kapsamKazanim - kapsamKayip;
 
   const kazanimKalemleri = [
-    { ad: "Öğrenme Tamamlama", deger: toplam.izleme, renk: PUAN_RENKLERI.izleme },
+    { ad: "Yayın Tamamlama", deger: toplam.izleme, renk: PUAN_RENKLERI.izleme },
     { ad: "Cevaplama", deger: toplam.cevaplama, renk: PUAN_RENKLERI.cevaplama },
     { ad: "Öneri", deger: toplam.oneri, renk: PUAN_RENKLERI.oneri },
     { ad: "Extra", deger: toplam.extra, renk: PUAN_RENKLERI.extra },

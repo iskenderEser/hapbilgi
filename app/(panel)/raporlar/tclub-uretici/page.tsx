@@ -182,7 +182,7 @@ export default function TclubUreticiRaporPage() {
 
   const b = data.bilesenler;
   const puanBilesenleri = [
-    { ad: "Öğrenme Tamamlama", puan: b.izleme_puani, renk: "#1D9E75" },
+    { ad: "Yayın Tamamlama", puan: b.izleme_puani, renk: "#1D9E75" },
     { ad: "Doğru Cevaplama", puan: b.cevaplama_puani, renk: "#1D9E75" },
     { ad: "Öneri Tamamlama", puan: b.oneri_puani, renk: "#1D9E75" },
     { ad: "Extra", puan: b.extra_puani, renk: "#1D9E75" },
