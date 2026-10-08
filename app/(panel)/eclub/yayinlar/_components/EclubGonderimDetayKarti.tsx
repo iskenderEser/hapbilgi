@@ -1,5 +1,7 @@
 "use client";
 
+import { SadeKontrolGrubu, SadeKontrolButonu } from "@/components/kontrol/SadeKontroller";
+
 import { useMemo, useState } from "react";
 import { Clock3, Eye, EyeOff } from "lucide-react";
 import { eclubKisiHedefRolu } from "@/lib/utils/roller";
@@ -82,26 +84,18 @@ export function EclubGonderimDetayKarti({ yayinId, urunAdi, aracTuru, kayitlar, 
             <span className="shrink-0 font-extrabold">{gorunenDurumEtiketi} · {aktifKayitlar.length} kişi</span>
           </div>
 
-          <div className="grid grid-cols-3 gap-1 border-b border-[#dce8f3] bg-white px-2 py-1" aria-label="Gönderim durumu grupları">
-            {DURUMLAR.map(({ anahtar, etiket, ikon: Ikon, renk }) => {
+          <SadeKontrolGrubu aria-label="Gönderim durumu grupları" tur="kapsul">
+            {DURUMLAR.map(({ anahtar, etiket, ikon: Ikon }) => {
               const secili = gorunenDurum === anahtar;
               return (
-                <button
-                  key={anahtar}
-                  type="button"
-                  aria-pressed={secili}
-                  aria-label={`${etiket}: ${gruplar[anahtar].length} kişi`}
-                  title={`${etiket}: ${gruplar[anahtar].length} kişi`}
-                  onClick={(event) => { event.stopPropagation(); setAktifDurum(anahtar); }}
-                  className={`min-w-0 rounded-lg border px-1 py-1 text-center transition-colors ${secili ? "border-[#9dc4e5] bg-[#e8f3fc]" : "border-transparent bg-[#f6f8fb] hover:bg-[#edf3f8]"}`}
-                >
-                  <span className={`flex items-center justify-center gap-1 text-[9px] font-extrabold ${renk}`}>
+                <SadeKontrolButonu key={anahtar} type="button" aria-pressed={secili} aria-label={`${etiket}: ${gruplar[anahtar].length} kişi`} title={`${etiket}: ${gruplar[anahtar].length} kişi`} onClick={(event) => { event.stopPropagation(); setAktifDurum(anahtar); }}>
+                  <span className="inline-flex items-center gap-1">
                     <Ikon className="size-2.5" aria-hidden="true" /> {gruplar[anahtar].length}
                   </span>
-                </button>
+                </SadeKontrolButonu>
               );
             })}
-          </div>
+          </SadeKontrolGrubu>
 
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
             {aktifKayitlar.length === 0 ? (

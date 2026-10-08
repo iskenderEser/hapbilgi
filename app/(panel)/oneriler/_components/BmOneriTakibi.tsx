@@ -1,19 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ChevronDown, Plus, X } from "lucide-react";
+import { SadeListeSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { DahaFazlaGoster, useListe } from "@/components/liste";
-import VideoOnizleme from "@/components/video/VideoOnizleme";
-import type { Periyot } from "@/lib/utils/raporUtils";
+import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
-import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { Button } from "@/components/ui/button";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
+import VideoOnizleme from "@/components/video/VideoOnizleme";
 import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
 import { YayinKarti } from "@/components/yayin/YayinKarti";
-import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
+import type { Periyot } from "@/lib/utils/raporUtils";
 import { talepIdGoster } from "@/lib/utils/talepId";
+import { Plus, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 
 export interface OneriKaydi {
   oneri_id: string;
@@ -194,7 +196,7 @@ export default function BmOneriTakibi({
           <UttYayinTuruToggle yayinlar={digerFiltrelenmis} deger={aktifYayinTuru} onDegistir={setAktifYayinTuru} className="w-fit min-w-0" />
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0">
             <div className="relative w-full sm:w-36">
-              <select value={konuFiltresi} onChange={(event) => setKonuFiltresi(event.target.value)} aria-label="Öneri Konusu" className="w-full appearance-none rounded-lg border border-[#d8e2ed] bg-white py-1.5 pl-2.5 pr-7 text-xs font-semibold text-[#586f8a] outline-none focus-visible:ring-2 focus-visible:ring-[#b7d7f2]">
+              <SadeListeSecimi value={konuFiltresi} onChange={(event) => setKonuFiltresi(event.target.value)} aria-label="Öneri Konusu" className="w-full">
                 <option value="">Öneri Konusu</option>
                 {konuSecenekleri.urunler.length > 0 && (
                   <optgroup label="Ürün / Eğitim">
@@ -206,25 +208,22 @@ export default function BmOneriTakibi({
                     {konuSecenekleri.teknikler.map((teknik) => <option key={`teknik:${teknik}`} value={`teknik:${teknik}`}>{teknik}</option>)}
                   </optgroup>
                 )}
-              </select>
-              <ChevronDown aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-[#718198]" />
+              </SadeListeSecimi>
             </div>
             <div className="relative w-full sm:w-32">
-              <select value={uttFiltresi} onChange={(event) => setUttFiltresi(event.target.value)} aria-label="UTT Listesi" className="w-full appearance-none rounded-lg border border-[#d8e2ed] bg-white py-1.5 pl-2.5 pr-7 text-xs font-semibold text-[#586f8a] outline-none focus-visible:ring-2 focus-visible:ring-[#b7d7f2]">
+              <SadeListeSecimi value={uttFiltresi} onChange={(event) => setUttFiltresi(event.target.value)} aria-label="UTT Listesi" className="w-full">
                 <option value="">UTT Listesi</option>
                 {uttler.map((utt) => <option key={utt} value={utt}>{utt}</option>)}
-              </select>
-              <ChevronDown aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-[#718198]" />
+              </SadeListeSecimi>
             </div>
             <div className="relative w-full sm:w-36">
-              <select value={durumFiltresi} onChange={(event) => setDurumFiltresi(event.target.value as DurumFiltresi)} aria-label="Öneri Durumları" className="w-full appearance-none rounded-lg border border-[#d8e2ed] bg-white py-1.5 pl-2.5 pr-7 text-xs font-semibold text-[#586f8a] outline-none focus-visible:ring-2 focus-visible:ring-[#b7d7f2]">
+              <SadeListeSecimi value={durumFiltresi} onChange={(event) => setDurumFiltresi(event.target.value as DurumFiltresi)} aria-label="Öneri Durumları" className="w-full">
                 <option value="tum">Öneri Durumları</option>
                 <option value="planlandi">Planlar</option>
                 <option value="bekliyor">Bekliyor</option>
                 <option value="tamamlandi">Tamamlandı</option>
                 <option value="suresi_gecmis">Süresi Geçti</option>
-              </select>
-              <ChevronDown aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-[#718198]" />
+              </SadeListeSecimi>
             </div>
           </div>
         </div>

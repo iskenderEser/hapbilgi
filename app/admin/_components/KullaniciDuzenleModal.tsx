@@ -12,11 +12,13 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
-import { ROLLER, rowStyle, labelStyle, inputStyle, btnBase, RENK_BORDO } from "../_constants";
-import { ROL_ADLARI } from "@/lib/utils/roller";
-import { adSoyadCanliBicimle } from "@/lib/utils/adSoyadBicimle";
+import { SadeFormSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { telefonBicimle, telefonRakam } from "@/lib/admin/telefonBicim";
+import { adSoyadCanliBicimle } from "@/lib/utils/adSoyadBicimle";
+import { ROL_ADLARI } from "@/lib/utils/roller";
+import { useMemo, useState } from "react";
+import { btnBase, inputStyle, labelStyle, RENK_BORDO, ROLLER, rowStyle } from "../_constants";
 import type { Kullanici, Takim } from "../_types";
 
 export interface KullaniciGuncelleVerisi {
@@ -107,9 +109,9 @@ export default function KullaniciDuzenleModal({ kullanici, takimlar, loading, on
 
           <div style={rowStyle}>
             <span style={labelStyle}>Rol</span>
-            <select value={rol} onChange={(e) => setRol(e.target.value)} style={inputStyle} required>
+            <SadeFormSecimi value={rol} onChange={(e) => setRol(e.target.value)} required aria-label="Rol" className="w-full">
               {ROLLER.map(r => <option key={r} value={r}>{ROL_ADLARI[r] ?? r}</option>)}
-            </select>
+            </SadeFormSecimi>
           </div>
 
           <div style={rowStyle}>
@@ -133,19 +135,19 @@ export default function KullaniciDuzenleModal({ kullanici, takimlar, loading, on
 
           <div style={rowStyle}>
             <span style={labelStyle}>Takım</span>
-            <select value={takimId} onChange={(e) => { setTakimId(e.target.value); setBolgeId(""); }} style={inputStyle}>
+            <SadeFormSecimi value={takimId} onChange={(e) => { setTakimId(e.target.value); setBolgeId(""); }} aria-label="Takım" className="w-full">
               <option value="">Takım seçin...</option>
               {takimlar.map(t => <option key={t.takim_id} value={t.takim_id}>{t.takim_adi}</option>)}
-            </select>
+            </SadeFormSecimi>
           </div>
 
           {takimId && seciliTakimBolgeleri.length > 0 && (
             <div style={rowStyle}>
               <span style={labelStyle}>Bölge</span>
-              <select value={bolgeId} onChange={(e) => setBolgeId(e.target.value)} style={inputStyle}>
+              <SadeFormSecimi value={bolgeId} onChange={(e) => setBolgeId(e.target.value)} aria-label="Bölge" className="w-full">
                 <option value="">Bölge seçin...</option>
                 {seciliTakimBolgeleri.map(b => <option key={b.bolge_id} value={b.bolge_id}>{b.bolge_adi}</option>)}
-              </select>
+              </SadeFormSecimi>
             </div>
           )}
 

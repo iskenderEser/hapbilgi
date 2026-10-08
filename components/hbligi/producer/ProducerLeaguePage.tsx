@@ -1,31 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  Activity,
-  ArrowDownRight,
-  ArrowUpRight,
-  Award,
-  CircleAlert,
-  Eye,
-  Gauge,
-  Medal,
-  Target,
-  Trophy,
-} from "lucide-react";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
 import EChart from "@/components/grafik/EChart";
+import fieldStyles from "@/components/hbligi/field/field.module.css";
+import CompetitorComparison from "@/components/hbligi/league/CompetitorComparison";
+import leagueStyles from "@/components/hbligi/league/league.module.css";
 import LeagueHeader from "@/components/hbligi/league/LeagueHeader";
 import MonthlyLeaders from "@/components/hbligi/league/MonthlyLeaders";
-import CompetitorComparison from "@/components/hbligi/league/CompetitorComparison";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { SahaLigKullanici, SahaLigSonuc } from "@/lib/tclub/hbligi/getSahaLig";
 import {
-  ureticiLiginiSirala,
-  ureticiLigKapsaminiUygula,
-  type UreticiLigKapsami as LigKapsami,
+    ureticiLiginiSirala,
+    ureticiLigKapsaminiUygula,
+    type UreticiLigKapsami as LigKapsami,
 } from "@/lib/tclub/hbligi/ureticiLigKapsami";
-import leagueStyles from "@/components/hbligi/league/league.module.css";
-import fieldStyles from "@/components/hbligi/field/field.module.css";
+import {
+    Activity,
+    ArrowDownRight,
+    ArrowUpRight,
+    Award,
+    CircleAlert,
+    Eye,
+    Gauge,
+    Medal,
+    Target,
+    Trophy,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 
 export type UreticiLigBakisi = "genel" | "yayinlarim";
 
@@ -222,46 +224,26 @@ export default function ProducerLeaguePage({
   };
 
   const bakisSecici = (
-    <div className="inline-flex min-w-0 max-w-full flex-1 items-center gap-1 overflow-x-auto rounded-[14px] border border-[rgba(148,163,184,.18)] bg-white/85 p-1 shadow-[0_6px_22px_rgba(36,64,98,.05)] sm:flex-none" aria-label="Lig görünümü">
+    <SadeKontrolGrubu aria-label="Lig görünümü" tur="kapsul">
       {([
         { id: "genel", etiket: "T-Club Ligi" },
         { id: "yayinlarim", etiket: "Yayınlarımın Ligi" },
       ] as const).map((secenek) => (
-        <button
-          key={secenek.id}
-          type="button"
-          onClick={() => onBakisDegistir(secenek.id)}
-          aria-pressed={bakis === secenek.id}
-          className={`shrink-0 rounded-[10px] px-3 py-[7px] text-[11px] font-bold transition-all duration-150 ${
-            bakis === secenek.id
-              ? "bg-[#237ac8] text-white shadow-[0_5px_14px_rgba(35,122,200,.22)]"
-              : "text-[#718198] hover:bg-[#f2f7fc] hover:text-[#237ac8]"
-          }`}
-        >
+        <SadeKontrolButonu key={secenek.id} type="button" onClick={() => onBakisDegistir(secenek.id)} aria-pressed={bakis === secenek.id}>
           {secenek.etiket}
-        </button>
+        </SadeKontrolButonu>
       ))}
-    </div>
+    </SadeKontrolGrubu>
   );
 
   const kapsamSecici = (
-    <div className="inline-flex min-w-0 max-w-full flex-1 items-center gap-1 overflow-x-auto rounded-[14px] border border-[rgba(148,163,184,.18)] bg-white/85 p-1 shadow-[0_6px_22px_rgba(36,64,98,.05)] sm:flex-none" aria-label="Lig kapsamı">
+    <SadeKontrolGrubu aria-label="Lig kapsamı" tur="kapsul">
       {KAPSAMLAR.map((secenek) => (
-        <button
-          key={secenek.id}
-          type="button"
-          onClick={() => kapsamDegistir(secenek.id)}
-          aria-pressed={kapsam === secenek.id}
-          className={`shrink-0 rounded-[10px] px-3 py-[7px] text-[11px] font-bold transition-all duration-150 ${
-            kapsam === secenek.id
-              ? "bg-[#237ac8] text-white shadow-[0_5px_14px_rgba(35,122,200,.22)]"
-              : "text-[#718198] hover:bg-[#f2f7fc] hover:text-[#237ac8]"
-          }`}
-        >
+        <SadeKontrolButonu key={secenek.id} type="button" onClick={() => kapsamDegistir(secenek.id)} aria-pressed={kapsam === secenek.id}>
           {secenek.etiket}
-        </button>
+        </SadeKontrolButonu>
       ))}
-    </div>
+    </SadeKontrolGrubu>
   );
 
   const kapsamEtiketi = KAPSAMLAR.find((secenek) => secenek.id === kapsam)?.etiket ?? "Bölge";

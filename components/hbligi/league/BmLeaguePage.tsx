@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
 import type { SahaLigSonuc } from "@/lib/tclub/hbligi/getSahaLig";
-import type { LigSatiri, SiraliSatir } from "./types";
-import LeagueHeader from "./LeagueHeader";
-import MonthlyLeaders from "./MonthlyLeaders";
+import { useState, type ReactNode } from "react";
 import CompetitorComparison from "./CompetitorComparison";
 import styles from "./league.module.css";
+import LeagueHeader from "./LeagueHeader";
+import MonthlyLeaders from "./MonthlyLeaders";
+import type { LigSatiri, SiraliSatir } from "./types";
 
 function sirala(satirlar: LigSatiri[]): SiraliSatir[] {
   const siralar = new Map([...new Set(satirlar.map((r) => r.toplam_puan))]
@@ -36,14 +38,13 @@ export default function BmLeaguePage({ veri, periyotSecici }: { veri: SahaLigSon
         <LeagueHeader periyotSecici={null} />
         <MonthlyLeaders top3={kursu} baslik={`${veri.aylik_kursu?.ay_adi ?? "Geçen"} Ayının Bölge Öğrenme Liderleri`} />
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="inline-flex items-center gap-1 rounded-[14px] border border-[#e3eaf2] bg-white/85 p-1 shadow-sm">
+          <SadeKontrolGrubu tur="kapsul">
             {(["bolge", "takim"] as const).map((id) => (
-              <button key={id} type="button" onClick={() => setKapsam(id)} aria-pressed={kapsam === id}
-                className={`rounded-[10px] px-3 py-[7px] text-[11px] font-bold ${kapsam === id ? "bg-[#237ac8] text-white shadow-sm" : "text-[#718198] hover:bg-[#f2f7fc]"}`}>
+              <SadeKontrolButonu key={id} type="button" onClick={() => setKapsam(id)} aria-pressed={kapsam === id}>
                 {id === "bolge" ? "Bölge" : "Takım"}
-              </button>
+              </SadeKontrolButonu>
             ))}
-          </div>
+          </SadeKontrolGrubu>
           {periyotSecici}
         </div>
         <div className={styles.listViewport}>

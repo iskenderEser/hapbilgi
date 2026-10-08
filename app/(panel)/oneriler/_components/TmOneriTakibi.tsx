@@ -1,18 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Popover } from "radix-ui";
-import { CheckCircle2, ChevronDown, Clock3, Send, TriangleAlert, X } from "lucide-react";
+import { SadeTabloSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
-import type { Periyot } from "@/lib/utils/raporUtils";
 import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
-import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
-import VideoOnizleme from "@/components/video/VideoOnizleme";
-import { YenileButonu } from "@/components/ui/yenile-butonu";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
-import { UTT_VIDEO_KATEGORILERI } from "@/lib/video/uttVideoKategorileri";
-import { YAYIN_TURU_SUNUMU } from "@/lib/ogrenmeAraci/turSunumu";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
+import VideoOnizleme from "@/components/video/VideoOnizleme";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { YAYIN_TURU_SUNUMU } from "@/lib/ogrenmeAraci/turSunumu";
+import type { Periyot } from "@/lib/utils/raporUtils";
+import { UTT_VIDEO_KATEGORILERI } from "@/lib/video/uttVideoKategorileri";
+import { CheckCircle2, ChevronDown, Clock3, Send, TriangleAlert, X } from "lucide-react";
+import { useMemo, useState } from "react";
 
 export type TmOneriDurumu = "planlandi" | "tamamlanan" | "bekleyen" | "suresi_gecmis";
 type TmOneriSecimi = "toplam" | TmOneriDurumu;
@@ -98,40 +99,8 @@ interface TemsilciSecenegi {
   ad: string;
 }
 
-function TemsilciFiltresi({ temsilciler, deger, onDegistir }: {
-  temsilciler: TemsilciSecenegi[];
-  deger: string;
-  onDegistir: (id: string) => void;
-}) {
-  const [acik, setAcik] = useState(false);
-  const [arama, setArama] = useState("");
-  const secili = temsilciler.find((temsilci) => temsilci.id === deger);
-  const sonuclar = temsilciler.filter((temsilci) => temsilci.ad.toLocaleLowerCase("tr-TR").includes(arama.trim().toLocaleLowerCase("tr-TR")));
-  const sec = (id: string) => {
-    onDegistir(id);
-    setAcik(false);
-    setArama("");
-  };
-
-  return (
-    <Popover.Root open={acik} onOpenChange={(sonraki) => { setAcik(sonraki); setArama(""); }}>
-      <Popover.Trigger asChild>
-        <button type="button" aria-label={`Temsilci filtresi: ${secili?.ad ?? "Tüm Temsilciler"}`} title={secili?.ad ?? "Tüm Temsilciler"} className="flex w-[140px] max-w-full min-w-0 items-center justify-between gap-1 rounded-lg border border-[#d8e2ed] bg-white px-2 py-1.5 text-left text-[10px] font-semibold normal-case tracking-normal text-[#586f8a] hover:bg-[#f8fbfe]">
-          <span className="truncate">{secili?.ad ?? "Tüm Temsilciler"}</span><ChevronDown size={12} className="shrink-0" />
-        </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content aria-label="Temsilci seçimi" align="start" sideOffset={5} className="z-50 w-[min(280px,calc(100vw-24px))] rounded-xl border border-[#dbe5ef] bg-white p-2 shadow-lg">
-          <input aria-label="Temsilci adı ara" value={arama} onChange={(event) => setArama(event.target.value)} placeholder="Temsilci adı ara…" className="mb-2 w-full rounded-lg border border-[#d8e2ed] px-2.5 py-2 text-xs text-[#405873] outline-none focus:border-[#237ac8]" />
-          <div className="max-h-60 overflow-y-auto">
-            <button type="button" aria-pressed={!deger} onClick={() => sec("")} className="block w-full rounded-lg px-2.5 py-2 text-left text-xs font-bold text-[#237ac8] hover:bg-[#eef6ff]">Tüm Temsilciler</button>
-            {sonuclar.map((temsilci) => <button key={temsilci.id} type="button" aria-pressed={deger === temsilci.id} onClick={() => sec(temsilci.id)} className={`block w-full rounded-lg px-2.5 py-2 text-left text-xs font-semibold ${deger === temsilci.id ? "bg-[#eef6ff] text-[#237ac8]" : "text-[#405873] hover:bg-[#f8fbfe]"}`}>{temsilci.ad}</button>)}
-            {sonuclar.length === 0 && <p className="px-2.5 py-3 text-xs text-[#7b8da5]">Eşleşen temsilci bulunamadı.</p>}
-          </div>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
-  );
+function TemsilciFiltresi({ temsilciler, deger, onDegistir }: { temsilciler: TemsilciSecenegi[]; deger: string; onDegistir: (id: string) => void }) {
+ return <SadeTabloSecimi etiket="Temsilci filtresi" secenekler={[{ deger: "", etiket: "Tüm Temsilciler" }, ...temsilciler.map((t) => ({ deger: t.id, etiket: t.ad }))]} deger={deger} onDegistir={onDegistir} />;
 }
 
 export default function TmOneriTakibi({

@@ -5,27 +5,29 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
+import { useAuth } from "@/app/providers/AuthProvider";
+import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
+import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
+import { STOK_AZ_ESIK } from "@/lib/tclub/store/sabitler";
+import type { Kategori, Urun } from "@/lib/tclub/store/tipler";
+import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
+import {
+    Coins,
+    Inbox,
+    Layers3,
+    MapPin,
+    Package,
+    Search,
+    ShoppingBag,
+    Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Coins,
-  Inbox,
-  Layers3,
-  MapPin,
-  Package,
-  Search,
-  ShoppingBag,
-  Sparkles,
-} from "lucide-react";
-import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
-import { useAuth } from "@/app/providers/AuthProvider";
-import type { Urun, Kategori } from "@/lib/tclub/store/tipler";
-import { STOK_AZ_ESIK } from "@/lib/tclub/store/sabitler";
-import { YenileButonu } from "@/components/ui/yenile-butonu";
-import SayfaRehberi from "@/components/rehber/SayfaRehberi";
-import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 function StatKarti({
   ikon: Icon,
@@ -405,33 +407,16 @@ export default function StorePage() {
           </div>
 
           {/* Kategori Pilleri */}
-          <div className="flex gap-1.5 overflow-x-auto pt-1 scrollbar-none">
-            <button
-              type="button"
-              onClick={() => setSeciliKategori(null)}
-              className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs transition-colors ${
-                seciliKategori === null
-                  ? "bg-[#237ac8] font-black text-white shadow-sm"
-                  : "border border-[#dce5ee] bg-[#f8fafc] font-extrabold text-[#556987] hover:bg-[#edf3f8]"
-              }`}
-            >
+          <SadeKontrolGrubu tur="kapsul">
+            <SadeKontrolButonu type="button" onClick={() => setSeciliKategori(null)} aria-pressed={seciliKategori === null}>
               Tümü
-            </button>
+            </SadeKontrolButonu>
             {kategoriler.map((k) => (
-              <button
-                type="button"
-                key={k.kategori_id}
-                onClick={() => setSeciliKategori(k.kategori_id)}
-                className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs transition-colors ${
-                  seciliKategori === k.kategori_id
-                    ? "bg-[#237ac8] font-black text-white shadow-sm"
-                    : "border border-[#dce5ee] bg-[#f8fafc] font-extrabold text-[#556987] hover:bg-[#edf3f8]"
-                }`}
-              >
+              <SadeKontrolButonu type="button" key={k.kategori_id} onClick={() => setSeciliKategori(k.kategori_id)} aria-pressed={seciliKategori === k.kategori_id}>
                 {k.ad}
-              </button>
+              </SadeKontrolButonu>
             ))}
-          </div>
+          </SadeKontrolGrubu>
         </section>
 
         {/* Ürünler Grid */}

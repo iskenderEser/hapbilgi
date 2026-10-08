@@ -6,17 +6,19 @@
 
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { BookOpen, Inbox, Send, Ticket, type LucideIcon } from "lucide-react";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
 import { useAuth } from "@/app/providers/AuthProvider";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import ChallengeGonderPaneli, { type GonderSonuc } from "@/components/challenge-club/ChallengeGonderPaneli";
 import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
-import { UttVideoKarti, type UttVideo } from "@/components/video/UttVideoKarti";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import { UttVideoKarti, type UttVideo } from "@/components/video/UttVideoKarti";
 import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
+import { BookOpen, Inbox, Send, Ticket, type LucideIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 
 const CC_RENK = "#237ac8";
 const GRI_METIN = "#737373";
@@ -419,24 +421,18 @@ export default function ChallengeClubPage() {
 
         {/* İşlem sekmeleri; yayın türü filtresi ayrı görsel düzeyde kalır. */}
         <div className="mb-4 max-w-[68rem] border-b border-[#dfe7f1]">
-          <div className="flex max-w-full gap-4 overflow-x-auto [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden" aria-label="Challenge Club bölümü">
+          <SadeKontrolGrubu aria-label="Challenge Club bölümü" tur="sekme">
             {CC_SEKMELERI.map((sekme) => {
               const aktif = aktifTab === sekme.key;
               return (
-                <button
-                  key={sekme.key}
-                  type="button"
-                  aria-pressed={aktif}
-                  onClick={() => setAktifTab(sekme.key)}
-                  className={`-mb-px shrink-0 cursor-pointer border-b-2 px-1 py-2 text-[13px] font-extrabold transition-colors ${aktif ? "border-[#237ac8] text-[#237ac8]" : "border-transparent text-[#70849d] hover:text-[#237ac8]"}`}
-                >
+                <SadeKontrolButonu key={sekme.key} type="button" aria-pressed={aktif} onClick={() => setAktifTab(sekme.key)}>
                   <span className="sm:hidden">{sekme.mobilLabel}</span>
                   <span className="hidden sm:inline">{sekme.label}</span>
                   {sekme.key === "bekleyen" && bekleyenSayisi > 0 ? ` ${bekleyenSayisi}` : ""}
-                </button>
+                </SadeKontrolButonu>
               );
             })}
-          </div>
+          </SadeKontrolGrubu>
         </div>
         <div className="mb-4 flex max-w-full">
           <UttYayinTuruToggle

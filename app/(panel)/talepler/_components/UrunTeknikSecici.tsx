@@ -6,9 +6,11 @@
 
 "use client";
 
-import { useState } from "react";
+import { SadeFormSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { type TalepTuruKurali } from "@/lib/uretici/yetenekler";
-import type { Urun, Teknik, Takim } from "../_types";
+import { useState } from "react";
+import type { Takim, Teknik, Urun } from "../_types";
 
 interface UrunTeknikSeciciProps {
   urunler: Urun[];
@@ -117,40 +119,22 @@ export function UrunTeknikSecici({
               <span className="text-gray-400 font-normal ml-1">(tercihli)</span>
             )}
           </label>
-          <select
-            value={yeniUrunGoster ? "yeni" : seciliUrunId}
-            onChange={(e) => handleUrunSelectChange(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer box-border"
-            style={{
-              fontFamily: "'Nunito', sans-serif",
-              color: seciliUrunId || yeniUrunGoster ? "#111" : "#9ca3af",
-            }}
-          >
+          <SadeFormSecimi value={yeniUrunGoster ? "yeni" : seciliUrunId} onChange={(e) => handleUrunSelectChange(e.target.value)} aria-label="Ürün" className="w-full">
             <option value="">Ürün seçin...</option>
             {urunler.map((u) => (
               <option key={u.urun_id} value={u.urun_id}>{u.urun_adi}</option>
             ))}
             <option value="yeni">+ Yeni Ürün Ekle</option>
-          </select>
+          </SadeFormSecimi>
           {yeniUrunGoster && (
             <div className="flex flex-col gap-1.5 mt-1.5">
               {kullaniciTakimId === null && (
-                <select
-                  value={seciliEkleTakimId}
-                  onChange={(e) => setSeciliEkleTakimId(e.target.value)}
-                  required
-                  className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-white cursor-pointer box-border"
-                  style={{
-                    fontFamily: "'Nunito', sans-serif",
-                    color: seciliEkleTakimId ? "#111" : "#9ca3af",
-                    borderColor: "#56aeff",
-                  }}
-                >
+                <SadeFormSecimi value={seciliEkleTakimId} onChange={(e) => setSeciliEkleTakimId(e.target.value)} required aria-label="Takım" className="w-full">
                   <option value="" disabled>Takım seçin (ürün ekleme için)...</option>
                   {takimlar.map((t) => (
                     <option key={t.takim_id} value={t.takim_id}>{t.takim_adi}</option>
                   ))}
-                </select>
+                </SadeFormSecimi>
               )}
               <div className="flex gap-1.5">
                 <input
@@ -200,21 +184,13 @@ export function UrunTeknikSecici({
               <span className="text-gray-400 font-normal ml-1">(tercihli)</span>
             )}
           </label>
-          <select
-            value={yeniTeknikGoster ? "yeni" : seciliTeknikId}
-            onChange={(e) => handleTeknikSelectChange(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer box-border"
-            style={{
-              fontFamily: "'Nunito', sans-serif",
-              color: seciliTeknikId || yeniTeknikGoster ? "#111" : "#9ca3af",
-            }}
-          >
+          <SadeFormSecimi value={yeniTeknikGoster ? "yeni" : seciliTeknikId} onChange={(e) => handleTeknikSelectChange(e.target.value)} aria-label="Teknik" className="w-full">
             <option value="">Teknik seçin...</option>
             {teknikler.map((t) => (
               <option key={t.teknik_id} value={t.teknik_id}>{t.teknik_adi}</option>
             ))}
             <option value="yeni">+ Yeni Teknik Ekle</option>
-          </select>
+          </SadeFormSecimi>
           {yeniTeknikGoster && (
             <div className="flex gap-1.5 mt-1.5">
               <input

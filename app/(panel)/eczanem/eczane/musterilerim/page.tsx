@@ -1,7 +1,5 @@
 "use client";
 
-import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Info, Link2, Mail, Phone, Plus, Search, ShieldCheck, Trash2, UserCheck, UserPlus, Users, UserX, X } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import { CheckCircle2, Info, Link2, Mail, Phone, Plus, Search, ShieldCheck, Trash2, UserCheck, UserPlus, Users, UserX, X } from "lucide-react";
+import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import { EczanemBosDurum, EczanemEczaneBaslik, EczanemEczaneSayfa, EczanemOzetKarti, EczanemPanel, EczanemSayfalama, EczanemYukleniyor } from "../_components/EczanemEczaneArayuz";
 
 interface MusteriSatiri {
@@ -190,7 +190,7 @@ export default function EczanemMusterilerimPage() {
         {gorunum === "liste" && <>
           <div className="flex flex-col gap-3 border-b border-[#e7edf4] p-4 md:flex-row md:items-center md:justify-between md:px-5">
             <div className="relative w-full md:max-w-md"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8a99aa]" /><Input value={arama} onChange={(e) => { setArama(e.target.value); setSayfa(1); }} placeholder="Ad, telefon veya e-posta ara" className="border-[#d7e1eb] bg-white pl-9" /></div>
-            <Select value={durum} onValueChange={(deger) => { setDurum(deger); setSayfa(1); }}><SelectTrigger className="w-full border-[#d7e1eb] bg-white md:w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="tumu">Tüm durumlar</SelectItem><SelectItem value="aktif">Aktif</SelectItem><SelectItem value="pasif">Pasif</SelectItem></SelectContent></Select>
+            <Select value={durum} onValueChange={(deger) => { setDurum(deger); setSayfa(1); }}><SelectTrigger className="w-full md:w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="tumu">Tüm durumlar</SelectItem><SelectItem value="aktif">Aktif</SelectItem><SelectItem value="pasif">Pasif</SelectItem></SelectContent></Select>
           </div>
 
           {ilkYukleme ? <EczanemYukleniyor metin="Müşteriler yükleniyor…" /> : veri.musteriler.length === 0 ? <EczanemBosDurum ikon={Users} baslik={arama || durum !== "tumu" ? "Aramanızla eşleşen müşteri yok" : "Henüz müşteriniz yok"} aciklama={arama || durum !== "tumu" ? "Arama veya durum filtresini değiştirin." : "Kayıtlı bir müşteriyi bağlayabilir veya yeni müşteri oluşturabilirsiniz."} /> : <>

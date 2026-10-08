@@ -132,7 +132,7 @@ function BmCekTakibi({ rol, ilkDurum, uttId, onUttDegistir, uttler, onUttler, on
 
   useEffect(() => { void yukle(0, false); }, [yukle, yenilemeAnahtari]);
 
-  return <div className="grid gap-4">
+  return <div className="grid min-w-0 grid-cols-1 gap-4">
     {islemHatasi && <p role="alert" className="text-sm text-red-700">{islemHatasi}</p>}
     <CekTakipFiltreleri deger={filtreler} secenekler={veri?.filtre_secenekleri ?? BOS_CEK_SECENEKLER} onDegistir={setFiltreler} uttler={uttler} uttId={uttId} onUttDegistir={onUttDegistir} />
     <CekTakipListesi
@@ -202,7 +202,7 @@ function BmSiparisTakibi({ rol, ilkDurum, uttId, onUttDegistir, uttler, onUttler
 
   useEffect(() => { void yukle(0, false); }, [yukle, yenilemeAnahtari]);
 
-  return <div className="grid gap-4">
+  return <div className="grid min-w-0 grid-cols-1 gap-4">
     <SiparisTakipFiltreleri deger={filtreler} secenekler={secenekler} onDegistir={setFiltreler} uttler={uttler} uttId={uttId} onUttDegistir={onUttDegistir} />
     {veri?.bm_onay_hazir === false && <p role="status" className="text-sm text-[#71859d]">BM sipariş onayı henüz kullanıma açılmadı.</p>}
     <SiparisTakipListesi

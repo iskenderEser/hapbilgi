@@ -7,14 +7,16 @@
 
 "use client";
 
-import { useState } from "react";
-import { useEclubOnaylar } from "../_hooks/useEclubOnaylar";
-import { useEclubKayitli } from "../_hooks/useEclubKayitli";
-import { useEclubTestEczaneler } from "../_hooks/useEclubTestEczaneler";
-import { useEclubTestTemizlik } from "../_hooks/useEclubTestTemizlik";
-import { RENK_BORDO, RENK_BORDO_ZEMIN } from "../../_constants";
+import { SadeListeSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { TEST_TEMIZLIK_ONAYI } from "@/lib/eclub/testGln";
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
+import { useState } from "react";
+import { RENK_BORDO, RENK_BORDO_ZEMIN } from "../../_constants";
+import { useEclubKayitli } from "../_hooks/useEclubKayitli";
+import { useEclubOnaylar } from "../_hooks/useEclubOnaylar";
+import { useEclubTestEczaneler } from "../_hooks/useEclubTestEczaneler";
+import { useEclubTestTemizlik } from "../_hooks/useEclubTestTemizlik";
 
 interface EclubYonetimPaneliProps {
   hata: (mesaj: string, adim?: string, detay?: string) => void;
@@ -264,19 +266,14 @@ export default function EclubYonetimPaneli({ hata, basari }: EclubYonetimPaneliP
 
         <div className="px-4 md:px-5 py-3 border-b border-gray-100">
           <label className="block text-xs text-gray-500 mb-1">Firma</label>
-          <select
-            value={seciliFirmaId}
-            onChange={(e) => firmaSec(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 outline-none"
-            style={{ fontFamily: "'Nunito', sans-serif" }}
-          >
+          <SadeListeSecimi value={seciliFirmaId} onChange={(e) => firmaSec(e.target.value)} aria-label="Firma" className="w-full">
             <option value="">Firma seçin...</option>
             {firmalar.map((f) => (
               <option key={f.firma_id} value={f.firma_id}>
                 {f.firma_adi}{f.eclub_aktif ? "" : " (E-Club kapalı)"}
               </option>
             ))}
-          </select>
+          </SadeListeSecimi>
         </div>
 
         {!seciliFirmaId ? (

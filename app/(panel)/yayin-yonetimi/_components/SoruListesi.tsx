@@ -8,9 +8,11 @@
 
 "use client";
 
+import { SadeFormSecimi } from "@/components/kontrol/SadeKontroller";
+
+import type { Soru } from "@/app/(panel)/talepler/_types";
 import type { Bekleyen } from "../_types";
 import { SORU_PUAN_SECENEKLERI, SORU_PUAN_SECENEKLERI_ECZANEM } from "../_types";
-import type { Soru } from "@/app/(panel)/talepler/_types";
 
 interface SoruListesiProps {
   sorular: Soru[];
@@ -44,13 +46,10 @@ export function SoruListesi({
       {bekleyen && (
         <div className="flex items-center justify-end gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2">
           <span className="text-xs font-bold text-blue-700">Tümüne aynı puan</span>
-          <select value="" onChange={(e) => { if (e.target.value) hepsineAyniPuanAta(soru_seti_durum_id, sorular, Number(e.target.value)); }}
-            aria-label="Tüm sorulara aynı puanı ata"
-            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-xs text-blue-700"
-            style={{ fontFamily: "'Nunito', sans-serif", width: 90 }}>
+          <SadeFormSecimi value="" onChange={(e) => { if (e.target.value) hepsineAyniPuanAta(soru_seti_durum_id, sorular, Number(e.target.value)); }} aria-label="Tüm sorulara aynı puanı ata" className="w-full">
             <option value="">Seçiniz</option>
             {soruPuanSecenekleri.map(p => <option key={p} value={p}>{p} puan</option>)}
-          </select>
+          </SadeFormSecimi>
         </div>
       )}
       </div>
@@ -81,17 +80,10 @@ export function SoruListesi({
                   <span className={`text-[10px] font-extrabold ${puanDolu ? "text-[#1d4ed8]" : "text-[#8292a7]"}`}>
                     {puanDolu ? "✓ Puan" : "Puan"}
                   </span>
-                  <select value={sp} onChange={(e) => setSoruPuani(soru_seti_durum_id, i, Number(e.target.value))}
-                    aria-label={`${i + 1}. soru puanı`}
-                    className={`rounded-lg border px-1.5 py-1 text-xs outline-none transition ${
-                      puanDolu
-                        ? "border-[#93c5fd] bg-[#eff6ff] font-extrabold text-[#1e3a8a] shadow-sm"
-                        : "border-gray-200 bg-white font-medium text-gray-900 hover:border-gray-300"
-                    }`}
-                    style={{ fontFamily: "'Nunito', sans-serif", width: 85 }}>
+                  <SadeFormSecimi value={sp} onChange={(e) => setSoruPuani(soru_seti_durum_id, i, Number(e.target.value))} aria-label={`${i + 1}. soru puanı`} className="w-full">
                     <option value="">-</option>
                     {soruPuanSecenekleri.map(p => <option key={p} value={p}>{p} puan</option>)}
-                  </select>
+                  </SadeFormSecimi>
                 </div>
               ) : (
                 <div className="flex shrink-0 flex-col items-end gap-0.5 rounded-lg bg-[#eef6ff] px-2 py-1.5">

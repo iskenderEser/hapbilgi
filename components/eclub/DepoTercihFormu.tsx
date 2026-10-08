@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { SadeFormSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { depoTalepMailto, konumEtiketi, secilebilirKonumlar, type DepoKonumu } from "@/lib/eclub/depo";
+import { useEffect, useRef, useState } from "react";
 
 interface Props {
   eczaneId?: string;
@@ -42,7 +44,7 @@ export function DepoTercihFormu({ eczaneId, secili, onChange, onHazir, onVeriYuk
   const subeli = katalog.some((k) => k.depo_id === taslakDepo && k.sube_adi);
   const konumlar = secilebilirKonumlar(katalog, taslakDepo);
   const konum = katalog.find((k) => k.depo_sube_id === taslakKonum);
-  const selectClass = "w-full rounded-lg border border-slate-300 bg-white p-2 text-xs";
+
   const konumBilgisi = (k: DepoKonumu) => <div className="grid gap-2 sm:grid-cols-2">
     <label className="grid gap-1 text-xs">İl<input readOnly value={k.il} className="rounded border bg-slate-50 p-2" /></label>
     <label className="grid gap-1 text-xs">İlçe<input readOnly value={k.ilce} className="rounded border bg-slate-50 p-2" /></label>
@@ -61,13 +63,13 @@ export function DepoTercihFormu({ eczaneId, secili, onChange, onHazir, onVeriYuk
         </div>;
       })}
       {secili.length < 3 && <>
-        <label className="grid gap-1 text-xs font-bold">Depo<select value={taslakDepo} className={selectClass} onChange={(e) => {
+        <label className="grid gap-1 text-xs font-bold">Depo<SadeFormSecimi value={taslakDepo} onChange={(e) => {
           const id = e.target.value; setTaslakDepo(id);
           const adaylar = secilebilirKonumlar(katalog, id);
           const hasSube = katalog.some((k) => k.depo_id === id && k.sube_adi);
           setTaslakKonum(!hasSube && adaylar.length === 1 ? adaylar[0].depo_sube_id : "");
-        }}><option value="">Depo seçin</option>{depolar.map(([id, ad]) => <option key={id} value={id}>{ad}</option>)}</select></label>
-        {taslakDepo && subeli && <label className="grid gap-1 text-xs font-bold">Şube (zorunlu)<select value={taslakKonum} className={selectClass} onChange={(e) => setTaslakKonum(e.target.value)}><option value="">Şube seçin</option>{konumlar.map((k) => <option key={k.depo_sube_id} value={k.depo_sube_id}>{k.sube_adi} · {k.il} / {k.ilce}</option>)}</select></label>}
+        }} aria-label="Seçim" className="w-full"><option value="">Depo seçin</option>{depolar.map(([id, ad]) => <option key={id} value={id}>{ad}</option>)}</SadeFormSecimi></label>
+        {taslakDepo && subeli && <label className="grid gap-1 text-xs font-bold">Şube (zorunlu)<SadeFormSecimi value={taslakKonum} onChange={(e) => setTaslakKonum(e.target.value)} aria-label="Seçim" className="w-full"><option value="">Şube seçin</option>{konumlar.map((k) => <option key={k.depo_sube_id} value={k.depo_sube_id}>{k.sube_adi} · {k.il} / {k.ilce}</option>)}</SadeFormSecimi></label>}
         {taslakDepo && konumlar.length === 0 && <p className="text-xs text-amber-800">Bu deponun konumu belirsiz veya aktif şubesi yok. Düzeltme/Ekleme Talebi gönderebilirsiniz.</p>}
         {konum && konumBilgisi(konum)}
         <button type="button" disabled={!konum || secili.includes(taslakKonum)} onClick={() => { onChange([...secili, taslakKonum]); setTaslakDepo(""); setTaslakKonum(""); }} className="w-fit rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 disabled:opacity-40">Tercihlere ekle</button>

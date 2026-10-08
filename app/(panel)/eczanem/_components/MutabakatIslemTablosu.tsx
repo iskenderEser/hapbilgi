@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { Popover } from "radix-ui";
-import { ChevronDown } from "lucide-react";
+import { SadeTabloSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { Button } from "@/components/ui/button";
 import {
-  mutabakatRolSonucEtiketi,
-  type UttMutabakatEczaneIslemleri,
-  type UttMutabakatKarari,
-  type UttMutabakatKaydi,
+    mutabakatRolSonucEtiketi,
+    type UttMutabakatEczaneIslemleri,
+    type UttMutabakatKarari,
+    type UttMutabakatKaydi,
 } from "@/lib/eczanem/uttMutabakat";
 import { YAYIN_TURU_SUNUMU } from "@/lib/ogrenmeAraci/turSunumu";
+import { type ReactNode } from "react";
 import styles from "./MutabakatIslemTablosu.module.css";
 
 export type MutabakatTabloRolu = "utt" | "bm" | "tm";
@@ -66,7 +66,7 @@ function MutabakatIslemSatiri({ kayit, rol, gorunum, kararPenceresiAcik, islemde
   onKarar: (kayit: UttMutabakatKaydi, karar: UttMutabakatKarari) => void;
   onOnayaGonder?: (kayit: UttMutabakatKaydi) => void;
 }) {
-  const [urunMenusuAcik, setUrunMenusuAcik] = useState(false);
+
   const mevcutKarar = rolKarari(kayit, rol);
   const kararAcik = kararVerilebilir(kayit, rol, kararPenceresiAcik);
   const gonderEtiketi = gondermeEylemi(kayit, rol);
@@ -80,15 +80,9 @@ function MutabakatIslemSatiri({ kayit, rol, gorunum, kararPenceresiAcik, islemde
       </>}
       <div className={styles.alan}><span className={styles.alanEtiketi}>İndirim Onay Tarihi</span><span>{tarih(kayit.onay_tarihi)}</span></div>
       <div className={`${styles.alan} ${styles.urunAlani}`}><span className={styles.alanEtiketi}>Ürün Adı</span><div className="min-w-0">
-        <Popover.Root open={urunMenusuAcik} onOpenChange={setUrunMenusuAcik}>
-          <Popover.Trigger asChild><button type="button" aria-label={`${kayit.urun_adi}: ürün adına göre filtrele`} className="inline-flex max-w-full items-center gap-1 text-left font-bold text-[#203653] hover:text-[#237ac8]">
-            <span className="min-w-0 break-words">{kayit.urun_adi}</span><ChevronDown className="size-3 shrink-0" aria-hidden="true" />
-          </button></Popover.Trigger>
-          <Popover.Portal><Popover.Content align="start" sideOffset={5} className="z-50 max-h-64 w-[min(280px,calc(100vw-24px))] overflow-y-auto rounded-xl border border-[#dbe5ef] bg-white p-1 shadow-[0_12px_28px_rgba(31,74,111,.18)]">
-            <button type="button" aria-pressed={seciliUrunId === null} onClick={() => { onUrunDegistir(null); setUrunMenusuAcik(false); }} className={`block w-full rounded-lg px-2 py-2 text-left text-xs font-semibold hover:bg-[#f2f7fc] ${seciliUrunId === null ? "bg-[#eaf4fd] text-[#237ac8]" : "text-[#405976]"}`}>Tümü</button>
-            {urunSecenekleri.map((urun) => <button key={urun.urun_id} type="button" aria-pressed={seciliUrunId === urun.urun_id} onClick={() => { onUrunDegistir(urun.urun_id); setUrunMenusuAcik(false); }} className={`block w-full rounded-lg px-2 py-2 text-left text-xs font-semibold hover:bg-[#f2f7fc] ${seciliUrunId === urun.urun_id ? "bg-[#eaf4fd] text-[#237ac8]" : "text-[#405976]"}`}>{urun.urun_adi}{urun.gorunen_urun_id ? ` · ${urun.gorunen_urun_id}` : ""}</button>)}
-          </Popover.Content></Popover.Portal>
-        </Popover.Root>
+        <SadeTabloSecimi etiket={`${kayit.urun_adi}: ürün adına göre filtrele`} gorunenEtiket={kayit.urun_adi}
+ secenekler={[{ deger: "", etiket: "Tümü" }, ...urunSecenekleri.map((urun) => ({ deger: urun.urun_id, etiket: urun.urun_adi, altBilgi: urun.gorunen_urun_id ?? undefined }))]}
+ deger={seciliUrunId ?? ""} onDegistir={(id) => onUrunDegistir(id || null)} />
         {kayit.gorunen_urun_id && <span className="block text-[10px] text-[#7b8da5]">{kayit.gorunen_urun_id}</span>}
       </div></div>
       <div className={`${styles.alan} ${styles.aracAlani}`}><span className={styles.alanEtiketi}>Öğrenme Aracı</span><div className="min-w-0">{kayit.kaynaklar.map((kaynak) => <div key={`${kaynak.yayin_id}-${kaynak.arac_id}`} className="leading-snug"><span>{YAYIN_TURU_SUNUMU[kaynak.arac_turu]?.etiket ?? "Öğrenme içeriği"}</span>{kaynak.gorunen_talep_id && <span className="block text-[10px] text-[#7b8da5]">Talep ID: {kaynak.gorunen_talep_id}</span>}</div>)}</div></div>

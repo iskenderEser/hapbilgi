@@ -12,39 +12,32 @@
 
 "use client";
 
-import type { useTalepFormu } from "@/app/(panel)/talepler/_hooks/useTalepFormu";
-import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
-import { ECLUB_HEDEF_ROLLER, hedefRolIkUreticisineAcikMi, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
-import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
-import { TALEP_TURU_ALT_ACIKLAMA, TUM_TURLER } from "@/app/(panel)/talepler/_types";
-import { UrunTeknikSecici } from "@/app/(panel)/talepler/_components/UrunTeknikSecici";
-import { SoruSetiAyarlari } from "@/app/(panel)/talepler/_components/SoruSetiAyarlari";
-import { HazirSoruSetiBlogu } from "@/app/(panel)/talepler/_components/HazirSoruSetiBlogu";
-import { VideoYukleme } from "@/app/(panel)/talepler/_components/VideoYukleme";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
 import { EkDosyaYukleme } from "@/app/(panel)/talepler/_components/EkDosyaYukleme";
-import { TalepOnayModal } from "@/app/(panel)/talepler/_components/TalepOnayModal";
+import { HazirSoruSetiBlogu } from "@/app/(panel)/talepler/_components/HazirSoruSetiBlogu";
 import { PodcastTalepAlanlari } from "@/app/(panel)/talepler/_components/PodcastTalepAlanlari";
-import { GorselTalepAlanlari } from "@/app/(panel)/talepler/_components/GorselTalepAlanlari";
-import { FlipPdfTalepAlanlari } from "@/app/(panel)/talepler/_components/FlipPdfTalepAlanlari";
+import { SoruSetiAyarlari } from "@/app/(panel)/talepler/_components/SoruSetiAyarlari";
+import { TalepOnayModal } from "@/app/(panel)/talepler/_components/TalepOnayModal";
+import { UrunTeknikSecici } from "@/app/(panel)/talepler/_components/UrunTeknikSecici";
+import { VideoYukleme } from "@/app/(panel)/talepler/_components/VideoYukleme";
+import type { useTalepFormu } from "@/app/(panel)/talepler/_hooks/useTalepFormu";
+import { HEDEF_ROL_TASARIM, TALEP_TURU_ALT_ACIKLAMA, TUM_TURLER } from "@/app/(panel)/talepler/_types";
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { OGRENME_ARACI_METINLERI } from "@/lib/ogrenmeAraci/etiketler";
+import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
+import { ECLUB_HEDEF_ROLLER, hedefRolIkUreticisineAcikMi, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 
 interface Props {
   formu: ReturnType<typeof useTalepFormu>;
 }
-
-const secimKutusu = (secili: boolean, renk?: string) => ({
-  background: secili ? (renk ? `${renk}14` : "#f0f7ff") : "#fff",
-  borderColor: secili ? (renk ?? "#56aeff") : "#e5e7eb",
-  color: secili ? (renk ?? "#56aeff") : "#374151",
-});
 
 const OGRENME_ARACI_SECENEKLERI = {
   video: { etiket: OGRENME_ARACI_METINLERI.video.ad, formatlar: "MP4, MOV, AVI, MKV, WEBM" },
@@ -133,26 +126,18 @@ export function YeniTalepFormV2({ formu }: Props) {
           <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7a8da8]">
             Yayın tipi
           </p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Öğrenme aracı seçimi">
+          <SadeKontrolGrubu aria-label="Öğrenme aracı seçimi" tur="kapsul">
             {(["video", "podcast", "gorsel", "flip_pdf"] as const)
               .filter((tur) => formu.ogrenmeAraciBayraklari[tur])
               .map((tur) => {
                 const secenek = OGRENME_ARACI_SECENEKLERI[tur];
                 return (
-                  <button
-                    key={tur}
-                    type="button"
-                    aria-pressed={formu.ogrenmeAraciTuru === tur}
-                    onClick={() => formu.handleOgrenmeAraciTuruDegis(tur)}
-                    className="flex min-h-12 w-full cursor-pointer flex-col items-start justify-center rounded-lg border px-3 py-1.5 text-left"
-                    style={secimKutusu(formu.ogrenmeAraciTuru === tur)}
-                  >
-                    <span className="text-xs font-extrabold">{secenek.etiket}</span>
-                    <span className="mt-0.5 text-[9px] font-bold tracking-[0.03em] opacity-65">{secenek.formatlar}</span>
-                  </button>
+                  <SadeKontrolButonu key={tur} type="button" aria-pressed={formu.ogrenmeAraciTuru === tur} title={secenek.formatlar} onClick={() => formu.handleOgrenmeAraciTuruDegis(tur)}>
+                    {secenek.etiket}
+                  </SadeKontrolButonu>
                 );
               })}
-          </div>
+          </SadeKontrolGrubu>
           <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7a8da8]">
             Üretim yöntemi
           </p>
@@ -245,30 +230,17 @@ export function YeniTalepFormV2({ formu }: Props) {
                 <h3 className="text-sm font-extrabold text-[#263b58]">İçerik Türü</h3>
                 <p className="mt-0.5 text-xs text-[#7a8ca5]">Talebin eğitim odağını belirleyin.</p>
               </div>
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-3 xl:grid-cols-6">
+              <SadeKontrolGrubu tur="kapsul">
                 {TUM_TURLER.filter((tur) => yetenek.acabilecegiTalepTurleri.includes(tur)).map((tur: TalepTuru) => {
                   const secili = formu.egitimTuruSecildiMi && formu.egitimTuru === tur;
                   const secilebilir = yetenek.acabilecegiTalepTurleri.includes(tur);
                   return (
-                    <button
-                      type="button"
-                      key={tur}
-                      disabled={!secilebilir}
-                      onClick={() => formu.handleEgitimTuruDegis(tur)}
-                      aria-pressed={secili}
-                      className="min-h-11 rounded-xl border px-2 py-2 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] focus-visible:ring-offset-1"
-                      style={{
-                        ...secimKutusu(secili),
-                        cursor: secilebilir ? "pointer" : "not-allowed",
-                        opacity: secilebilir ? 1 : 0.42,
-                      }}
-                      title={TALEP_TURU_ALT_ACIKLAMA[tur]}
-                    >
-                      <span className="block whitespace-nowrap text-[11px] font-extrabold">{TALEP_TURU_KURALLARI[tur].ad}</span>
-                    </button>
+                    <SadeKontrolButonu type="button" key={tur} disabled={!secilebilir} onClick={() => formu.handleEgitimTuruDegis(tur)} aria-pressed={secili} title={TALEP_TURU_ALT_ACIKLAMA[tur]}>
+                      <span className="inline-flex items-center gap-1">{TALEP_TURU_KURALLARI[tur].ad}</span>
+                    </SadeKontrolButonu>
                   );
                 })}
-              </div>
+              </SadeKontrolGrubu>
             </fieldset>}
 
             <div className="grid grid-cols-1 gap-3.5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">

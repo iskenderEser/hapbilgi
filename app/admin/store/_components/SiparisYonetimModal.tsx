@@ -9,8 +9,10 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { SadeFormSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { KARGO_FIRMA_ADLARI } from "@/lib/tclub/store/kargo";
+import { useEffect, useState } from "react";
 import { RENK_BORDO } from "../../_constants";
 
 export type SiparisYonetimModu = "kargola" | "iptal";
@@ -185,19 +187,13 @@ export default function SiparisYonetimModal({
                 <label className="text-xs font-semibold text-gray-700 block mb-1.5">
                   Kargo Firması
                 </label>
-                <select
-                  value={kargoFirmasi}
-                  onChange={(e) => setKargoFirmasi(e.target.value)}
-                  disabled={islemSuruyor}
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-white cursor-pointer"
-                  style={inputStili}
-                >
+                <SadeFormSecimi value={kargoFirmasi} onChange={(e) => setKargoFirmasi(e.target.value)} disabled={islemSuruyor} aria-label="Kargo Firması" className="w-full">
                   {KARGO_FIRMA_ADLARI.map((f) => (
                     <option key={f} value={f}>
                       {f}
                     </option>
                   ))}
-                </select>
+                </SadeFormSecimi>
               </div>
 
               <div>

@@ -1,21 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ChevronDown, LoaderCircle } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
-import { YenileButonu } from "@/components/ui/yenile-butonu";
-import SayfaRehberi from "@/components/rehber/SayfaRehberi";
-import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
-import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
+import { SadeSecim } from "@/components/kontrol/SadeKontroller";
+
 import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
 import { OgrenmeAraciOnizlemeModal } from "@/app/(panel)/yayin-yonetimi/_components/Modallar";
 import type { OnizlemeHedefi } from "@/app/(panel)/yayin-yonetimi/_types";
 import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
-import type { OneriGecmisKaydi, OneriKisi, OneriYayin } from "../../oneriler/_types";
-import { yayinAlicisiUygun, yayinGonderimListeleri, type GonderimFiltresi } from "@/lib/eclub/yayinGonderimFiltreleri";
-import { EclubYayinGonderimKarti } from "./EclubYayinGonderimKarti";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
+import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
+import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
 import { eclubBmGruplari } from "@/lib/eclub/bmGruplari";
+import { yayinAlicisiUygun, yayinGonderimListeleri, type GonderimFiltresi } from "@/lib/eclub/yayinGonderimFiltreleri";
+import { LoaderCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import type { OneriGecmisKaydi, OneriKisi, OneriYayin } from "../../oneriler/_types";
+import { EclubYayinGonderimKarti } from "./EclubYayinGonderimKarti";
 
 type HedefGrubu = "eczaci" | "eczane_teknisyeni" | "ortak";
 interface BmUtt { utt_id: string; utt_adi: string; bm_id: string | null; bm_adi: string; bolge_adi: string; }
@@ -28,25 +29,8 @@ const HEDEF_GRUPLARI: { anahtar: HedefGrubu; etiket: string; aciklama: string; r
 ];
 const hedefGrubu = (yayin: OneriYayin): HedefGrubu => yayin.hedef_roller.includes("eczaci") && yayin.hedef_roller.includes("eczane_teknisyeni") ? "ortak" : yayin.hedef_roller.includes("eczane_teknisyeni") ? "eczane_teknisyeni" : "eczaci";
 
-function YoneticiSecimi({ etiket, deger, secenekler, engelli, onSec }: {
-  etiket: string;
-  deger: string;
-  secenekler: { id: string; ad: string }[];
-  engelli: boolean;
-  onSec: (id: string) => void;
-}) {
-  const [acik, setAcik] = useState(false);
-  return <div className="flex h-10 max-w-full items-center gap-1 rounded-[14px] border border-[rgba(148,163,184,.18)] bg-white/85 p-1 shadow-[0_6px_22px_rgba(36,64,98,.05)]">
-    <span className="px-2 text-[11px] font-bold text-[#405976]">{etiket}:</span>
-    <Collapsible open={acik} onOpenChange={setAcik} className="relative z-20 w-[190px]">
-      <CollapsibleTrigger asChild><button type="button" aria-label={etiket + " seçimi"} disabled={engelli} className="flex h-[30px] w-full items-center justify-between gap-2 rounded-[10px] border border-[#d5e0eb] px-3 text-left text-[11px] font-bold text-[#405976] disabled:opacity-50">
-        <span className="min-w-0 truncate">{secenekler.find((secenek) => secenek.id === deger)?.ad ?? etiket + " seçin"}</span><ChevronDown className={`size-4 shrink-0 ${acik ? "rotate-180" : ""}`} />
-      </button></CollapsibleTrigger>
-      <CollapsibleContent className="absolute right-0 top-full z-30 mt-1 max-h-72 w-full min-w-[220px] overflow-y-auto rounded-xl border border-[#dbe5ef] bg-white p-1.5 shadow-xl">
-        {secenekler.map((secenek) => <button key={secenek.id} type="button" disabled={engelli} aria-pressed={secenek.id === deger} onClick={() => { setAcik(false); onSec(secenek.id); }} className={`block w-full rounded-lg px-2 py-2 text-left text-xs font-bold ${secenek.id === deger ? "bg-[#e7f2fc] text-[#1d65aa]" : "text-[#304963] hover:bg-[#f5f8fc]"}`}>{secenek.ad}</button>)}
-      </CollapsibleContent>
-    </Collapsible>
-  </div>;
+function YoneticiSecimi({ etiket, deger, secenekler, engelli, onSec }: { etiket: string; deger: string; secenekler: { id: string; ad: string }[]; engelli: boolean; onSec: (id: string) => void }) {
+ return <SadeSecim etiket={etiket} secenekler={secenekler.map((s) => ({ deger: s.id, etiket: etiket === "BM" && s.id !== "" && !s.ad.startsWith("BM ") ? "BM " + s.ad : s.ad }))} deger={deger} onDegistir={onSec} disabled={engelli} placeholder={etiket + " seçin"} />;
 }
 
 export default function BmEclubYayinlari({ rol = "bm" }: { rol?: "bm" | "tm" }) {
@@ -127,8 +111,8 @@ export default function BmEclubYayinlari({ rol = "bm" }: { rol?: "bm" | "tm" }) 
         {HEDEF_GRUPLARI.map((grup) => { const secili = aktifHedef === grup.anahtar; const gonderilen = gruplar[grup.anahtar].filter((yayin) => bolgeGonderilenler.has(yayin.yayin_id)).length; const stil = { "--stat-renk": grup.renk, boxShadow: secili ? `0 0 0 2px ${grup.renk}22` : "none" } as CSSProperties; return <button type="button" key={grup.anahtar} onClick={() => { setAktifHedef(grup.anahtar); setGonderimFiltresi("tumu"); sifirla(); }} aria-pressed={secili} className="cursor-pointer rounded-xl border border-gray-200 border-l-[3px] bg-white p-3 text-left transition-all [border-left-color:var(--stat-renk)] hover:-translate-y-0.5 hover:shadow-md md:p-5" style={stil}><div className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">{grup.etiket}</div><div className="text-2xl font-extrabold leading-none text-gray-900 md:text-3xl">{gruplar[grup.anahtar].length.toLocaleString("tr-TR")}</div><div className="mt-1.5 hidden text-xs text-gray-500 md:block">{rol === "tm" ? "Takımda yayındaki toplam yayın" : "Bölgede yayındaki toplam yayın"} · {gonderilen} yayın gönderildi</div></button>; })}
       </section>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PeriyotButonlari<GonderimFiltresi> secenekler={[{ key: "tumu", label: `Tümü ${listeler.tumu.length}` }, { key: "gonderilebilir", label: `Gönderime Hazır ${listeler.gonderilebilir.length}` }, { key: "gonderilen", label: `Gönderilenler ${listeler.gonderilen.length}` }]} deger={gonderimFiltresi} onDegistir={(filtre) => { setGonderimFiltresi(filtre); sifirla(); }} ariaLabel="Gönderim durumu" className="h-10 w-fit flex-none [&>button]:h-[30px] [&>button]:py-0 md:[&>button]:px-2 md:[&>button]:text-[10px] lg:[&>button]:px-3 lg:[&>button]:text-[11px]" />
-        <div className="ml-auto flex max-w-full flex-wrap items-center gap-2">
+        <PeriyotButonlari<GonderimFiltresi> secenekler={[{ key: "tumu", label: `Tümü ${listeler.tumu.length}` }, { key: "gonderilebilir", label: `Gönderime Hazır ${listeler.gonderilebilir.length}` }, { key: "gonderilen", label: `Gönderilenler ${listeler.gonderilen.length}` }]} deger={gonderimFiltresi} onDegistir={(filtre) => { setGonderimFiltresi(filtre); sifirla(); }} ariaLabel="Gönderim durumu" className="w-fit flex-none" />
+        <div className={`ml-auto grid max-w-full flex-none items-center gap-2 ${rol === "tm" ? "w-[288px] grid-cols-2 sm:w-[328px]" : "w-[140px] grid-cols-1 sm:w-[160px]"}`}>
           {rol === "tm" && <YoneticiSecimi etiket="BM" deger={seciliBmId} engelli={yenileniyor || !bmGruplari.length} secenekler={[{ id: "", ad: "Tüm BM’ler" }, ...bmGruplari]} onSec={(bmId) => {
             const uttler = bmId ? bmGruplari.find((bm) => bm.id === bmId)?.uttler ?? [] : veri?.uttler ?? [];
             const uttId = uttler.find((utt) => utt.utt_id === seciliUttId)?.utt_id ?? uttler[0]?.utt_id;

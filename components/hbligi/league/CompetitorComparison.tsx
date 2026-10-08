@@ -2,19 +2,21 @@
 
 "use client";
 
-import { Fragment, useState, type ReactNode } from "react";
+import { SadeListeSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
 import { ChevronDown, ChevronUp, LockKeyhole } from "lucide-react";
-import type { SiraliSatir } from "./types";
+import { Fragment, useState, type ReactNode } from "react";
 import styles from "./league.module.css";
+import type { SiraliSatir } from "./types";
 
 export interface OrganizasyonTabloFiltresi {
   takimlar: Array<{ id: string; ad: string }>;
@@ -173,25 +175,17 @@ export default function CompetitorComparison({
         <div className="mb-3 grid grid-cols-2 gap-2 md:hidden">
           <label className="min-w-0 text-[10px] font-extrabold uppercase tracking-wide text-[#7b8ca5]">
             Takım
-            <select
-              value={organizasyonFiltresi.takimId}
-              onChange={(event) => organizasyonFiltresi.onTakimDegistir(event.target.value)}
-              className="mt-1 min-h-11 w-full rounded-xl border border-[#dfe8f2] bg-white px-2 text-xs font-bold normal-case tracking-normal text-[#344a65] outline-none focus:border-[#2f80ed]"
-            >
+            <SadeListeSecimi value={organizasyonFiltresi.takimId} onChange={(event) => organizasyonFiltresi.onTakimDegistir(event.target.value)} aria-label="Takım" className="w-full">
               <option value="">Tüm takımlar</option>
               {organizasyonFiltresi.takimlar.map((takim) => <option key={takim.id} value={takim.id}>{takim.ad}</option>)}
-            </select>
+            </SadeListeSecimi>
           </label>
           <label className="min-w-0 text-[10px] font-extrabold uppercase tracking-wide text-[#7b8ca5]">
             Bölge
-            <select
-              value={organizasyonFiltresi.bolgeId}
-              onChange={(event) => organizasyonFiltresi.onBolgeDegistir(event.target.value)}
-              className="mt-1 min-h-11 w-full rounded-xl border border-[#dfe8f2] bg-white px-2 text-xs font-bold normal-case tracking-normal text-[#344a65] outline-none focus:border-[#2f80ed]"
-            >
+            <SadeListeSecimi value={organizasyonFiltresi.bolgeId} onChange={(event) => organizasyonFiltresi.onBolgeDegistir(event.target.value)} aria-label="Bölge" className="w-full">
               <option value="">Tüm bölgeler</option>
               {organizasyonFiltresi.bolgeler.map((bolge) => <option key={bolge.id} value={bolge.id}>{bolge.ad}</option>)}
-            </select>
+            </SadeListeSecimi>
           </label>
         </div>
       )}
@@ -259,27 +253,17 @@ export default function CompetitorComparison({
                 <>
                   <TableHead className="h-9 min-w-[130px] align-middle text-left text-[10px] font-bold uppercase tracking-wide text-[#94a0b1]">
                     <label className="sr-only" htmlFor="lig-takim-filtresi">Takım filtresi</label>
-                    <select
-                      id="lig-takim-filtresi"
-                      value={organizasyonFiltresi.takimId}
-                      onChange={(event) => organizasyonFiltresi.onTakimDegistir(event.target.value)}
-                      className={`w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-[10px] font-bold uppercase tracking-wide outline-none ${organizasyonFiltresi.takimId ? "text-[#2f80ed]" : "text-[#94a0b1]"}`}
-                    >
+                    <SadeListeSecimi id="lig-takim-filtresi" value={organizasyonFiltresi.takimId} onChange={(event) => organizasyonFiltresi.onTakimDegistir(event.target.value)} aria-label="Takım filtresi" className="w-full">
                       <option value="">Takım ▾</option>
                       {organizasyonFiltresi.takimlar.map((takim) => <option key={takim.id} value={takim.id}>{takim.ad}</option>)}
-                    </select>
+                    </SadeListeSecimi>
                   </TableHead>
                   <TableHead className="h-9 min-w-[130px] align-middle text-left text-[10px] font-bold uppercase tracking-wide text-[#94a0b1]">
                     <label className="sr-only" htmlFor="lig-bolge-filtresi">Bölge filtresi</label>
-                    <select
-                      id="lig-bolge-filtresi"
-                      value={organizasyonFiltresi.bolgeId}
-                      onChange={(event) => organizasyonFiltresi.onBolgeDegistir(event.target.value)}
-                      className={`w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-[10px] font-bold uppercase tracking-wide outline-none ${organizasyonFiltresi.bolgeId ? "text-[#2f80ed]" : "text-[#94a0b1]"}`}
-                    >
+                    <SadeListeSecimi id="lig-bolge-filtresi" value={organizasyonFiltresi.bolgeId} onChange={(event) => organizasyonFiltresi.onBolgeDegistir(event.target.value)} aria-label="Bölge filtresi" className="w-full">
                       <option value="">Bölge ▾</option>
                       {organizasyonFiltresi.bolgeler.map((bolge) => <option key={bolge.id} value={bolge.id}>{bolge.ad}</option>)}
-                    </select>
+                    </SadeListeSecimi>
                   </TableHead>
                 </>
               )}

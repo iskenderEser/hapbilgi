@@ -15,14 +15,16 @@
 
 "use client";
 
-import { useState } from "react";
-import { TALEP_TURU_KURALLARI } from "@/lib/uretici/yetenekler";
-import { talepIdGoster } from "@/lib/utils/talepId";
-import { ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
+import { SadeListeSecimi } from "@/components/kontrol/SadeKontroller";
+
+import { DahaFazlaGoster, ListeArama, useListe } from "@/components/liste";
 import { AsamaPill, DurumPill } from "@/components/pill";
-import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
-import { ASAMA_SUZGEC_SECENEKLERI, type AsamaSuzgeci, type TalepSatiri } from "../_ureticiRolTypes";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import { TALEP_TURU_KURALLARI } from "@/lib/uretici/yetenekler";
+import { ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
+import { talepIdGoster } from "@/lib/utils/talepId";
+import { useState } from "react";
+import { ASAMA_SUZGEC_SECENEKLERI, type AsamaSuzgeci, type TalepSatiri } from "../_ureticiRolTypes";
 
 interface Props {
   talepler: TalepSatiri[];
@@ -63,17 +65,11 @@ export function IsListesi({ talepler, seciliTalepId, rol, onSec }: Props) {
           <span className="rounded-full bg-[#eef5fd] px-3 py-1 text-xs font-extrabold text-[#4479b7]">{liste.toplam} aktif</span>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <select
-            aria-label="Üretim aşamasına göre süz"
-            value={asamaSuzgeci}
-            onChange={(e) => setAsamaSuzgeci(e.target.value as AsamaSuzgeci)}
-            className="cursor-pointer rounded-lg border border-[#dce5ef] bg-white px-2.5 py-2 text-xs font-semibold text-[#566b87] outline-none focus:border-[#56aeff]"
-            style={{ fontFamily: "'Nunito', sans-serif" }}
-          >
+          <SadeListeSecimi aria-label="Üretim aşamasına göre süz" value={asamaSuzgeci} onChange={(e) => setAsamaSuzgeci(e.target.value as AsamaSuzgeci)} className="w-full">
             {ASAMA_SUZGEC_SECENEKLERI.map((s) => (
               <option key={s.deger} value={s.deger}>{s.etiket}</option>
             ))}
-          </select>
+          </SadeListeSecimi>
           <ListeArama arama={liste.arama} />
         </div>
       </div>

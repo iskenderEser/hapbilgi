@@ -1,13 +1,15 @@
 // components/raporlar/YayinDetayModal.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { X, CheckCircle2, HelpCircle, Film, Sparkles, Award, Layers, Clock, AlertCircle } from "lucide-react";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
 import OgrenmeAraciOnizleme from "@/components/ogrenme-araci/OgrenmeAraciOnizleme";
-import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { YayinTuruPill } from "@/components/ogrenme-araci/YayinTuruPill";
 import { HedefRolPilleri } from "@/components/pill/HedefRolPill";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import type { HedefRol } from "@/lib/utils/roller";
+import { AlertCircle, Award, CheckCircle2, Clock, Film, HelpCircle, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface SoruSecenegi {
   harf: string;
@@ -210,33 +212,17 @@ export default function YayinDetayModal({ yayinId, onKapat }: Props) {
               </div>
 
               {/* Sekme Seçicisi */}
-              <div className="flex border-b border-[#e2e8f0] gap-4">
-                <button
-                  type="button"
-                  onClick={() => setAktifSekme("arac")}
-                  className={`flex items-center gap-1.5 pb-2.5 text-xs font-extrabold transition-colors relative ${
-                    aktifSekme === "arac"
-                      ? "text-[#237ac8] border-b-2 border-[#237ac8]"
-                      : "text-[#64748b] hover:text-[#0f172a]"
-                  }`}
-                >
+              <SadeKontrolGrubu tur="sekme">
+                <SadeKontrolButonu type="button" onClick={() => setAktifSekme("arac")} aria-pressed={aktifSekme === "arac"}>
                   <Film className="h-3.5 w-3.5" />
                   <span>Öğrenme Aracı Önizleme</span>
-                </button>
+                </SadeKontrolButonu>
 
-                <button
-                  type="button"
-                  onClick={() => setAktifSekme("sorular")}
-                  className={`flex items-center gap-1.5 pb-2.5 text-xs font-extrabold transition-colors relative ${
-                    aktifSekme === "sorular"
-                      ? "text-[#237ac8] border-b-2 border-[#237ac8]"
-                      : "text-[#64748b] hover:text-[#0f172a]"
-                  }`}
-                >
+                <SadeKontrolButonu type="button" onClick={() => setAktifSekme("sorular")} aria-pressed={aktifSekme === "sorular"}>
                   <HelpCircle className="h-3.5 w-3.5" />
                   <span>Atanmış Sorular ve Cevaplar ({sorularDizisi.length})</span>
-                </button>
-              </div>
+                </SadeKontrolButonu>
+              </SadeKontrolGrubu>
 
               {/* Sekme 1: Öğrenme Aracı */}
               {aktifSekme === "arac" && (

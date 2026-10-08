@@ -5,14 +5,16 @@
 
 "use client";
 
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import CompetitorComparison from "./CompetitorComparison";
+import styles from "./league.module.css";
 import LeagueHeader from "./LeagueHeader";
 import MonthlyLeaders from "./MonthlyLeaders";
-import CompetitorComparison from "./CompetitorComparison";
 import type { AylikKursu, LigSatiri, SiraliSatir } from "./types";
-import styles from "./league.module.css";
 
 type LigKapsami = "bolge" | "takim" | "firma";
 
@@ -43,23 +45,13 @@ export default function LeaguePage({
   );
 
   const kapsamSecici = (
-    <div className="inline-flex min-w-0 max-w-full flex-1 items-center gap-1 overflow-x-auto rounded-[14px] border border-[rgba(148,163,184,.18)] bg-white/85 p-1 shadow-[0_6px_22px_rgba(36,64,98,.05)] sm:flex-none">
+    <SadeKontrolGrubu tur="kapsul">
       {KAPSAMLAR.map((secenek) => (
-        <button
-          key={secenek.id}
-          type="button"
-          onClick={() => setKapsam(secenek.id)}
-          className={`shrink-0 rounded-[10px] px-3 py-[7px] text-[11px] font-bold transition-all duration-150 ${
-            kapsam === secenek.id
-              ? "bg-[#237ac8] text-white shadow-[0_5px_14px_rgba(35,122,200,.22)]"
-              : "text-[#718198] hover:bg-[#f2f7fc] hover:text-[#237ac8]"
-          }`}
-          aria-pressed={kapsam === secenek.id}
-        >
+        <SadeKontrolButonu key={secenek.id} type="button" onClick={() => setKapsam(secenek.id)} aria-pressed={kapsam === secenek.id}>
           {secenek.etiket}
-        </button>
+        </SadeKontrolButonu>
       ))}
-    </div>
+    </SadeKontrolGrubu>
   );
 
   const filtreler = (

@@ -5,8 +5,10 @@
 
 "use client";
 
-import { inputStyle, btnBase, rowStyle, labelStyle, RENK_BORDO } from "../_constants";
-import type { Takim, Urun, Teknik } from "../_types";
+import { SadeFormSecimi } from "@/components/kontrol/SadeKontroller";
+
+import { btnBase, inputStyle, labelStyle, RENK_BORDO, rowStyle } from "../_constants";
+import type { Takim, Teknik, Urun } from "../_types";
 
 interface UrunTeknikYonetimiProps {
   takimlar: Takim[];
@@ -72,14 +74,10 @@ export default function UrunTeknikYonetimi(p: UrunTeknikYonetimiProps) {
 
           <div style={rowStyle}>
             <span style={labelStyle}>Takım</span>
-            <select
-              value={p.yeniUrunTakimId}
-              onChange={(e) => p.setYeniUrunTakimId(e.target.value)}
-              style={inputStyle} required
-            >
+            <SadeFormSecimi value={p.yeniUrunTakimId} onChange={(e) => p.setYeniUrunTakimId(e.target.value)} required aria-label="Takım" className="w-full">
               <option value="">Takım seçin...</option>
               {p.takimlar.map(t => <option key={t.takim_id} value={t.takim_id}>{t.takim_adi}</option>)}
-            </select>
+            </SadeFormSecimi>
           </div>
 
           <button

@@ -8,7 +8,9 @@
 
 "use client";
 
-import { MODUL_SEKMELERI, ModulSekme, ModulSekmeId, RENK_BORDO, RENK_CIZGI } from "../_constants";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
+import { MODUL_SEKMELERI, ModulSekme, ModulSekmeId, RENK_CIZGI } from "../_constants";
 
 interface ModulSekmeBariProps {
   seciliSekme: ModulSekmeId;
@@ -26,25 +28,7 @@ export default function ModulSekmeBari(p: ModulSekmeBariProps) {
     const aktif = p.seciliSekme === s.id;
     const kapali = p.kapaliModuller?.includes(s.id) ?? false;
     return (
-      <button
-        key={s.id}
-        onClick={() => p.setSeciliSekme(s.id)}
-        style={{
-          padding: "8px 14px",
-          background: "transparent",
-          border: "none",
-          borderBottom: aktif ? `2px solid ${RENK_BORDO}` : "2px solid transparent",
-          color: aktif ? RENK_BORDO : kapali ? "#b3b3b3" : "#737373",
-          fontSize: "13px",
-          fontWeight: aktif ? 700 : 600,
-          cursor: "pointer",
-          fontFamily: "'Nunito', sans-serif",
-          transition: "border-color 0.15s",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "6px",
-        }}
-      >
+      <SadeKontrolButonu key={s.id} onClick={() => p.setSeciliSekme(s.id)} aria-pressed={aktif}>
         {s.etiket}
         {kapali && (
           <span
@@ -52,7 +36,7 @@ export default function ModulSekmeBari(p: ModulSekmeBariProps) {
             style={{ width: 6, height: 6, borderRadius: "50%", background: "#d1d5db", display: "inline-block" }}
           />
         )}
-      </button>
+      </SadeKontrolButonu>
     );
   };
 
@@ -77,7 +61,7 @@ export default function ModulSekmeBari(p: ModulSekmeBariProps) {
       <div style={{ display: "flex", alignItems: "flex-end" }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {grupEtiketi("Firma")}
-          <div style={{ display: "flex", gap: "2px" }}>{firmaSekmeleri.map(sekmeButonu)}</div>
+          <SadeKontrolGrubu tur="sekme">{firmaSekmeleri.map(sekmeButonu)}</SadeKontrolGrubu>
         </div>
 
         <div
@@ -91,7 +75,7 @@ export default function ModulSekmeBari(p: ModulSekmeBariProps) {
 
         <div style={{ display: "flex", flexDirection: "column" }}>
           {grupEtiketi("Modüller")}
-          <div style={{ display: "flex", gap: "2px" }}>{modulSekmeleri.map(sekmeButonu)}</div>
+          <SadeKontrolGrubu tur="sekme">{modulSekmeleri.map(sekmeButonu)}</SadeKontrolGrubu>
         </div>
       </div>
     </div>

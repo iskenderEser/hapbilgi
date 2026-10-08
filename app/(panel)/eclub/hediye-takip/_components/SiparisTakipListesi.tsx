@@ -116,9 +116,9 @@ export default function SiparisTakipListesi({ talepler, yukleniyor, hata, filtre
   if (yukleniyor) return <section aria-live="polite" className="rounded-2xl border bg-white p-10 text-center text-sm text-[#60758d]">Siparişler yükleniyor…</section>;
   if (hata && talepler.length === 0) return <section role="alert" className="rounded-2xl border bg-white p-10 text-center text-sm text-red-700">{hata} <button type="button" className="ml-2 font-bold underline" onClick={onYenidenDene}>Yeniden dene</button></section>;
   if (!talepler.length) return <section className="rounded-2xl border bg-white p-10 text-center text-sm text-[#60758d]">{filtreVar ? "Bu filtrelerde sipariş bulunmuyor." : "Henüz sipariş verilmemiş."}</section>;
-  return <div className="space-y-3">
+  return <div className="min-w-0 space-y-3">
     {hata && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">{hata} <button type="button" className="font-bold underline" onClick={onYenidenDene}>Yeniden dene</button></div>}
-    <section aria-label="Sipariş takip listesi" className="overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-sm">
+    <section aria-label="Sipariş takip listesi" className="min-w-0 overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-sm">
       <div className="hidden overflow-x-auto lg:block"><table className="min-w-full w-max table-auto border-collapse text-left text-xs"><thead className="bg-[#f8fafc] text-[10px] uppercase text-[#71859d]"><tr>
         {[
           ...(uttGoster ? [{ baslik: 'UTT Adı', ortali: false }] : []),

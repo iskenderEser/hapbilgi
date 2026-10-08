@@ -1,20 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ROL_ADLARI } from "@/lib/utils/roller";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
+import SahaVideoRaflari from "@/components/ana-sayfa/SahaVideoRaflari";
 import { useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
-import SahaVideoRaflari from "@/components/ana-sayfa/SahaVideoRaflari";
-import type { SahaAnaSayfaVideo, TmAnaSayfaYayinlari } from "@/lib/video/anaSayfaVideolari";
+import HayaletTanburSecici from "@/components/navigasyon/HayaletTanburSecici";
 import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
+import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
+import { YayinKarti } from "@/components/yayin/YayinKarti";
 import type { TmStatIstatistikleri, TmStatSecimi } from "@/lib/utils/anaSayfa/tm";
 import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
+import { ROL_ADLARI } from "@/lib/utils/roller";
+import type { SahaAnaSayfaVideo, TmAnaSayfaYayinlari } from "@/lib/video/anaSayfaVideolari";
 import type { AuthKullanici } from "@/types/auth";
-import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
-import { YayinKarti } from "@/components/yayin/YayinKarti";
-import HayaletTanburSecici from "@/components/navigasyon/HayaletTanburSecici";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 interface TmVeri {
   istatistikler: TmStatIstatistikleri;
@@ -235,28 +237,22 @@ function TmAnaSayfaIcerigi({ user, adSoyad }: Props) {
       </div>
 
       <div className="mb-4 max-w-[68rem] border-b border-[#dfe7f1]">
-        <div className="flex max-w-full gap-4 overflow-x-auto [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden" aria-label="TM yayın rolü">
+        <SadeKontrolGrubu aria-label="TM yayın rolü" tur="sekme">
           {TM_YAYIN_SEKMELERI.map((sekme) => {
             const aktif = aktifYayinSekmesi === sekme.key;
             return (
-              <button
-                key={sekme.key}
-                type="button"
-                aria-pressed={aktif}
-                onClick={() => setAktifYayinSekmesi(sekme.key)}
-                className={`-mb-px shrink-0 cursor-pointer border-b-2 px-1 py-2 text-[13px] font-extrabold transition-colors ${aktif ? "border-[#237ac8] text-[#237ac8]" : "border-transparent text-[#70849d] hover:text-[#237ac8]"}`}
-              >
+              <SadeKontrolButonu key={sekme.key} type="button" aria-pressed={aktif} onClick={() => setAktifYayinSekmesi(sekme.key)}>
                 {sekme.label}
-              </button>
+              </SadeKontrolButonu>
             );
           })}
-        </div>
+        </SadeKontrolGrubu>
       </div>
-      <div className="mb-5 flex items-center justify-between gap-2">
-        <div className="min-w-0 flex-1 lg:flex-none">
+      <div className="mb-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 max-w-full sm:flex-1 lg:flex-none">
           <UttYayinTuruToggle yayinlar={seciliYayinlar} deger={aracTuru} onDegistir={setAracTuru} />
         </div>
-        <div className="ml-auto flex min-w-0 flex-1 justify-end lg:flex-none">
+        <div className="flex min-w-0 max-w-full sm:ml-auto sm:flex-1 sm:justify-end lg:flex-none">
           <PeriyotButonlari secenekler={PERIYOTLAR} deger={periyot} onDegistir={setPeriyot} ariaLabel="TM istatistik dönemi" />
         </div>
       </div>

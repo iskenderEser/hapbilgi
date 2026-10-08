@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { SadeListeSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
@@ -8,13 +9,14 @@ import { ListeArama, useListe, type AramaAlani } from "@/components/liste";
 import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
-import { YayinKarti } from "@/components/yayin/YayinKarti";
 import { useBmOneriSecimi } from "@/components/yayin/BmOneriSecimi";
 import { UttYayinKartIskeletleri, UttYayinListeAkisi, UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
+import { YayinKarti } from "@/components/yayin/YayinKarti";
+import { talepIdGoster } from "@/lib/utils/talepId";
 import type { UttVideoKategorisi } from "@/lib/video/uttVideoKategorileri";
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 import { trGunEkle, trGunu } from "@/lib/zaman/kontrol";
-import { talepIdGoster } from "@/lib/utils/talepId";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface Alici {
   kullanici_id: string;
@@ -169,9 +171,9 @@ export default function BmEgitimYayinlari({ kategoriBilgisi }: { kategoriBilgisi
         <YenileButonu yenileniyor={yenileniyor} onYenile={() => setYenileTetik((deger) => deger + 1)} />
       </header>
 
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-5 flex min-w-0 flex-wrap items-center justify-between gap-3">
         <UttYayinTuruToggle yayinlar={kategoriYayinlari} deger={aktifTur} onDegistir={setAktifTur} className="min-w-0" />
-        <div className="flex shrink-0 items-center justify-end">
+        <div className="ml-auto flex min-w-0 max-w-full items-center justify-end">
           <ListeArama arama={liste.arama} ipucu="Bu kategoride ara..." genislik="w-48 sm:w-60" />
         </div>
       </div>
@@ -180,10 +182,10 @@ export default function BmEgitimYayinlari({ kategoriBilgisi }: { kategoriBilgisi
         <div className="mb-5 flex flex-wrap items-end justify-end gap-2" aria-label="Yayın önerisi gönderimi">
           <label className="flex min-w-36 flex-col">
             <span className="sr-only">UTT</span>
-            <select value={aliciId} onChange={(event) => setAliciId(event.target.value)} className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-[11px] font-bold text-[#718198]">
+            <SadeListeSecimi value={aliciId} onChange={(event) => setAliciId(event.target.value)} aria-label="Öneri gönderilecek UTT" className="w-full">
               <option value="">UTT seçin</option>
               {alicilar.map((alici) => <option key={alici.kullanici_id} value={alici.kullanici_id}>{alici.ad} {alici.soyad} · {alici.haftalik_kalan} kalan</option>)}
-            </select>
+            </SadeListeSecimi>
           </label>
           <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#718198]">
             Başlangıç

@@ -1,8 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
 import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
 import { ECLUB_ORTAK_YAYIN_GRUBU, type YayinHedefGrubu } from "@/lib/utils/roller";
+import type { ReactNode } from "react";
 import type { AltSekme, BekleyenHedefSayilari } from "../_types";
 import { ANA_SEKMELER, ANA_SEKME_ETIKETLERI } from "../_types";
 
@@ -99,27 +101,13 @@ export function YayinKumandaPaneli({
             {ANA_SEKME_ETIKETLERI[aktifHedef]}
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+        <SadeKontrolGrubu tur="sekme">
           {ANA_SEKMELER.map((hedef) => {
-            const tasarim = hedef === ECLUB_ORTAK_YAYIN_GRUBU
-              ? { renk: "#5367c7", bg: "#f0f1ff" }
-              : HEDEF_ROL_TASARIM[hedef];
+            
             const aktif = hedef === aktifHedef;
             const bekleyenSayi = bekleyenHedefSayilari[hedef];
             return (
-              <button
-                type="button"
-                key={hedef}
-                aria-pressed={aktif}
-                onClick={() => onHedefDegistir(hedef)}
-                className="min-h-11 rounded-xl border px-3 py-2 text-left text-xs font-extrabold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] focus-visible:ring-offset-1"
-                style={{
-                  color: aktif ? tasarim.renk : "#566b87",
-                  backgroundColor: aktif ? tasarim.bg : "#ffffff",
-                  borderColor: aktif ? tasarim.renk : "#dfe7f1",
-                  boxShadow: aktif ? `inset 0 0 0 1px ${tasarim.renk}20` : undefined,
-                }}
-              >
+              <SadeKontrolButonu type="button" key={hedef} aria-pressed={aktif} onClick={() => onHedefDegistir(hedef)}>
                 <span className="flex items-center justify-between gap-2">
                   <span>{ANA_SEKME_ETIKETLERI[hedef]}</span>
                   {bekleyenSayi > 0 && (
@@ -131,10 +119,10 @@ export function YayinKumandaPaneli({
                     </span>
                   )}
                 </span>
-              </button>
+              </SadeKontrolButonu>
             );
           })}
-        </div>
+        </SadeKontrolGrubu>
       </div>
 
       <div aria-label="Yayın durumu" className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">

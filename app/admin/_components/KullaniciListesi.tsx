@@ -6,11 +6,13 @@
 
 "use client";
 
-import { ROLLER, filterSelectStyle, RENK_BORDO, RENK_BORDO_ZEMIN } from "../_constants";
-import { ROL_ADLARI } from "@/lib/utils/roller";
-import type { Kullanici, Takim } from "../_types";
+import { SadeFormSecimi, SadeListeSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { kullaniciEksikMi } from "@/lib/admin/kullaniciDogrulama";
 import { telefonBicimle } from "@/lib/admin/telefonBicim";
+import { ROL_ADLARI } from "@/lib/utils/roller";
+import { filterSelectStyle, RENK_BORDO, RENK_BORDO_ZEMIN, ROLLER } from "../_constants";
+import type { Kullanici, Takim } from "../_types";
 import KullaniciDuzenleModal from "./KullaniciDuzenleModal";
 
 interface KullaniciListesiProps {
@@ -110,9 +112,7 @@ const headerSelectStyle: React.CSSProperties = {
   cursor: "pointer", outline: "none", padding: "0",
 };
 
-const headerSelectAktifStyle: React.CSSProperties = {
-  ...headerSelectStyle, color: RENK_BORDO,
-};
+
 
 export default function KullaniciListesi(p: KullaniciListesiProps) {
   return (
@@ -188,36 +188,32 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                 <th style={thStyle}>Ad</th>
                 <th style={thStyle}>Soyad</th>
                 <th style={thStyle}>
-                  <select value={p.filtrRol} onChange={(e) => p.setFiltrRol(e.target.value)}
-                    style={p.filtrRol ? headerSelectAktifStyle : headerSelectStyle}>
+                  <SadeListeSecimi value={p.filtrRol} onChange={(e) => p.setFiltrRol(e.target.value)} aria-label="Rol" varyant="tablo" className="w-full">
                     <option value="">Rol ▾</option>
                     {p.benzersizRoller.map(r => <option key={r} value={r}>{ROL_ADLARI[r] ?? r}</option>)}
-                  </select>
+                  </SadeListeSecimi>
                 </th>
                 <th style={thStyle}>E-posta</th>
                 <th style={thStyle}>Telefon</th>
                 <th style={thStyle}>
-                  <select value={p.filtrTakim} onChange={(e) => p.setFiltrTakim(e.target.value)}
-                    style={p.filtrTakim ? headerSelectAktifStyle : headerSelectStyle}>
+                  <SadeListeSecimi value={p.filtrTakim} onChange={(e) => p.setFiltrTakim(e.target.value)} aria-label="Takım" varyant="tablo" className="w-full">
                     <option value="">Takım ▾</option>
                     {p.benzersizTakimlar.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                  </SadeListeSecimi>
                 </th>
                 <th style={thStyle}>
-                  <select value={p.filtrBolge} onChange={(e) => p.setFiltrBolge(e.target.value)}
-                    style={p.filtrBolge ? headerSelectAktifStyle : headerSelectStyle}>
+                  <SadeListeSecimi value={p.filtrBolge} onChange={(e) => p.setFiltrBolge(e.target.value)} aria-label="Bölge" varyant="tablo" className="w-full">
                     <option value="">Bölge ▾</option>
                     {p.benzersizBolgeler.map(b => <option key={b} value={b}>{b}</option>)}
-                  </select>
+                  </SadeListeSecimi>
                 </th>
                 <th style={thStyle}>
-                  <select value={p.filtrDurum} onChange={(e) => p.setFiltrDurum(e.target.value)}
-                    style={p.filtrDurum ? headerSelectAktifStyle : headerSelectStyle}>
+                  <SadeListeSecimi value={p.filtrDurum} onChange={(e) => p.setFiltrDurum(e.target.value)} aria-label="Durum" varyant="tablo" className="w-full">
                     <option value="">Durum ▾</option>
                     <option value="aktif">Aktif</option>
                     <option value="pasif">Pasif</option>
                     <option value="eksik">Eksik bilgili</option>
-                  </select>
+                  </SadeListeSecimi>
                 </th>
                 <th style={thStyle}>Yetkiler</th>
                 <th style={thStyle}></th>
@@ -238,13 +234,10 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                   <td style={tdStyle}>{k.soyad}</td>
                   <td style={tdStyle}>
                     {p.acikRolId === k.kullanici_id ? (
-                      <select autoFocus value={k.rol}
-                        onChange={(e) => p.handleRolDegistir(k.kullanici_id, e.target.value)}
-                        onBlur={() => p.setAcikRolId(null)}
-                        style={{ ...filterSelectStyle, padding: "2px 6px" }}>
+                      <SadeFormSecimi autoFocus value={k.rol} onChange={(e) => p.handleRolDegistir(k.kullanici_id, e.target.value)} onBlur={() => p.setAcikRolId(null)} aria-label="Rol" className="w-full">
                         {/* B-31: insan adı gösterilir, değer kod kalır */}
                         {ROLLER.map(r => <option key={r} value={r}>{ROL_ADLARI[r] ?? r}</option>)}
-                      </select>
+                      </SadeFormSecimi>
                     ) : (
                       <span onClick={() => p.setAcikRolId(k.kullanici_id)}
                         style={{ cursor: "pointer", color: RENK_BORDO, fontWeight: 600 }}>
@@ -286,33 +279,28 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                   {/* K-A6: takım/bölge eksikse rozet + hücre içi atama seçicisi. */}
                   {(() => {
                     const yukleniyor = p.eksikTamamlaLoading === k.kullanici_id;
-                    const eksikSelectStyle: React.CSSProperties = {
-                      ...filterSelectStyle, padding: "2px 6px",
-                      background: "#fffbeb", border: "0.5px solid #fcd34d", color: "#92400e",
-                    };
+                    
                     return (
                       <>
                         <td style={tdStyle}>
                           {eksik.eksikAlanlar.includes("takim") ? (
                             yukleniyor ? "..." : (
-                              <select value="" style={eksikSelectStyle}
-                                onChange={(e) => e.target.value && p.handleEksikTamamla(k.kullanici_id, { takim_id: e.target.value })}>
+                              <SadeListeSecimi value="" onChange={(e) => e.target.value && p.handleEksikTamamla(k.kullanici_id, { takim_id: e.target.value })} aria-label="Takım" varyant="tablo" className="w-full">
                                 <option value="">⚠ Takım ata ▾</option>
                                 {p.takimlar.map(t => <option key={t.takim_id} value={t.takim_id}>{t.takim_adi}</option>)}
-                              </select>
+                              </SadeListeSecimi>
                             )
                           ) : (k.takim_adi ?? "-")}
                         </td>
                         <td style={tdStyle}>
                           {eksik.eksikAlanlar.includes("bolge") ? (
                             yukleniyor ? "..." : (
-                              <select value="" style={eksikSelectStyle}
-                                onChange={(e) => e.target.value && p.handleEksikTamamla(k.kullanici_id, { bolge_id: e.target.value })}>
+                              <SadeListeSecimi value="" onChange={(e) => e.target.value && p.handleEksikTamamla(k.kullanici_id, { bolge_id: e.target.value })} aria-label="Bölge" varyant="tablo" className="w-full">
                                 <option value="">⚠ Bölge ata ▾</option>
                                 {p.takimlar.flatMap(t => t.bolgeler.map(b => (
                                   <option key={b.bolge_id} value={b.bolge_id}>{t.takim_adi} — {b.bolge_adi}</option>
                                 )))}
-                              </select>
+                              </SadeListeSecimi>
                             )
                           ) : (k.bolge_adi ?? "-")}
                         </td>

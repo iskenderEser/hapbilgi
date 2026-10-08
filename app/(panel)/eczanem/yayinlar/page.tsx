@@ -1,20 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Building2, ChevronDown, ChevronLeft, CircleAlert, Send, UsersRound } from "lucide-react";
+import { SadeCokluAliciSecimi } from "@/components/kontrol/SadeKontroller";
+
+import UttGonderimIncelemesi from "@/components/eclub/UttGonderimIncelemesi";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import OgrenmeAraciOnizleme from "@/components/ogrenme-araci/OgrenmeAraciOnizleme";
+import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
-import OgrenmeAraciOnizleme from "@/components/ogrenme-araci/OgrenmeAraciOnizleme";
-import UttGonderimIncelemesi from "@/components/eclub/UttGonderimIncelemesi";
-import type { YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
+import { Building2, ChevronLeft, CircleAlert, Send, UsersRound } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { EczanemYayinGonderimKarti } from "./_components/EczanemYayinGonderimKarti";
-import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type { UttEczanemGonderim, UttEczanemVeri, UttEczanemYayin } from "./_types";
 
 type GonderimFiltresi = "tumu" | "gonderilebilir" | "gonderilen";
@@ -52,7 +53,7 @@ export default function EczanemYayinlariPage() {
   const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
   const [seciliYayinIdleri, setSeciliYayinIdleri] = useState<string[]>([]);
   const [seciliEczaneIdleri, setSeciliEczaneIdleri] = useState<string[]>([]);
-  const [aliciListesiAcik, setAliciListesiAcik] = useState(false);
+
   const [topluGonderiliyor, setTopluGonderiliyor] = useState(false);
   const [gonderimOzeti, setGonderimOzeti] = useState<string | null>(null);
   const [acikDetayYayinId, setAcikDetayYayinId] = useState<string | null>(null);
@@ -145,12 +146,10 @@ export default function EczanemYayinlariPage() {
   const ortakSecilebilirEczaneler = ortakUygunEczaneler.filter((eczane) => eczane.esik_uygun);
   const ortakSecilebilirIdler = new Set(ortakSecilebilirEczaneler.map((eczane) => eczane.eczane_id));
   const gecerliSeciliEczaneIdleri = seciliEczaneIdleri.filter((id) => ortakSecilebilirIdler.has(id));
-  const enUzunEczaneAdi = Math.max(14, ...ortakUygunEczaneler.map((eczane) => eczane.eczane_adi.length));
 
   const secimSifirla = () => {
     setSeciliYayinIdleri([]);
     setSeciliEczaneIdleri([]);
-    setAliciListesiAcik(false);
     setAcikDetayYayinId(null);
   };
 
@@ -305,40 +304,18 @@ export default function EczanemYayinlariPage() {
                 deger={gonderimFiltresi}
                 onDegistir={(filtre) => { setGonderimFiltresi(filtre); secimSifirla(); setGonderimOzeti(null); }}
                 ariaLabel="Gönderim durumu"
-                className="h-10 w-fit flex-none [&>button]:h-[30px] [&>button]:py-0 md:[&>button]:px-2 md:[&>button]:text-[10px] lg:[&>button]:px-3 lg:[&>button]:text-[11px]"
+                className="w-fit flex-none"
               />
-              <div className="ml-auto flex min-h-10 w-fit max-w-full flex-none flex-wrap items-center gap-1 rounded-[14px] border border-[rgba(148,163,184,.18)] bg-white/85 p-1 shadow-[0_6px_22px_rgba(36,64,98,.05)] sm:h-10 sm:flex-nowrap">
+              <div className="ml-auto flex w-fit max-w-full flex-none flex-wrap items-center gap-2 sm:flex-nowrap">
                 <span className="px-2 text-[11px] font-bold text-[#405976]">
                   <span className="lg:hidden">{seciliYayinlar.length} yayın</span>
                   <span className="hidden lg:inline">Gönderilecek: {seciliYayinlar.length} yayın</span>
                 </span>
-                <Collapsible open={aliciListesiAcik} onOpenChange={setAliciListesiAcik} className="relative z-20 w-[120px] flex-none lg:w-[150px]">
-                  <CollapsibleTrigger asChild>
-                    <button type="button" disabled={seciliYayinlar.length === 0 || topluGonderiliyor} className="flex h-[30px] w-full items-center justify-between gap-2 rounded-[10px] border border-[#d5e0eb] px-3 text-left text-[11px] font-bold text-[#405976] disabled:cursor-not-allowed disabled:opacity-50">
-                      <span className="min-w-0 truncate">{gecerliSeciliEczaneIdleri.length ? `${gecerliSeciliEczaneIdleri.length} eczane seçildi` : "Eczaneleri seçin"}</span>
-                      <ChevronDown className={`size-4 shrink-0 ${aliciListesiAcik ? "rotate-180" : ""}`} />
-                    </button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="absolute right-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-[#dbe5ef] bg-white shadow-xl" style={{ width: `min(max(150px, calc(${enUzunEczaneAdi}ch + 40px)), calc(100vw - 32px))` }}>
-                    {ortakUygunEczaneler.length === 0 ? <p className="p-3 text-xs text-[#71859d]">Seçilen yayınların hepsine uygun eczane bulunmuyor.</p> : <>
-                      <button type="button" disabled={ortakSecilebilirEczaneler.length === 0} onClick={() => setSeciliEczaneIdleri(gecerliSeciliEczaneIdleri.length === ortakSecilebilirEczaneler.length ? [] : [...ortakSecilebilirIdler])} className="w-full border-b border-[#e5ecf4] px-3 py-2 text-left text-xs font-bold text-[#237ac8] disabled:opacity-50">
-                        {gecerliSeciliEczaneIdleri.length === ortakSecilebilirEczaneler.length ? "Seçimleri Kaldır" : `Tümünü Seç (${ortakSecilebilirEczaneler.length})`}
-                      </button>
-                      <div className="max-h-64 overflow-y-auto p-1.5">
-                        {ortakUygunEczaneler.map((eczane) => {
-                          const secilebilir = ortakSecilebilirIdler.has(eczane.eczane_id);
-                          const secili = secilebilir && gecerliSeciliEczaneIdleri.includes(eczane.eczane_id);
-                          return <button key={eczane.eczane_id} type="button" aria-pressed={secili} disabled={!secilebilir}
-                            onClick={() => setSeciliEczaneIdleri((onceki) => onceki.includes(eczane.eczane_id) ? onceki.filter((id) => id !== eczane.eczane_id) : [...onceki, eczane.eczane_id])}
-                            className={`block w-full rounded-lg px-2 py-2 text-left text-xs ${!secilebilir ? "cursor-not-allowed bg-[#f5f7fa] opacity-55" : secili ? "bg-[#e7f2fc] text-[#1d65aa] hover:bg-[#dcecfb]" : "hover:bg-[#f5f8fc]"}`}>
-                            <strong className={`block truncate ${secili ? "text-[#1d65aa]" : "text-[#304963]"}`}>{eczane.eczane_adi}</strong>
-                            <small className="block truncate text-[#8090a3]">{eczane.aktif_uye_sayisi} aktif üye{!secilebilir ? ` · En az ${esik} gerekli` : ""}</small>
-                          </button>;
-                        })}
-                      </div>
-                    </>}
-                  </CollapsibleContent>
-                </Collapsible>
+                <SadeCokluAliciSecimi key={seciliYayinIdleri.join(",")}
+ etiket="Eczane" aliciAdi="eczane" placeholder="Eczaneleri seçin"
+ secenekler={ortakUygunEczaneler.map((eczane) => ({ deger: eczane.eczane_id, etiket: eczane.eczane_adi, altBilgi: String(eczane.aktif_uye_sayisi) + " aktif üye" + (ortakSecilebilirIdler.has(eczane.eczane_id) ? "" : " · Tekrar gönderim süresi dolmadı"), disabled: !ortakSecilebilirIdler.has(eczane.eczane_id) }))}
+ degerler={gecerliSeciliEczaneIdleri} onDegistir={setSeciliEczaneIdleri} disabled={seciliYayinlar.length === 0 || topluGonderiliyor}
+/>
                 <button type="button" onClick={() => void gonder()} disabled={seciliYayinlar.length === 0 || gecerliSeciliEczaneIdleri.length === 0 || topluGonderiliyor} className="h-[30px] rounded-[10px] bg-[#237ac8] px-3 text-[11px] font-bold text-white hover:bg-[#1d68ad] disabled:cursor-not-allowed disabled:bg-[#9fc4e5]">
                   {topluGonderiliyor ? "Gönderiliyor…" : "Gönder"}
                 </button>

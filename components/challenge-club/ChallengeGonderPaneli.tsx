@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { BookOpen, ChevronDown } from "lucide-react";
+import { SadeCokluAliciSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { DagitimIcerikOzeti } from "@/components/ogrenme-araci/DagitimIcerikOzeti";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { BookOpen } from "lucide-react";
+import { useState } from "react";
 
 export interface GonderVideo {
   yayin_id: string;
@@ -64,7 +65,7 @@ export default function ChallengeGonderPaneli({ videolar, kalanKota, hata, onGon
 }
 
 function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; hata: HataFn; onGonder: GonderFn }) {
-  const [listeAcik, setListeAcik] = useState(false);
+
   const [aliciler, setAliciler] = useState<UygunAlici[] | null>(null);
   const [aliciLoading, setAliciLoading] = useState(false);
   const [secililer, setSecililer] = useState<string[]>([]);
@@ -83,13 +84,7 @@ function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; 
     setAliciLoading(false);
   };
 
-  const acKapat = (acik: boolean) => { setListeAcik(acik); if (acik) void alicilariYukle(); };
-
-  const gonderilebilirler = useMemo(() => (aliciler ?? []).filter((a) => a.gonderilebilir), [aliciler]);
-  const tumuSecili = gonderilebilirler.length > 0 && gonderilebilirler.every((a) => secililer.includes(a.kullanici_id));
-
-  const secimDegistir = (id: string) => { setSecililer((m) => m.includes(id) ? m.filter((x) => x !== id) : [...m, id]); setSonuc(null); };
-  const tumSecim = () => { setSecililer(tumuSecili ? [] : gonderilebilirler.map((a) => a.kullanici_id)); setSonuc(null); };
+  const acKapat = (acik: boolean) => { if (acik) void alicilariYukle(); };
 
   const gonder = async () => {
     if (secililer.length === 0) return;
@@ -114,49 +109,20 @@ function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; 
         </div>
 
         {/* Alıcı seçimi + Gönder */}
-        <Collapsible open={listeAcik} onOpenChange={acKapat} className="relative">
+        <div className="relative">
           <div className="flex flex-col gap-2 sm:flex-row">
-            <div className="relative min-w-0 flex-1">
-              <CollapsibleTrigger asChild>
-                <button type="button" className="flex w-full items-center justify-between gap-2 rounded-lg border border-[#d5e0eb] bg-white px-3 py-2 text-left text-xs font-bold text-[#405976]">
-                  <span>{secililer.length > 0 ? `${secililer.length} BM seçildi` : "Alıcı BM seçin"}</span>
-                  <ChevronDown className={`size-4 shrink-0 transition-transform ${listeAcik ? "rotate-180" : ""}`} />
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="relative z-20 mt-1 w-full overflow-hidden rounded-xl border border-[#dbe5ef] bg-white shadow-lg lg:absolute lg:right-0 lg:w-80">
-                {aliciLoading ? (
-                  <p className="p-4 text-center text-xs font-semibold text-[#8393a6]">Yükleniyor…</p>
-                ) : (aliciler ?? []).length === 0 ? (
-                  <p className="p-4 text-center text-xs font-semibold text-[#8393a6]">Gönderilebilecek başka BM yok.</p>
-                ) : (
-                  <>
-                    <div className="border-b border-[#e5ecf4] p-1.5">
-                      <button type="button" onClick={tumSecim} disabled={gonderilebilirler.length === 0} className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-extrabold text-[#237ac8] hover:bg-[#edf6fd] disabled:cursor-not-allowed disabled:opacity-50">
-                        <span>{tumuSecili ? "Seçimleri Kaldır" : "Tümünü Seç"}</span>
-                        <span className="text-[10px] text-[#71859d]">{gonderilebilirler.length} BM</span>
-                      </button>
-                    </div>
-                    <div className="max-h-64 overflow-y-auto p-1.5">
-                      {(aliciler ?? []).map((a) => {
-                        const secili = secililer.includes(a.kullanici_id);
-                        return (
-                          <button key={a.kullanici_id} type="button" onClick={() => { if (a.gonderilebilir) secimDegistir(a.kullanici_id); }} disabled={!a.gonderilebilir} title={a.sebep} className={`flex w-full items-center justify-between gap-3 rounded-lg border px-2.5 py-2 text-left transition-colors ${!a.gonderilebilir ? "cursor-not-allowed border-transparent bg-[#f5f7fa] opacity-60" : secili ? "cursor-pointer border-[#bfdbfe] bg-[#edf6fd]" : "cursor-pointer border-transparent hover:bg-[#f5f8fc]"}`}>
-                            <span className="min-w-0"><strong className="block truncate text-xs text-[#304963]">{a.ad} {a.soyad}</strong>{!a.gonderilebilir && a.sebep && <small className="mt-0.5 block truncate text-[10px] font-semibold text-[#8090a3]">{a.sebep}</small>}</span>
-                            {secili && a.gonderilebilir && <span className="shrink-0 rounded-full bg-[#237ac8] px-2 py-0.5 text-[9px] font-extrabold text-white">Seçildi</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </CollapsibleContent>
-            </div>
+            <SadeCokluAliciSecimi
+ etiket="BM" aliciAdi="BM" placeholder="Alıcı BM seçin"
+ secenekler={(aliciler ?? []).map((a) => ({ deger: a.kullanici_id, etiket: "BM " + a.ad + " " + a.soyad, altBilgi: !a.gonderilebilir ? a.sebep : undefined, disabled: !a.gonderilebilir }))}
+ degerler={secililer} onDegistir={(ids) => { setSecililer(ids); setSonuc(null); }}
+ onAcikDegistir={acKapat} yukleniyor={aliciLoading} disabled={gonderiliyor}
+/>
             <Button type="button" onClick={() => void gonder()} disabled={secililer.length === 0 || gonderiliyor} className="w-full shrink-0 bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69aa] sm:w-auto">
               {gonderiliyor ? "Gönderiliyor…" : `${secililer.length || ""} ${secililer.length ? "BM'ye Gönder" : "Gönder"}`}
             </Button>
           </div>
           {sonuc && <p className="mt-1.5 text-[10px] font-semibold text-[#617894]">{sonuc.gonderilen_sayisi} gönderildi{sonuc.atlanan.length > 0 ? ` · ${sonuc.atlanan.length} atlandı` : ""}.</p>}
-        </Collapsible>
+        </div>
       </div>
     </article>
   );

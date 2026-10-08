@@ -11,15 +11,17 @@
 
 "use client";
 
-import type {
-  Filtreler,
-  Hiyerarsi,
-  HiyerarsiTakim,
-  HiyerarsiBolge,
-  HiyerarsiKullanici,
-} from "../_types";
+import { SadeListeSecimi, SadeTarihAlani } from "@/components/kontrol/SadeKontroller";
+
 import { DURUM_ETIKETLERI } from "@/lib/tclub/store/sabitler";
 import { STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
+import type {
+    Filtreler,
+    Hiyerarsi,
+    HiyerarsiBolge,
+    HiyerarsiKullanici,
+    HiyerarsiTakim,
+} from "../_types";
 
 interface SiparisFiltreleriProps {
   hiyerarsi: Hiyerarsi | null;
@@ -27,31 +29,6 @@ interface SiparisFiltreleriProps {
   filtreDegistir: (alan: keyof Filtreler, deger: string) => void;
   filtreleriSifirla: () => void;
 }
-
-const selectStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 10px",
-  border: "1px solid #dfe7f1",
-  borderRadius: "10px",
-  fontSize: "12px",
-  background: "white",
-  color: "#374151",
-  fontFamily: "'Nunito', sans-serif",
-  cursor: "pointer",
-  minWidth: 0,
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 10px",
-  border: "1px solid #dfe7f1",
-  borderRadius: "10px",
-  fontSize: "12px",
-  background: "white",
-  color: "#374151",
-  fontFamily: "'Nunito', sans-serif",
-  minWidth: 0,
-};
 
 const labelStyle: React.CSSProperties = {
   fontSize: "10px",
@@ -142,18 +119,14 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
       {rol === "admin" && (
         <div className="min-w-0">
           <label style={labelStyle}>Firma</label>
-          <select
-            value={p.filtreler.firma_id}
-            onChange={(e) => p.filtreDegistir("firma_id", e.target.value)}
-            style={selectStyle}
-          >
+          <SadeListeSecimi value={p.filtreler.firma_id} onChange={(e) => p.filtreDegistir("firma_id", e.target.value)} aria-label="Firma" className="w-full">
             <option value="">Tümü</option>
             {firmalar.map((f) => (
               <option key={f.firma_id} value={f.firma_id}>
                 {f.firma_adi}
               </option>
             ))}
-          </select>
+          </SadeListeSecimi>
         </div>
       )}
 
@@ -161,19 +134,14 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
       {takimFiltresiGoren && (
         <div className="min-w-0">
           <label style={labelStyle}>Takım</label>
-          <select
-            value={p.filtreler.takim_id}
-            onChange={(e) => p.filtreDegistir("takim_id", e.target.value)}
-            style={selectStyle}
-            disabled={rol === "admin" && !p.filtreler.firma_id}
-          >
+          <SadeListeSecimi value={p.filtreler.takim_id} onChange={(e) => p.filtreDegistir("takim_id", e.target.value)} disabled={rol === "admin" && !p.filtreler.firma_id} aria-label="Takım" className="w-full">
             <option value="">Tümü</option>
             {takimlar.map((t) => (
               <option key={t.takim_id} value={t.takim_id}>
                 {t.takim_adi}
               </option>
             ))}
-          </select>
+          </SadeListeSecimi>
         </div>
       )}
 
@@ -181,74 +149,56 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
       {rol !== "bm" && (
         <div className="min-w-0">
           <label style={labelStyle}>Bölge</label>
-          <select
-            value={p.filtreler.bolge_id}
-            onChange={(e) => p.filtreDegistir("bolge_id", e.target.value)}
-            style={selectStyle}
-            disabled={rol !== "tm" && !p.filtreler.takim_id}
-          >
+          <SadeListeSecimi value={p.filtreler.bolge_id} onChange={(e) => p.filtreDegistir("bolge_id", e.target.value)} disabled={rol !== "tm" && !p.filtreler.takim_id} aria-label="Bölge" className="w-full">
             <option value="">Tümü</option>
             {bolgeler.map((b) => (
               <option key={b.bolge_id} value={b.bolge_id}>
                 {b.bolge_adi}
               </option>
             ))}
-          </select>
+          </SadeListeSecimi>
         </div>
       )}
 
       {/* KULLANICI */}
       <div className="min-w-0">
         <label style={labelStyle}>{rol === "bm" ? "UTT / KD_UTT" : "Kullanıcı"}</label>
-        <select
-          value={p.filtreler.kullanici_id}
-          onChange={(e) => p.filtreDegistir("kullanici_id", e.target.value)}
-          style={selectStyle}
-          disabled={rol !== "bm" && !p.filtreler.bolge_id}
-        >
+        <SadeListeSecimi value={p.filtreler.kullanici_id} onChange={(e) => p.filtreDegistir("kullanici_id", e.target.value)} disabled={rol !== "bm" && !p.filtreler.bolge_id} aria-label="Rol" className="w-full">
           <option value="">Tümü</option>
           {kullanicilar.map((k) => (
             <option key={k.kullanici_id} value={k.kullanici_id}>
               {k.ad} {k.soyad} ({k.rol})
             </option>
           ))}
-        </select>
+        </SadeListeSecimi>
       </div>
 
       {/* DURUM */}
       <div className="min-w-0">
         <label style={labelStyle}>Durum</label>
-        <select
-          value={p.filtreler.durum}
-          onChange={(e) => p.filtreDegistir("durum", e.target.value)}
-          style={selectStyle}
-        >
+        <SadeListeSecimi value={p.filtreler.durum} onChange={(e) => p.filtreDegistir("durum", e.target.value)} aria-label="Durum" className="w-full">
           <option value="">Tümü</option>
           {Object.entries(DURUM_ETIKETLERI).map(([deger, etiket]) => (
             <option key={deger} value={deger}>
               {etiket}
             </option>
           ))}
-        </select>
+        </SadeListeSecimi>
       </div>
 
       {/* TARİH ARALIĞI */}
       <div className="min-w-0">
         <label style={labelStyle}>Tarih başlangıç</label>
-        <input
-          type="date"
+        <SadeTarihAlani
           value={p.filtreler.tarih_baslangic}
           onChange={(e) => p.filtreDegistir("tarih_baslangic", e.target.value)}
-          style={inputStyle}
         />
       </div>
       <div className="min-w-0">
         <label style={labelStyle}>Tarih bitiş</label>
-        <input
-          type="date"
+        <SadeTarihAlani
           value={p.filtreler.tarih_bitis}
           onChange={(e) => p.filtreDegistir("tarih_bitis", e.target.value)}
-          style={inputStyle}
         />
       </div>
 

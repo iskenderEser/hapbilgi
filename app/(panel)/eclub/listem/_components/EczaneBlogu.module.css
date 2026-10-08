@@ -69,11 +69,7 @@
   height: 12px;
 }
 
-.eklemeButonlari .depoSecimListesi {
-  justify-content: space-between;
-  color: #7c8fa4;
-  font-weight: 500;
-}
+
 
 .depoKarti {
   min-width: 0;

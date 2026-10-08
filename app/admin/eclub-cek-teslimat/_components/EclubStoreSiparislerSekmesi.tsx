@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
 import {
-  CEK_KODU_GORUNUR_DURUMLARI,
-  CEK_TALEP_ADMIN_DURUMLARI,
-  CEK_TALEP_DURUM_META,
-  type EclubStoreCekTalebiSatiri,
+    CEK_KODU_GORUNUR_DURUMLARI,
+    CEK_TALEP_ADMIN_DURUMLARI,
+    CEK_TALEP_DURUM_META,
+    type EclubStoreCekTalebiSatiri,
 } from "@/lib/eclub/store/eclubStoreTipler";
 import { Check, Copy, FileSpreadsheet } from "lucide-react";
+import { useState } from "react";
 
 interface Props {
   cekTalepleri: EclubStoreCekTalebiSatiri[];
@@ -57,16 +59,16 @@ export default function EclubStoreSiparislerSekmesi({
   return (
     <div style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "14px" }}>
-        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+        <SadeKontrolGrubu tur="kapsul">
           {CEK_FILTRELER.map((filtre) => {
             const aktif = cekDurumFiltre === filtre.id;
             return (
-              <button key={filtre.id} onClick={() => setCekDurumFiltre(filtre.id)} style={{ padding: "5px 12px", background: aktif ? "#ecfdf5" : "transparent", border: aktif ? "1px solid #10b981" : "0.5px solid #e5e7eb", borderRadius: "6px", fontSize: "12px", color: aktif ? "#065f46" : "#6b7280", fontWeight: aktif ? 600 : 400, cursor: "pointer" }}>
+              <SadeKontrolButonu key={filtre.id} onClick={() => setCekDurumFiltre(filtre.id)} aria-pressed={aktif}>
                 {filtre.ad}
-              </button>
+              </SadeKontrolButonu>
             );
           })}
-        </div>
+        </SadeKontrolGrubu>
         <button type="button" onClick={() => excelExport(cekTalepleri)} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 14px", background: "#15803d", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: 700, color: "#fff", cursor: "pointer" }}>
           <FileSpreadsheet size={15} /> Excel&apos;e Aktar
         </button>

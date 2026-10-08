@@ -5,6 +5,8 @@
 
 "use client";
 
+import { SadeFormSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { SORU_SETI_BUYUKLUGU_SECENEKLERI } from "../_types";
 
 interface SoruSetiAyarlariProps {
@@ -34,45 +36,30 @@ export function SoruSetiAyarlari({
     <div className="flex flex-col md:flex-row gap-3">
       <div className="flex-1">
         <label className="text-xs text-gray-500 block mb-1">{buyuklukEtiketi}</label>
-        <select
-          value={buyukluk}
-          onChange={(e) => onBuyuklukChange(Number(e.target.value))}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer box-border"
-          style={{ fontFamily: "'Nunito', sans-serif", color: "#111" }}
-        >
+        <SadeFormSecimi value={buyukluk} onChange={(e) => onBuyuklukChange(Number(e.target.value))} aria-label={buyuklukEtiketi} className="w-full">
           {SORU_SETI_BUYUKLUGU_SECENEKLERI.map((s) => (
             <option key={s} value={s}>{s} soru</option>
           ))}
-        </select>
+        </SadeFormSecimi>
       </div>
       <div className="flex-1">
         <label className="text-xs text-gray-500 block mb-1">Soru başına seçenek sayısı</label>
-        <select
-          value={secenek}
-          onChange={(e) => onSecenekChange(Number(e.target.value))}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer box-border"
-          style={{ fontFamily: "'Nunito', sans-serif", color: "#111" }}
-        >
+        <SadeFormSecimi value={secenek} onChange={(e) => onSecenekChange(Number(e.target.value))} aria-label="Soru başına seçenek sayısı" className="w-full">
           {[2, 3, 4].map((s) => (
             <option key={s} value={s}>{s} seçenek</option>
           ))}
-        </select>
+        </SadeFormSecimi>
       </div>
       <div className="flex-1">
         <label className="text-xs text-gray-500 block mb-1">
           {videoBasiEtiketi}
           <span className="text-gray-400 font-normal ml-1">(max {buyukluk})</span>
         </label>
-        <select
-          value={videoBasi}
-          onChange={(e) => onVideoBasiChange(Number(e.target.value))}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer box-border"
-          style={{ fontFamily: "'Nunito', sans-serif", color: "#111" }}
-        >
+        <SadeFormSecimi value={videoBasi} onChange={(e) => onVideoBasiChange(Number(e.target.value))} aria-label={videoBasiEtiketi} className="w-full">
           {Array.from({ length: buyukluk }, (_, i) => i + 1).map((n) => (
             <option key={n} value={n}>{n} soru</option>
           ))}
-        </select>
+        </SadeFormSecimi>
       </div>
     </div>
   );

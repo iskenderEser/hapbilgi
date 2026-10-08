@@ -105,7 +105,7 @@ export default function SiparisTakipIstemcisi({ onStatlar }: { onStatlar: (statl
     }
   };
 
-  return <div className="grid gap-4">
+  return <div className="grid min-w-0 grid-cols-1 gap-4">
     <SiparisTakipFiltreleri deger={filtreler} secenekler={secenekler} onDegistir={setFiltreler} />
     <SiparisTakipListesi
       talepler={veri?.talepler ?? []} yukleniyor={yukleniyor} hata={hata}

@@ -1,24 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Popover } from "radix-ui";
-import { Banknote, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Coins, FileText, type LucideIcon } from "lucide-react";
+import { SadeAySecimi } from "@/components/kontrol/SadeKontroller";
+
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
-import MutabakatIslemTablosu, { type MutabakatDuzKaydi } from "../../../_components/MutabakatIslemTablosu";
-import MutabakatExcelButonu from "../../../_components/MutabakatExcelButonu";
 import {
-  UTT_MUTABAKAT_SAYFA_BOYUTU,
-  varsayilanUttMutabakatDonemi,
-  type UttMutabakatEczaneIslemleri,
-  type UttMutabakatEczaneListesi,
-  type UttMutabakatFiltresi,
-  type UttMutabakatKarari,
-  type UttMutabakatKaydi,
+    UTT_MUTABAKAT_SAYFA_BOYUTU,
+    varsayilanUttMutabakatDonemi,
+    type UttMutabakatEczaneIslemleri,
+    type UttMutabakatEczaneListesi,
+    type UttMutabakatFiltresi,
+    type UttMutabakatKarari,
+    type UttMutabakatKaydi,
 } from "@/lib/eczanem/uttMutabakat";
+import { Banknote, ChevronDown, CircleAlert, Coins, FileText, type LucideIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import MutabakatExcelButonu from "../../../_components/MutabakatExcelButonu";
+import MutabakatIslemTablosu, { type MutabakatDuzKaydi } from "../../../_components/MutabakatIslemTablosu";
 
 interface BmMutabakatUttOzeti {
   utt_id: string;
@@ -65,7 +66,6 @@ const DURUMLAR: { deger: UttMutabakatFiltresi; etiket: string }[] = [
   { deger: "beklet", etiket: "Beklet" },
   { deger: "ret", etiket: "Ret" },
 ];
-const AY_ADLARI = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"] as const;
 
 function sayi(deger: number): string { return deger.toLocaleString("tr-TR"); }
 function para(deger: number): string { return `${deger.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`; }
@@ -77,41 +77,7 @@ async function jsonGet<T>(endpoint: string, params: URLSearchParams, signal?: Ab
   return govde as T;
 }
 
-function MutabakatZamaniSecici({ deger, disabled, onDegistir }: { deger: string; disabled: boolean; onDegistir: (deger: string) => void }) {
-  const [acik, setAcik] = useState(false);
-  const [gorunenYil, setGorunenYil] = useState(Number(deger.slice(0, 4)));
-  const seciliAy = Number(deger.slice(5, 7));
-  const seciliYil = Number(deger.slice(0, 4));
-
-  return <Popover.Root open={acik} onOpenChange={(sonraki) => { setAcik(sonraki); if (sonraki) setGorunenYil(seciliYil); }}>
-    <div className="flex min-h-10 items-center gap-2 rounded-[14px] border border-[rgba(148,163,184,.18)] bg-white/85 px-3 text-[11px] font-bold text-[#405976] shadow-[0_6px_22px_rgba(36,64,98,.05)]">
-      <span>Mutabakat Zamanı</span>
-      <Popover.Trigger asChild>
-        <button type="button" disabled={disabled} aria-label={`Mutabakat Zamanı: ${AY_ADLARI[seciliAy - 1]} ${seciliYil}`}
-          className="inline-flex h-[30px] items-center gap-1.5 rounded-[10px] border border-[#d5e0eb] bg-white px-2.5 text-[11px] font-bold text-[#405976] hover:bg-[#f2f7fc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#237ac8] disabled:cursor-not-allowed disabled:opacity-50">
-          <CalendarDays className="size-3.5 text-[#237ac8]" aria-hidden="true" />
-          {AY_ADLARI[seciliAy - 1]} {seciliYil}<ChevronDown className="size-3.5 text-[#718198]" aria-hidden="true" />
-        </button>
-      </Popover.Trigger>
-    </div>
-    <Popover.Portal>
-      <Popover.Content align="end" sideOffset={6} className="z-50 w-[min(300px,calc(100vw-24px))] rounded-2xl border border-[#dbe5ef] bg-white p-3 shadow-[0_12px_28px_rgba(31,74,111,.18)]">
-        <div className="mb-3 flex items-center justify-between border-b border-[#e8eef5] pb-2">
-          <button type="button" aria-label="Önceki yıl" disabled={gorunenYil <= 2000} onClick={() => setGorunenYil((yil) => yil - 1)} className="rounded-lg p-1.5 text-[#526780] hover:bg-[#f2f7fc] disabled:opacity-40"><ChevronLeft className="size-4" /></button>
-          <span className="text-sm font-extrabold text-[#203653]">{gorunenYil}</span>
-          <button type="button" aria-label="Sonraki yıl" disabled={gorunenYil >= 2199} onClick={() => setGorunenYil((yil) => yil + 1)} className="rounded-lg p-1.5 text-[#526780] hover:bg-[#f2f7fc] disabled:opacity-40"><ChevronRight className="size-4" /></button>
-        </div>
-        <div className="grid grid-cols-3 gap-1.5" aria-label={`${gorunenYil} ayları`}>
-          {AY_ADLARI.map((ayAdi, indeks) => {
-            const secili = gorunenYil === seciliYil && indeks + 1 === seciliAy;
-            return <button key={ayAdi} type="button" aria-pressed={secili} onClick={() => { onDegistir(`${gorunenYil}-${String(indeks + 1).padStart(2, "0")}`); setAcik(false); }}
-              className={`rounded-[10px] px-2 py-2 text-xs font-bold ${secili ? "bg-[#237ac8] text-white" : "text-[#526780] hover:bg-[#f2f7fc] hover:text-[#237ac8]"}`}>{ayAdi}</button>;
-          })}
-        </div>
-      </Popover.Content>
-    </Popover.Portal>
-  </Popover.Root>;
-}
+function MutabakatZamaniSecici(props: { deger: string; disabled: boolean; onDegistir: (deger: string) => void }) { return <SadeAySecimi {...props} />; }
 
 function OzetKarti({ ikon: Icon, etiket, deger, detay, renk, zemin }: { ikon: LucideIcon; etiket: string; deger: string; detay: string; renk: string; zemin: string }) {
   return <Card className="gap-0 border border-gray-200 border-l-[3px] py-0 shadow-sm" style={{ borderLeftColor: renk }}>
@@ -532,14 +498,14 @@ export default function BmMutabakatTakipClient({ rol = "bm" }: { rol?: "bm" | "t
       </section>}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PeriyotButonlari<UttMutabakatFiltresi> secenekler={DURUMLAR.map((secenek) => ({ key: secenek.deger, label: secenek.etiket }))} deger={durum} onDegistir={(secim) => filtreDegistir(donem, secim)} ariaLabel="Mutabakat karar durumu" className="h-10 w-fit flex-none [&>button]:h-[30px] [&>button]:py-0" />
+        <PeriyotButonlari<UttMutabakatFiltresi> secenekler={DURUMLAR.map((secenek) => ({ key: secenek.deger, label: secenek.etiket }))} deger={durum} onDegistir={(secim) => filtreDegistir(donem, secim)} ariaLabel="Mutabakat karar durumu" className="w-fit flex-none" />
         <MutabakatZamaniSecici deger={donem} disabled={false} onDegistir={(secim) => filtreDegistir(secim, durum)} />
       </div>
 
       {yukleniyor && <p role="status" className="rounded-2xl border border-[#dfe7f1] bg-white px-4 py-8 text-center text-sm font-semibold text-[#8090a4]">Mutabakat takip kayıtları yükleniyor…</p>}
       {hata && <Card role="alert" className="gap-3 border-[#f2c9c9] bg-[#fffafa] py-8 text-center shadow-none"><CardContent className="flex flex-col items-center px-5"><span className="flex size-11 items-center justify-center rounded-2xl bg-[#fdecec] text-[#b42318]"><CircleAlert /></span><CardTitle className="mt-3 text-base text-[#7f1d1d]">Veriler yüklenemedi</CardTitle><CardDescription className="mt-1">{hata}</CardDescription><Button className="mt-4 bg-[#237ac8] hover:bg-[#1d69ad]" onClick={() => setYenileme((deger) => deger + 1)}>Tekrar dene</Button></CardContent></Card>}
       {!yukleniyor && !hata && <section aria-label={rol === "tm" ? "BM mutabakatları" : "UTT mutabakatları"}>
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-base font-extrabold text-[#203653]">İndirim Onay Tablosu</h2><p className="mt-0.5 text-[11px] font-semibold text-[#7b8da5]">{rol === "tm" ? `${bmGruplari.length} BM · ` : ""}{veri?.uttler.length ?? 0} UTT gösteriliyor · {veri?.toplam ?? 0} indirim işlemi</p></div><div className="flex flex-wrap items-center justify-end gap-2"><PeriyotButonlari<"akordiyon" | "duz"> secenekler={[{ key: "akordiyon", label: "Akordiyon Tablo" }, { key: "duz", label: "Düz Tablo" }]} deger={gorunum} onDegistir={gorunumDegistir} ariaLabel="Mutabakat tablo görünümü" className="h-10 w-fit flex-none [&>button]:h-[30px] [&>button]:py-0" /><MutabakatExcelButonu rol={rol} donem={donem} kayitlar={tumDuzKayitlar} />{gorunum === "akordiyon" && (acikBmler.size > 0 || acikUttler.size > 0) && <button type="button" onClick={() => { setAcikBmler(new Set()); setAcikUttler(new Set()); }} className="text-xs font-bold text-[#237ac8] hover:underline">Tümünü kapat</button>}</div></div>
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-base font-extrabold text-[#203653]">İndirim Onay Tablosu</h2><p className="mt-0.5 text-[11px] font-semibold text-[#7b8da5]">{rol === "tm" ? `${bmGruplari.length} BM · ` : ""}{veri?.uttler.length ?? 0} UTT gösteriliyor · {veri?.toplam ?? 0} indirim işlemi</p></div><div className="flex flex-wrap items-center justify-end gap-2"><PeriyotButonlari<"akordiyon" | "duz"> secenekler={[{ key: "akordiyon", label: "Akordiyon Tablo" }, { key: "duz", label: "Düz Tablo" }]} deger={gorunum} onDegistir={gorunumDegistir} ariaLabel="Mutabakat tablo görünümü" className="w-fit flex-none" /><MutabakatExcelButonu rol={rol} donem={donem} kayitlar={tumDuzKayitlar} />{gorunum === "akordiyon" && (acikBmler.size > 0 || acikUttler.size > 0) && <button type="button" onClick={() => { setAcikBmler(new Set()); setAcikUttler(new Set()); }} className="text-xs font-bold text-[#237ac8] hover:underline">Tümünü kapat</button>}</div></div>
         {gorunum === "duz" ? <>
           {duzIslemHatasi && <p role="alert" className="mb-2 text-xs font-semibold text-[#b42318]">{duzIslemHatasi}</p>}
           <MutabakatIslemTablosu

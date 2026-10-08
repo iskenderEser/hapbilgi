@@ -2,14 +2,12 @@
 
 import { PeriyotButonlari } from "@/components/ui/periyot-butonlari";
 
-export type Periyot = "ay" | "donem" | "yil" | "hafta";
+import { PERIYOTLAR } from "@/lib/utils/raporUtils";
 
-const SECENEKLER = [
-  { key: "hafta", label: "Haftalık" },
-  { key: "ay", label: "Aylık" },
-  { key: "donem", label: "Dönemlik" },
-  { key: "yil", label: "Yıllık" },
-] as const;
+export type Periyot = "ay" | "donem" | "yil" | "hafta";
+// Etiketler ortak kaynaktan; lig API'sinin mevcut değerleri korunur.
+const LIG_DEGERLERI = { bu_hafta: "hafta", bu_ay: "ay", bu_donem: "donem", bu_yil: "yil" } as const;
+const SECENEKLER = PERIYOTLAR.map((s) => ({ key: LIG_DEGERLERI[s.key], label: s.label }));
 
 export default function CcLigiPeriyotSecici({
   periyot,

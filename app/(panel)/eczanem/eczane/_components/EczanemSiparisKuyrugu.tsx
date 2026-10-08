@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, CircleAlert, ClipboardCheck, ClipboardList, Clock3, History, XCircle } from "lucide-react";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
+import { CheckCircle2, CircleAlert, ClipboardCheck, ClipboardList, Clock3, History, XCircle } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EczanemBosDurum, EczanemEczaneBaslik, EczanemOzetKarti, EczanemPanel, EczanemSayfalama, EczanemYukleniyor } from "./EczanemEczaneArayuz";
 
 interface Siparis {
@@ -138,8 +140,8 @@ export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
     <EczanemPanel>
       {veriHatasi && veriHazir && <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f1d3d3] bg-[#fff7f7] px-4 py-3 text-[#a74646] md:px-5"><div className="flex min-w-0 items-start gap-2"><CircleAlert className="mt-0.5 size-4 shrink-0" /><div><p className="text-xs font-extrabold">Güncel sipariş verisi alınamadı; son başarılı kayıtlar gösteriliyor.</p><p className="mt-0.5 text-[10px] font-semibold opacity-80">{veriHatasi.mesaj}{veriHatasi.adim ? ` · ${veriHatasi.adim}` : ""}</p></div></div><Button type="button" size="sm" variant="outline" onClick={() => void cek(true)} disabled={yenileniyor || isliyor} className="h-8 border-[#e8bcbc] bg-white text-xs font-extrabold text-[#a74646] hover:bg-[#fff1f1] hover:text-[#913737]">Tekrar dene</Button></div>}
         {veriHazir && <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e7edf4] bg-[#fbfcfe] p-2">
-        <div className="flex gap-1"><Button type="button" variant={sekme === "bekleyen" ? "default" : "ghost"} onClick={() => setSekme("bekleyen")} className={sekme === "bekleyen" ? "bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]" : "text-xs font-extrabold text-[#60758c]"}><Clock3 /> Onay Bekleyenler <Badge className="ml-1 bg-white/20 text-white">{veri.ozet.bekleyen}</Badge></Button><Button type="button" variant={sekme === "gecmis" ? "default" : "ghost"} onClick={() => setSekme("gecmis")} className={sekme === "gecmis" ? "bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]" : "text-xs font-extrabold text-[#60758c]"}><History /> Geçmiş</Button></div>
-        {sekme === "gecmis" && <Select value={durum} onValueChange={(deger) => { setDurum(deger); setGecmisSayfa(1); }}><SelectTrigger className="h-8 w-40 border-[#d7e1eb] bg-white text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="tumu">Tüm işlemler</SelectItem><SelectItem value="onaylandi">Onaylanan</SelectItem><SelectItem value="dustu">Onaylanmayan / İptal</SelectItem></SelectContent></Select>}
+        <SadeKontrolGrubu tur="sekme"><SadeKontrolButonu type="button" onClick={() => setSekme("bekleyen")} aria-pressed={sekme === "bekleyen"}><Clock3 /> Onay Bekleyenler <Badge className="ml-1 bg-white/20 text-white">{veri.ozet.bekleyen}</Badge></SadeKontrolButonu><SadeKontrolButonu type="button" onClick={() => setSekme("gecmis")} aria-pressed={sekme === "gecmis"}><History /> Geçmiş</SadeKontrolButonu></SadeKontrolGrubu>
+        {sekme === "gecmis" && <Select value={durum} onValueChange={(deger) => { setDurum(deger); setGecmisSayfa(1); }}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="tumu">Tüm işlemler</SelectItem><SelectItem value="onaylandi">Onaylanan</SelectItem><SelectItem value="dustu">Onaylanmayan / İptal</SelectItem></SelectContent></Select>}
       </div>}
 
       {ilkYukleme ? <EczanemYukleniyor metin="Siparişler yükleniyor…" /> : !veriHazir && veriHatasi ? <div className="px-5 py-12 text-center"><span className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-[#fff0f0] text-[#b84444]"><CircleAlert className="size-5" /></span><h3 className="mt-3 text-sm font-extrabold text-[#8f3636]">Sipariş kuyruğu görüntülenemedi</h3><p className="mx-auto mt-1 max-w-lg text-xs font-semibold leading-5 text-[#9a6969]">{veriHatasi.mesaj}</p>{veriHatasi.adim && <p className="mt-1 text-[10px] font-bold text-[#ad7b7b]">Adım: {veriHatasi.adim}</p>}<Button type="button" size="sm" onClick={() => void cek(true)} disabled={yenileniyor} className="mt-4 bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]">Tekrar dene</Button></div> : sekme === "bekleyen" ? <>

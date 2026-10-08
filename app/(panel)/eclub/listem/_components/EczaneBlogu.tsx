@@ -121,7 +121,7 @@ export function EczaneBlogu({ eczane, kisiler, gecisTalepleri, islemLoading, onL
                 </div>}
                 <div className={styles.eklemeButonlari}>
                   <Button type="button" variant="outline" size="sm" className={styles.eklemeButonu} disabled={kisiFormAcik} onClick={() => setKisiFormAcik(true)}><Plus />Kişi ekle</Button>
-                  <DepoAramaliSecim ref={depoDuzenleyiciRef} eczaneId={eczane.eczane_id} className={`${styles.eklemeButonu} ${styles.depoSecimListesi}`} onKayitliTercihler={(depolar) => { setKayitliDepolar(depolar); setDepoSilmeHatasi(""); }} />
+                  <DepoAramaliSecim ref={depoDuzenleyiciRef} eczaneId={eczane.eczane_id}  onKayitliTercihler={(depolar) => { setKayitliDepolar(depolar); setDepoSilmeHatasi(""); }} />
                 </div>
               </div>
 

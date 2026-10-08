@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useId, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
-import { Popover } from "radix-ui";
-import { ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { SadeAramaAlani, SadeSecimButonu, SadeSecimMenusu, SadeSecimSecenegi } from "@/components/kontrol/SadeKontroller";
+
 import { depoAramaSonuclari, depoOzetEtiketi, type DepoKonumu } from "@/lib/eclub/depo";
+import { Popover } from "radix-ui";
+import { useEffect, useId, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
 export interface DepoAramaliSecimHandle {
   tercihKaldir: (id: string) => Promise<string | null>;
@@ -76,19 +76,19 @@ export function DepoAramaliSecim({ eczaneId, onKayitliTercihler, className, ref 
   };
   if (secili.length >= 3) return null;
   return <Popover.Root open={acik} onOpenChange={(v) => { if (!islem) { setAcik(v); setArama(""); setAktif(0); } }}>
-    <Popover.Trigger asChild><Button type="button" role="combobox" aria-label="Depo seçin" variant="outline" size="sm" className={className} disabled={yukleniyor || islem}>Depo seçin<ChevronDown size={12} /></Button></Popover.Trigger>
-    <Popover.Portal><Popover.Content align="end" sideOffset={6} className="z-50 w-[min(420px,calc(100vw-24px))] rounded-xl border border-slate-200 bg-white p-3 shadow-xl" onOpenAutoFocus={(e) => { e.preventDefault(); document.getElementById(`${listeId}-arama`)?.focus(); }}>
-      <input id={`${listeId}-arama`} role="combobox" aria-label="Depo veya şube ara" aria-autocomplete="list" aria-expanded={true} aria-controls={listeId} aria-activedescendant={sonuclar[aktif] ? `${listeId}-${aktif}` : undefined} value={arama} disabled={islem} placeholder="Depo seçin" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs outline-none focus:border-blue-500" onChange={(e) => { setArama(e.target.value); setAktif(0); }} onKeyDown={(e) => {
+    <Popover.Trigger asChild><SadeSecimButonu role="combobox" aria-label="Depo seçin" className={className} disabled={yukleniyor || islem}>Depo seçin</SadeSecimButonu></Popover.Trigger>
+    <Popover.Portal><SadeSecimMenusu align="end" onOpenAutoFocus={(e) => { e.preventDefault(); document.getElementById(`${listeId}-arama`)?.focus(); }}>
+      <SadeAramaAlani id={`${listeId}-arama`} role="combobox" aria-label="Depo veya şube ara" aria-autocomplete="list" aria-expanded={true} aria-controls={listeId} aria-activedescendant={sonuclar[aktif] ? `${listeId}-${aktif}` : undefined} value={arama} disabled={islem} placeholder="Depo seçin" onChange={(e) => { setArama(e.target.value); setAktif(0); }} onKeyDown={(e) => {
         if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); setAktif((v) => Math.max(0, Math.min(sonuclar.length - 1, v + (e.key === "ArrowDown" ? 1 : -1)))); }
         if (e.key === "Enter" && sonuclar[aktif]) { e.preventDefault(); void ekle(sonuclar[aktif]); }
       }} />
       {hata && <p role="alert" className="mt-2 text-xs text-red-700">{hata}</p>}
       <div id={listeId} role="listbox" aria-label="Depo ve şube sonuçları" className="mt-2 max-h-64 overflow-y-auto">
-        {arama.trim().length < 3 ? null : !sonuclar.length ? <p className="p-2 text-xs text-slate-500">Sonuç yok.</p> : sonuclar.map((k, i) => <button type="button" role="option" aria-selected={i === aktif} id={`${listeId}-${i}`} key={k.depo_sube_id} tabIndex={-1} disabled={islem} onMouseDown={(e) => e.preventDefault()} onClick={() => void ekle(k)} className={`block w-full rounded-lg px-3 py-2 text-left disabled:opacity-50 ${i === aktif ? "bg-blue-50" : "hover:bg-slate-50"}`} title={`${k.depo_adi} · ${k.il} / ${k.ilce} · ${k.adres}`}>
+        {arama.trim().length < 3 ? null : !sonuclar.length ? <p className="p-2 text-xs text-slate-500">Sonuç yok.</p> : sonuclar.map((k, i) => <SadeSecimSecenegi role="option" aria-selected={i === aktif} id={`${listeId}-${i}`} key={k.depo_sube_id} tabIndex={-1} disabled={islem} onMouseDown={(e) => e.preventDefault()} onClick={() => void ekle(k)} title={`${k.depo_adi} · ${k.il} / ${k.ilce} · ${k.adres}`}>
           <strong className="block text-xs text-slate-800">{depoOzetEtiketi(k)}</strong>
-        </button>)}
+        </SadeSecimSecenegi>)}
       </div>
       {islem && <p role="status" className="mt-2 text-xs text-blue-700">Kaydediliyor…</p>}
-    </Popover.Content></Popover.Portal>
+    </SadeSecimMenusu></Popover.Portal>
   </Popover.Root>;
 }

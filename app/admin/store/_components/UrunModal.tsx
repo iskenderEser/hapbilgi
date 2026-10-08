@@ -15,8 +15,10 @@
 
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import type { Urun, Kategori } from "@/lib/tclub/store/tipler";
+import { SadeFormSecimi } from "@/components/kontrol/SadeKontroller";
+
+import type { Kategori, Urun } from "@/lib/tclub/store/tipler";
+import { useEffect, useRef, useState } from "react";
 import { RENK_BORDO } from "../../_constants";
 
 interface UrunGosterim extends Urun {
@@ -317,13 +319,7 @@ export default function UrunModal({
             <label className="text-xs font-semibold text-gray-700 block mb-1.5">
               Kategori
             </label>
-            <select
-              value={form.kategori_id}
-              onChange={(e) => handleChange("kategori_id", e.target.value)}
-              disabled={islemSuruyor}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-white cursor-pointer"
-              style={inputStili}
-            >
+            <SadeFormSecimi value={form.kategori_id} onChange={(e) => handleChange("kategori_id", e.target.value)} disabled={islemSuruyor} aria-label="Kategori" className="w-full">
               <option value="">Seç...</option>
               {kategoriler.map((k) => (
                 <option key={k.kategori_id} value={k.kategori_id}>
@@ -331,7 +327,7 @@ export default function UrunModal({
                   {!k.aktif_mi ? " (pasif)" : ""}
                 </option>
               ))}
-            </select>
+            </SadeFormSecimi>
           </div>
 
           {/* Ad */}

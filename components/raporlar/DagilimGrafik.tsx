@@ -9,9 +9,11 @@
 
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { EChartsCoreOption } from "echarts/core";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
 import EChart, { type EChartTiklama } from "@/components/grafik/EChart";
+import type { EChartsCoreOption } from "echarts/core";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const RENKLER = ["#378ADD", "#1D9E75", "#EF9F27", "#D4537E", "#7F77DD", "#D85A30", "#639922"];
 
@@ -44,7 +46,6 @@ export default function DagilimGrafik({
   ordinatAdi = "Puan",
   modlar = ["pie", "bar", "line", "tablo"],
   indirAdi,
-  modern = false,
 }: Props) {
   const kapsayiciRef = useRef<HTMLDivElement>(null);
   const [mod, setMod] = useState<Mod>(modlar[0]);
@@ -171,14 +172,6 @@ export default function DagilimGrafik({
     };
   }, [veri, mod, apsisAdi, ordinatAdi, paletli, darGrafik, eksenFontu, veriFontu]);
 
-  const btnStil = (aktif: boolean): React.CSSProperties => ({
-    padding: modern ? "6px 12px" : "4px 13px", borderRadius: modern ? 10 : 999, fontSize: modern ? 11 : 13, cursor: "pointer",
-    border: modern ? "1px solid transparent" : "0.5px solid #e5e7eb",
-    background: aktif ? (modern ? "#e7f3ff" : "rgba(86,174,255,0.12)") : (modern ? "#f6f8fb" : "#fff"),
-    color: aktif ? "#185fa5" : "#6b7280",
-    fontWeight: aktif ? 700 : modern ? 600 : 400,
-  });
-
   const modTanimlari: { key: Mod; etiket: string }[] = [
     { key: "pie", etiket: "Pasta" },
     { key: "bar", etiket: "Sütun" },
@@ -187,9 +180,9 @@ export default function DagilimGrafik({
   ];
   const gorunurModlar = modlar.map((anahtar) => modTanimlari.find((modTanimi) => modTanimi.key === anahtar)!);
   const modButonlari = gorunurModlar.map((m) => (
-    <button key={m.key} type="button" className="shrink-0" style={btnStil(mod === m.key)} onClick={() => setMod(m.key)}>
+    <SadeKontrolButonu key={m.key} aria-pressed={mod === m.key} onClick={() => setMod(m.key)}>
       {m.etiket}
-    </button>
+    </SadeKontrolButonu>
   ));
 
   const grafikGovdesi = mod === "tablo" ? (
@@ -229,7 +222,7 @@ export default function DagilimGrafik({
 
   return (
     <div ref={kapsayiciRef}>
-      <div className="mb-2 flex flex-wrap gap-2">{modButonlari}</div>
+      <SadeKontrolGrubu aria-label="Grafik görünümü" className="mb-2">{modButonlari}</SadeKontrolGrubu>
       {grafikGovdesi}
     </div>
   );

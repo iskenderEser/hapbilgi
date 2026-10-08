@@ -1,7 +1,8 @@
-import { RotateCcw } from "lucide-react";
+import { SadeListeSecimi, SadeTarihAlani } from "@/components/kontrol/SadeKontroller";
 import type { CekTakipFiltreSecenekleri } from "@/lib/eclub/hediyeTakip/cekTakip";
 import { CEK_TALEP_DURUM_META, CEK_TALEP_DURUMLARI } from "@/lib/eclub/store/eclubStoreTipler";
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
+import { RotateCcw } from "lucide-react";
 
 export interface CekTakipFiltreDegerleri {
   eczane_id: string;
@@ -21,7 +22,6 @@ export const BOS_CEK_TAKIP_FILTRELERI: CekTakipFiltreDegerleri = {
   bitis: "",
 };
 
-const alanSinifi = "h-10 w-full min-w-0 rounded-xl border border-[#dce5ef] bg-white px-3 text-xs font-semibold text-[#40556d] outline-none transition focus:border-[#8abde8] focus:ring-2 focus:ring-[#dceefa]";
 
 export default function CekTakipFiltreleri({
   deger,
@@ -56,49 +56,49 @@ export default function CekTakipFiltreleri({
     <section aria-label="Çek takibi filtreleri" className="rounded-2xl border border-[#dfe7f1] bg-white p-3 shadow-[0_6px_18px_rgba(31,55,90,0.035)] md:p-4">
       <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 ${uttler ? "xl:grid-cols-7" : "xl:grid-cols-6"}`}>
         {uttler && (
-          <label htmlFor="cek-takip-utt" className="min-w-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
+          <label htmlFor="cek-takip-utt" className="flex min-w-0 flex-col gap-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
             UTT
-            <select id="cek-takip-utt" className={`${alanSinifi} mt-1 normal-case tracking-normal`} value={uttId} onChange={(event) => onUttDegistir?.(event.target.value)}>
+            <SadeListeSecimi id="cek-takip-utt" value={uttId} onChange={(event) => onUttDegistir?.(event.target.value)} aria-label="UTT" className="w-full">
               <option value="">Tüm UTT’ler</option>
               {uttler.map((utt) => <option key={utt.utt_id} value={utt.utt_id}>{utt.utt_adi}</option>)}
-            </select>
+            </SadeListeSecimi>
           </label>
         )}
-        <label htmlFor="cek-takip-eczane" className="min-w-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
+        <label htmlFor="cek-takip-eczane" className="flex min-w-0 flex-col gap-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
           Eczane
-          <select id="cek-takip-eczane" className={`${alanSinifi} mt-1 normal-case tracking-normal`} value={deger.eczane_id} onChange={(event) => alanDegistir("eczane_id", event.target.value)}>
+          <SadeListeSecimi id="cek-takip-eczane" value={deger.eczane_id} onChange={(event) => alanDegistir("eczane_id", event.target.value)} aria-label="Eczane" className="w-full">
             <option value="">Tüm eczaneler</option>
             {secenekler.eczaneler.map((eczane) => <option key={eczane.eczane_id} value={eczane.eczane_id}>{eczane.eczane_adi}</option>)}
-          </select>
+          </SadeListeSecimi>
         </label>
-        <label htmlFor="cek-takip-uye" className="min-w-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
+        <label htmlFor="cek-takip-uye" className="flex min-w-0 flex-col gap-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
           Üye
-          <select id="cek-takip-uye" className={`${alanSinifi} mt-1 normal-case tracking-normal`} value={deger.kisi_id} onChange={(event) => alanDegistir("kisi_id", event.target.value)}>
+          <SadeListeSecimi id="cek-takip-uye" value={deger.kisi_id} onChange={(event) => alanDegistir("kisi_id", event.target.value)} aria-label="Üye" className="w-full">
             <option value="">Tüm üyeler</option>
             {uyeler.map((uye) => <option key={uye.kisi_id} value={uye.kisi_id}>{eclubKisiRolEtiketi(uye.rol)} · {uye.ad_soyad}</option>)}
-          </select>
+          </SadeListeSecimi>
         </label>
-        <label htmlFor="cek-takip-urun" className="min-w-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
+        <label htmlFor="cek-takip-urun" className="flex min-w-0 flex-col gap-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
           Ürün
-          <select id="cek-takip-urun" className={`${alanSinifi} mt-1 normal-case tracking-normal`} value={deger.urun_id} onChange={(event) => alanDegistir("urun_id", event.target.value)}>
+          <SadeListeSecimi id="cek-takip-urun" value={deger.urun_id} onChange={(event) => alanDegistir("urun_id", event.target.value)} aria-label="Ürün" className="w-full">
             <option value="">Tüm ürünler</option>
             {secenekler.urunler.map((urun) => <option key={urun.urun_id} value={urun.urun_id}>{urun.urun_adi}</option>)}
-          </select>
+          </SadeListeSecimi>
         </label>
-        <label htmlFor="cek-takip-durum" className="min-w-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
+        <label htmlFor="cek-takip-durum" className="flex min-w-0 flex-col gap-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
           Durum
-          <select id="cek-takip-durum" className={`${alanSinifi} mt-1 normal-case tracking-normal`} value={deger.durum} onChange={(event) => alanDegistir("durum", event.target.value)}>
+          <SadeListeSecimi id="cek-takip-durum" value={deger.durum} onChange={(event) => alanDegistir("durum", event.target.value)} aria-label="Durum" className="w-full">
             <option value="">Tüm durumlar</option>
             {CEK_TALEP_DURUMLARI.map((durum) => <option key={durum} value={durum}>{CEK_TALEP_DURUM_META[durum].etiket}</option>)}
-          </select>
+          </SadeListeSecimi>
         </label>
-        <label htmlFor="cek-takip-baslangic" className="min-w-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
+        <label htmlFor="cek-takip-baslangic" className="flex min-w-0 flex-col gap-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
           Başlangıç
-          <input id="cek-takip-baslangic" type="date" className={`${alanSinifi} mt-1 normal-case tracking-normal`} value={deger.baslangic} max={deger.bitis || undefined} onChange={(event) => alanDegistir("baslangic", event.target.value)} />
+          <SadeTarihAlani id="cek-takip-baslangic" value={deger.baslangic} max={deger.bitis || undefined} onChange={(event) => alanDegistir("baslangic", event.target.value)} />
         </label>
-        <label htmlFor="cek-takip-bitis" className="min-w-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
+        <label htmlFor="cek-takip-bitis" className="flex min-w-0 flex-col gap-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
           Bitiş
-          <input id="cek-takip-bitis" type="date" className={`${alanSinifi} mt-1 normal-case tracking-normal`} value={deger.bitis} min={deger.baslangic || undefined} onChange={(event) => alanDegistir("bitis", event.target.value)} />
+          <SadeTarihAlani id="cek-takip-bitis" value={deger.bitis} min={deger.baslangic || undefined} onChange={(event) => alanDegistir("bitis", event.target.value)} />
         </label>
       </div>
       {filtreVar && (

@@ -8,16 +8,18 @@
 
 "use client";
 
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { SadeFormSecimi } from "@/components/kontrol/SadeKontroller";
+
 import type { Soru } from "@/app/(panel)/talepler/_types";
-import type { Bekleyen, OnizlemeHedefi } from "../_types";
-import { VIDEO_PUAN_SECENEKLERI, VIDEO_PUAN_SECENEKLERI_ECZANEM, EXTRA_PUAN_SECENEKLERI } from "../_types";
 import { HedefRolPilleri } from "@/components/pill";
-import { talepIdGoster } from "@/lib/utils/talepId";
-import { VideoThumb } from "./Yardimcilar";
-import { SoruListesi } from "./SoruListesi";
+import { ECLUB_KAZANIM_SECENEKLERI, type BaremSatiri, type EclubKazanimModeli } from "@/lib/eclub/store/eclubStoreTipler";
 import { yalnizEclubHedefliMi } from "@/lib/utils/roller";
-import { ECLUB_KAZANIM_SECENEKLERI, type EclubKazanimModeli, type BaremSatiri } from "@/lib/eclub/store/eclubStoreTipler";
+import { talepIdGoster } from "@/lib/utils/talepId";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import type { Bekleyen, OnizlemeHedefi } from "../_types";
+import { EXTRA_PUAN_SECENEKLERI, VIDEO_PUAN_SECENEKLERI, VIDEO_PUAN_SECENEKLERI_ECZANEM } from "../_types";
+import { SoruListesi } from "./SoruListesi";
+import { VideoThumb } from "./Yardimcilar";
 
 interface BekleyenSatirProps {
   b: Bekleyen;
@@ -84,7 +86,7 @@ export function BekleyenSatir({
   const hazir = !silmeBaslatilmis && tumPuanlarAtandiMi(b);
   const secilenGun = yayinGunleri[b.soru_seti_durum_id] ?? "";
   const bugun = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD (yerel)
-  
+
   // Eczanem yayınında extra puan / tekrar periyodu / ileri sarma YOKTUR (İP §4.4);
   // yerine barkod + Karşılık (puan ↔ TL) alanları girilir (U5, K-E3).
   const eczanem = b.hedef_roller.includes("eczanem");
@@ -106,15 +108,15 @@ export function BekleyenSatir({
   // Öğrenme aracı puanı durumu
   const videoPuanSecenekleri = eczanem ? VIDEO_PUAN_SECENEKLERI_ECZANEM : VIDEO_PUAN_SECENEKLERI;
   const seciliVideoPuani = videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani ?? "";
-  const videoPuaniDolu = typeof seciliVideoPuani === "number" && seciliVideoPuani > 0;
+  
 
   // Extra puan durumu
   const seciliExtra = extraPuanlar[b.soru_seti_durum_id];
-  const extraDolu = typeof seciliExtra === "number" && seciliExtra > 0;
+  
 
   // Tekrar periyodu durumu
   const seciliTekrar = tekrarPeriyotlari[b.soru_seti_durum_id];
-  const tekrarDolu = typeof seciliTekrar === "number" && seciliTekrar > 0;
+  
 
   // Eczanem durumları
   const seciliBarkod = barkodlar[b.soru_seti_durum_id]?.trim();
@@ -200,18 +202,10 @@ export function BekleyenSatir({
 
           const videoPuaniAlani = (
             <div className="w-[145px] shrink-0">
-              <select value={seciliVideoPuani}
-                onChange={(e) => setVideoPuanlari(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
-                aria-label={`${b.urun_adi} öğrenme aracı puanı`}
-                className={`h-9 min-h-9 max-h-9 w-full box-border rounded-lg border px-2 text-[11px] transition outline-none ${
-                  videoPuaniDolu
-                    ? "border-[#93c5fd] bg-[#eff6ff] font-extrabold text-[#1e3a8a] shadow-sm"
-                    : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
-                }`}
-                style={{ fontFamily: "'Nunito', sans-serif" }}>
+              <SadeFormSecimi value={seciliVideoPuani} onChange={(e) => setVideoPuanlari(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))} aria-label={`${b.urun_adi} öğrenme aracı puanı`} className="w-full">
                 <option value="" className="text-[#9aa7b7]">Yayın Bitirme Puanı</option>
                 {videoPuanSecenekleri.map(p => <option key={p} value={p}>{p} puan</option>)}
-              </select>
+              </SadeFormSecimi>
             </div>
           );
 
@@ -407,9 +401,7 @@ export function BekleyenSatir({
                   {soruBtn}
                   {videoPuaniAlani}
                   <div className="w-[110px] shrink-0">
-                    <select
-                      value={seciliTekrar ?? ""}
-                      onChange={(e) => {
+                    <SadeFormSecimi value={seciliTekrar ?? ""} onChange={(e) => {
                         const deger = e.target.value;
                         setTekrarPeriyotlari(prev => {
                           const yeni = { ...prev };
@@ -417,19 +409,11 @@ export function BekleyenSatir({
                           else yeni[b.soru_seti_durum_id] = Number(deger);
                           return yeni;
                         });
-                      }}
-                      aria-label={`${b.urun_adi} yayın sıklığı`}
-                      className={`h-9 w-full rounded-lg border px-2 text-[11px] transition outline-none ${
-                        tekrarDolu
-                          ? "border-[#cbd5e1] bg-[#f8fafc] font-extrabold text-[#334155] shadow-sm"
-                          : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
-                      }`}
-                      style={{ fontFamily: "'Nunito', sans-serif" }}
-                    >
+                      }} aria-label={`${b.urun_adi} yayın sıklığı`} className="w-full">
                       <option value="" className="text-[#9aa7b7]">Yayın Sıklığı</option>
                       <option value="0">Tekrar Yok</option>
                       {[7, 15, 30, 45, 60].map(g => <option key={g} value={g}>{g} gün tekrar</option>)}
-                    </select>
+                    </SadeFormSecimi>
                   </div>
                   {yayinGunuAlani}
                 </div>
@@ -597,22 +581,13 @@ export function BekleyenSatir({
                 {soruBtn}
                 {videoPuaniAlani}
                 <div className="w-[145px] shrink-0">
-                  <select value={seciliExtra ?? ""}
-                    onChange={(e) => setExtraPuanlar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
-                    aria-label={`${b.urun_adi} extra puanı`}
-                    className={`h-9 w-full rounded-lg border px-2 text-[11px] transition outline-none ${
-                      extraDolu
-                        ? "border-[#c4b5fd] bg-[#f5f3ff] font-extrabold text-[#5b21b6] shadow-sm"
-                        : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
-                    }`}
-                    style={{ fontFamily: "'Nunito', sans-serif" }}>
+                  <SadeFormSecimi value={seciliExtra ?? ""} onChange={(e) => setExtraPuanlar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))} aria-label={`${b.urun_adi} extra puanı`} className="w-full">
                     <option value="">Extra Bitirme Puanı</option>
                     {EXTRA_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>+{p} extra puan</option>)}
-                  </select>
+                  </SadeFormSecimi>
                 </div>
                 <div className="w-[110px] shrink-0">
-                  <select value={seciliTekrar ?? ""}
-                    onChange={(e) => {
+                  <SadeFormSecimi value={seciliTekrar ?? ""} onChange={(e) => {
                       const deger = e.target.value;
                       setTekrarPeriyotlari(prev => {
                         const yeni = { ...prev };
@@ -620,18 +595,11 @@ export function BekleyenSatir({
                         else yeni[b.soru_seti_durum_id] = Number(deger);
                         return yeni;
                       });
-                    }}
-                    aria-label={`${b.urun_adi} yayın sıklığı`}
-                    className={`h-9 w-full rounded-lg border px-2 text-[11px] transition outline-none ${
-                      tekrarDolu
-                        ? "border-[#cbd5e1] bg-[#f8fafc] font-extrabold text-[#334155] shadow-sm"
-                        : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
-                    }`}
-                    style={{ fontFamily: "'Nunito', sans-serif" }}>
+                    }} aria-label={`${b.urun_adi} yayın sıklığı`} className="w-full">
                     <option value="" className="text-[#9aa7b7]">Yayın Sıklığı</option>
                     <option value="0">Tekrar Yok</option>
                     {[7, 15, 30, 45, 60].map(g => <option key={g} value={g}>{g} gün tekrar</option>)}
-                  </select>
+                  </SadeFormSecimi>
                 </div>
                 {yayinGunuAlani}
               </div>

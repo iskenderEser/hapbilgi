@@ -5,24 +5,26 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
-import {
-  ChevronLeft,
-  Minus,
-  Package,
-  Plus,
-  ShoppingBag,
-  Sparkles,
-} from "lucide-react";
-import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
+import { SadeListeSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { useAuth } from "@/app/providers/AuthProvider";
-import { STOK_AZ_ESIK } from "@/lib/tclub/store/sabitler";
-import type { Urun, Adres } from "@/lib/tclub/store/tipler";
-import { hbstoreBakiyesiDegistiBildir } from "@/lib/tclub/store/olay";
+import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
+import { hbstoreBakiyesiDegistiBildir } from "@/lib/tclub/store/olay";
+import { STOK_AZ_ESIK } from "@/lib/tclub/store/sabitler";
+import type { Adres, Urun } from "@/lib/tclub/store/tipler";
+import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
+import {
+    ChevronLeft,
+    Minus,
+    Package,
+    Plus,
+    ShoppingBag,
+    Sparkles,
+} from "lucide-react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface UrunDetay extends Urun {
   kategori_adi: string | null;
@@ -369,17 +371,13 @@ export default function UrunDetayPage() {
                         </Link>
                       </div>
                     ) : (
-                      <select
-                        value={seciliAdresId}
-                        onChange={(e) => setSeciliAdresId(e.target.value)}
-                        className="w-full rounded-xl border border-[#dce5ee] bg-[#f8fafc] px-3.5 py-2.5 text-xs font-bold text-[#1f334d] transition-colors focus:border-[#237ac8] focus:bg-white focus:outline-none"
-                      >
+                      <SadeListeSecimi value={seciliAdresId} onChange={(e) => setSeciliAdresId(e.target.value)} aria-label="Teslimat adresi" className="w-full">
                         {adresler.map((a) => (
                           <option key={a.adres_id} value={a.adres_id}>
                             {a.baslik} — {a.ilce} / {a.il} {a.varsayilan_mi ? "★ (Varsayılan)" : ""}
                           </option>
                         ))}
-                      </select>
+                      </SadeListeSecimi>
                     )}
                   </div>
 

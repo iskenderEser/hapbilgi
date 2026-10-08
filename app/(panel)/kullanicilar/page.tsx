@@ -1,14 +1,16 @@
 // app/kullanicilar/page.tsx
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
-import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { SadeFormSecimi } from "@/components/kontrol/SadeKontroller";
+
 import { useAuth } from "@/app/providers/AuthProvider";
-import { ADMIN_ROLLER, TUM_ROLLER } from "@/lib/utils/roller";
+import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { DahaFazlaGoster, ListeArama, useListe } from "@/components/liste";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import { createClient } from "@/lib/supabase/client";
+import { ADMIN_ROLLER, TUM_ROLLER } from "@/lib/utils/roller";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 interface Kullanici {
   kullanici_id: string;
@@ -192,38 +194,34 @@ export default function KullanicilarPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Rol</label>
-                  <select value={secilenRol} onChange={(e) => setSecilenRol(e.target.value)} required
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-[Nunito] outline-none cursor-pointer">
+                  <SadeFormSecimi value={secilenRol} onChange={(e) => setSecilenRol(e.target.value)} required aria-label="Rol" className="w-full">
                     <option value="">Seçiniz</option>
                     {ROLLER.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
+                  </SadeFormSecimi>
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Firma</label>
-                  <select value={secilenFirma} onChange={(e) => { setSecilenFirma(e.target.value); setSecilenTakim(""); setSecilenBolge(""); }} required
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-[Nunito] outline-none cursor-pointer">
+                  <SadeFormSecimi value={secilenFirma} onChange={(e) => { setSecilenFirma(e.target.value); setSecilenTakim(""); setSecilenBolge(""); }} required aria-label="Firma" className="w-full">
                     <option value="">Seçiniz</option>
                     {hiyerarsi.firmalar.map(f => <option key={f.firma_id} value={f.firma_id}>{f.firma_adi}</option>)}
-                  </select>
+                  </SadeFormSecimi>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Takım (opsiyonel)</label>
-                  <select value={secilenTakim} onChange={(e) => { setSecilenTakim(e.target.value); setSecilenBolge(""); }}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-[Nunito] outline-none cursor-pointer">
+                  <SadeFormSecimi value={secilenTakim} onChange={(e) => { setSecilenTakim(e.target.value); setSecilenBolge(""); }} aria-label="Takım (opsiyonel)" className="w-full">
                     <option value="">Seçiniz</option>
                     {filtreliTakimlar.map(t => <option key={t.takim_id} value={t.takim_id}>{t.takim_adi}</option>)}
-                  </select>
+                  </SadeFormSecimi>
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Bölge (opsiyonel)</label>
-                  <select value={secilenBolge} onChange={(e) => setSecilenBolge(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-[Nunito] outline-none cursor-pointer">
+                  <SadeFormSecimi value={secilenBolge} onChange={(e) => setSecilenBolge(e.target.value)} aria-label="Bölge (opsiyonel)" className="w-full">
                     <option value="">Seçiniz</option>
                     {filtreliBolgeler.map(b => <option key={b.bolge_id} value={b.bolge_id}>{b.bolge_adi}</option>)}
-                  </select>
+                  </SadeFormSecimi>
                 </div>
               </div>
 

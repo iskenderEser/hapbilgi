@@ -211,6 +211,7 @@ export default function SolListe(props: SolListeProps) {
             <div key={grup.baslik} className="flex flex-col gap-1">
               <button
                 onClick={() => grupToggle(grup.baslik)}
+                aria-expanded={acik}
                 className="w-full flex items-center justify-between bg-transparent border-none cursor-pointer"
                 style={{ fontSize: "12px", fontWeight: 800, color: "#111827", textTransform: "uppercase", letterSpacing: "0.06em", padding: "2px 10px 4px", fontFamily: "'Nunito', sans-serif" }}
               >

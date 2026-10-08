@@ -1,21 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, BookOpenCheck, CheckCheck, Send, Repeat2, Users, FastForward, CircleHelp, Clock3 } from 'lucide-react';
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
+import styles from '@/app/(panel)/raporlar/utt/utt-report.module.css';
 import { useAuth } from '@/app/providers/AuthProvider';
+import RaporPeriyotSecici from '@/components/raporlar/RaporPeriyotSecici';
+import TemsilciSecici from '@/components/raporlar/TemsilciSecici';
+import { PeriyotButonlari } from '@/components/ui/periyot-butonlari';
+import { YenileButonu } from '@/components/ui/yenile-butonu';
+import { useRapor } from '@/hooks/useRapor';
 import { useRaporModulDurumu } from '@/hooks/useRaporModulDurumu';
 import { raporBolumleriniSec } from '@/lib/rapor/paylasilan/eclubDurumu';
-import { useRapor } from '@/hooks/useRapor';
-import { YenileButonu } from '@/components/ui/yenile-butonu';
-import RaporPeriyotSecici from '@/components/raporlar/RaporPeriyotSecici';
-import { PeriyotButonlari } from '@/components/ui/periyot-butonlari';
-import { type Periyot } from '@/lib/utils/raporUtils';
-import { TUR_RAPOR_ADI, TUR_SIRA, type IcerikTuru } from '@/lib/video/icerikTuru';
 import type { DavranisHucre } from '@/lib/rapor/utt/getUttDavranis';
 import type { UttKatki } from '@/lib/rapor/utt/getUttKatki';
-import TemsilciSecici from '@/components/raporlar/TemsilciSecici';
-import styles from '@/app/(panel)/raporlar/utt/utt-report.module.css';
+import { type Periyot } from '@/lib/utils/raporUtils';
+import { TUR_RAPOR_ADI, TUR_SIRA, type IcerikTuru } from '@/lib/video/icerikTuru';
+import { ArrowLeft, BookOpenCheck, CheckCheck, CircleHelp, Clock3, FastForward, Repeat2, Send, Users } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
 
 const ARACLAR = [{ key: 'tumu', label: 'Tümü' }, { key: 'video', label: 'Videolar' }, { key: 'podcast', label: 'Podcastler' }, { key: 'gorsel', label: 'Dijital Broşürler' }, { key: 'flip_pdf', label: 'Literatürler' }];
 const fmt = (n: number) => n.toLocaleString('tr-TR', { maximumFractionDigits: 1 });
@@ -108,12 +110,12 @@ export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' }) {
         })}
       </section>
       </>}
-      {rol !== 'utt' && <div className={styles.categories} role="tablist" aria-label="Rapor görünümü">
-        {([{ key: 'rapor', ad: 'Rapor' }, { key: 'karsilastirma', ad: 'Karşılaştırma' }] as const).map(m => <button key={m.key} type="button" role="tab" aria-selected={gorunum === m.key} onClick={() => setGorunum(m.key)} className={`${styles.category} ${gorunum === m.key ? styles.categoryActive : ''}`}>{m.ad}</button>)}
-      </div>}
-      <div className={styles.categories} role="tablist" aria-label="Eğitim kategorisi">
-        {TUR_SIRA.map(t => <button key={t} role="tab" aria-selected={kategori === t} onClick={() => setKategori(t)} className={`${styles.category} ${kategori === t ? styles.categoryActive : ''}`}>{TUR_RAPOR_ADI[t]}</button>)}
-      </div>
+      {rol !== 'utt' && <SadeKontrolGrubu role="tablist" aria-label="Rapor görünümü" tur="sekme" className={styles.controlTabs}>
+        {([{ key: 'rapor', ad: 'Rapor' }, { key: 'karsilastirma', ad: 'Karşılaştırma' }] as const).map(m => <SadeKontrolButonu key={m.key} type="button" role="tab" aria-selected={gorunum === m.key} onClick={() => setGorunum(m.key)}>{m.ad}</SadeKontrolButonu>)}
+      </SadeKontrolGrubu>}
+      <SadeKontrolGrubu role="tablist" aria-label="Eğitim kategorisi" tur="sekme" className={styles.controlTabs}>
+        {TUR_SIRA.map(t => <SadeKontrolButonu key={t} role="tab" aria-selected={kategori === t} onClick={() => setKategori(t)}>{TUR_RAPOR_ADI[t]}</SadeKontrolButonu>)}
+      </SadeKontrolGrubu>
       <div className={`${styles.filters} ${rol !== 'utt' ? styles.filtersWithScope : ''}`}>
         <PeriyotButonlari ariaLabel="Yayın türü" secenekler={ARACLAR} deger={arac} onDegistir={setArac} />
         <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
@@ -127,17 +129,8 @@ export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' }) {
           <div className={styles.scopePicker}><TemsilciSecici temsilciler={rol === 'tm' && yanit?.bmId !== bmId ? [] : yanit?.temsilciler ?? []} deger={temsilciId} onDegistir={setTemsilciId} genelAdi={rol === 'tm' ? 'Tüm Bölge' : 'Bölge Geneli'} etiket={rol === 'tm' ? 'Temsilci' : 'Rapor kapsamı'} disabled={rol === 'tm' && (!bmId || yanit?.bmId !== bmId)} /></div></>}
 
         </div>}
-      <div className={styles.categories} role="tablist" aria-label="Davranış grubu">
-        {DAVRANIS_SEKMELERI.map((sekme, index) => <button
-          key={sekme.key}
-          type="button"
-          role="tab"
-          id={`davranis-tab-${sekme.key}`}
-          aria-selected={davranis === sekme.key}
-          aria-controls="rapor-davranis-panel"
-          tabIndex={davranis === sekme.key ? 0 : -1}
-          onClick={() => setDavranis(sekme.key)}
-          onKeyDown={event => {
+      <SadeKontrolGrubu role="tablist" aria-label="Davranış grubu" tur="sekme">
+        {DAVRANIS_SEKMELERI.map((sekme, index) => <SadeKontrolButonu key={sekme.key} type="button" role="tab" id={`davranis-tab-${sekme.key}`} aria-selected={davranis === sekme.key} aria-controls="rapor-davranis-panel" tabIndex={davranis === sekme.key ? 0 : -1} onClick={() => setDavranis(sekme.key)} onKeyDown={event => {
             const yon = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
             if (!yon && event.key !== 'Home' && event.key !== 'End') return;
             event.preventDefault();
@@ -145,10 +138,8 @@ export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' }) {
               : (index + yon + DAVRANIS_SEKMELERI.length) % DAVRANIS_SEKMELERI.length;
             setDavranis(DAVRANIS_SEKMELERI[hedef].key);
             event.currentTarget.parentElement?.querySelectorAll('button')[hedef]?.focus();
-          }}
-          className={`${styles.category} ${davranis === sekme.key ? styles.categoryActive : ''}`}
-        >{sekme.ad}</button>)}
-      </div>
+          }}>{sekme.ad}</SadeKontrolButonu>)}
+      </SadeKontrolGrubu>
       {raporHatasi && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{raporHatasi}<button onClick={raporuYenile} className="ml-3 font-bold underline">Tekrar dene</button></div>}
       {karsilastirma && !karsilastirmaSecildi && <p className="rounded-xl border border-[#dbe5ef] bg-white p-5 text-sm text-[#667e98]">{rol === 'tm' ? 'Karşılaştırmak için iki bölge müdürü seçiniz.' : 'Karşılaştırmak için iki temsilci seçiniz.'}</p>}
       {(!karsilastirma || karsilastirmaSecildi) && (bekliyor || data) && <div id="rapor-davranis-panel" role="tabpanel" aria-labelledby={`davranis-tab-${davranis}`} aria-busy={loading || yenileniyor}>

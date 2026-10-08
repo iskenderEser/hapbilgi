@@ -1,28 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import {
-  ArrowLeft,
-  ChartNoAxesCombined,
-  ExternalLink,
-  FileChartColumnIncreasing,
-  Gauge,
-  Layers3,
-  MapPinned,
-  Newspaper,
-  X,
-} from "lucide-react";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
 import { useAuth } from "@/app/providers/AuthProvider";
-import { useRapor } from "@/hooks/useRapor";
-import { YenileButonu } from "@/components/ui/yenile-butonu";
-import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
 import DagilimGrafik from "@/components/raporlar/DagilimGrafik";
+import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
 import YayinDetayModal from "@/components/raporlar/YayinDetayModal";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import TClubPageSkeleton from "@/components/tclub/TClubPageSkeleton";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
+import { useRapor } from "@/hooks/useRapor";
 import { formatPuan, type Periyot } from "@/lib/utils/raporUtils";
 import { TUR_RAPOR_ADI, isIcerikTuru } from "@/lib/video/icerikTuru";
+import {
+    ArrowLeft,
+    ChartNoAxesCombined,
+    ExternalLink,
+    FileChartColumnIncreasing,
+    Gauge,
+    Layers3,
+    MapPinned,
+    Newspaper,
+    X,
+} from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 import styles from "../utt/utt-report.module.css";
 
 const DEFAULT_PERIYOT: Periyot = "bu_ay";
@@ -248,22 +250,22 @@ export default function TclubUreticiRaporPage() {
 
           <section className={`${styles.panel} ${styles.section}`}>
             <KartBasligi baslik="İçerik Puan Dağılımı" aciklama="Yayın puanlarının öğrenme aracı, eğitim konusu ve ürün bazındaki dağılımı" icon={Layers3} />
-            <div className="mb-3 grid w-full grid-cols-3 rounded-xl border border-[#dfe8f2] bg-[#f7f9fc] p-1 sm:inline-flex sm:w-auto">
-              {(["araclar", "kategoriler", "urunler"] as const).map((sekme) => <button key={sekme} type="button" onClick={() => setIcerikSekmesi(sekme)} className={`rounded-lg px-3 py-1.5 text-xs font-extrabold ${icerikSekmesi === sekme ? "bg-[#237ac8] text-white" : "text-[#60728f]"}`}>{sekme === "araclar" ? "Öğrenme Araçları" : sekme === "kategoriler" ? "Eğitim Konuları" : "Ürünler"}</button>)}
-            </div>
+            <SadeKontrolGrubu tur="sekme">
+              {(["araclar", "kategoriler", "urunler"] as const).map((sekme) => <SadeKontrolButonu key={sekme} type="button" onClick={() => setIcerikSekmesi(sekme)} aria-pressed={icerikSekmesi === sekme}>{sekme === "araclar" ? "Öğrenme Araçları" : sekme === "kategoriler" ? "Eğitim Konuları" : "Ürünler"}</SadeKontrolButonu>)}
+            </SadeKontrolGrubu>
             <DagilimGrafik veri={icerikSatirlari.map((satir) => ({ ad: satir.ad, puan: satir.net_puan }))} modlar={["bar", "pie", "line", "tablo"]} apsisAdi="İçerik" ordinatAdi="Net puan" indirAdi={`tclub-${icerikSekmesi}`} height={270} modern />
           </section>
         </div>
 
         <section className={`${styles.panel} ${styles.section}`}>
           <KartBasligi baslik="Saha Puan Dağılımı" aciklama="Firma puanının takım, bölge ve UTT bazındaki dağılımı" icon={MapPinned} />
-          <div className="mb-3 grid w-full grid-cols-3 rounded-xl border border-[#dfe8f2] bg-[#f7f9fc] p-1 sm:inline-flex sm:w-auto">
+          <SadeKontrolGrubu tur="sekme">
             {(["takimlar", "bolgeler", "uttler"] as const).map((sekme) => (
-              <button key={sekme} type="button" onClick={() => setSahaSekmesi(sekme)} className={`rounded-lg px-3 py-1.5 text-xs font-extrabold ${sahaSekmesi === sekme ? "bg-[#237ac8] text-white" : "text-[#60728f]"}`}>
+              <SadeKontrolButonu key={sekme} type="button" onClick={() => setSahaSekmesi(sekme)} aria-pressed={sahaSekmesi === sekme}>
                 {sekme === "takimlar" ? "Takımlar" : sekme === "bolgeler" ? "Bölgeler" : "UTT’ler"}
-              </button>
+              </SadeKontrolButonu>
             ))}
-          </div>
+          </SadeKontrolGrubu>
           <div className="space-y-2 md:hidden">
             {sahaSatirlari.map((satir) => {
               const uttMi = sahaSekmesi === "uttler";
