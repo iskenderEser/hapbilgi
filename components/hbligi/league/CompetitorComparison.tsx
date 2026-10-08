@@ -40,15 +40,15 @@ function PuanKalemi({ etiket, deger, kayip = false }: { etiket: string; deger: n
   );
 }
 
-function PuanAyrintisi({ satir }: { satir: SiraliSatir }) {
+function PuanAyrintisi({ satir, eclubAcik }: { satir: SiraliSatir; eclubAcik: boolean }) {
   return (
     <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-start gap-x-5 whitespace-normal sm:gap-x-8">
       <div className="min-w-0">
-        <PuanKalemi etiket="Öğrenme Tamamlama" deger={satir.izleme_puani} />
+        <PuanKalemi etiket="Yayın Tamamlama" deger={satir.izleme_puani} />
         <PuanKalemi etiket="Cevaplama" deger={satir.cevaplama_puani} />
         <PuanKalemi etiket="Öneri" deger={satir.oneri_puani} />
         <PuanKalemi etiket="Extra" deger={satir.extra_puani} />
-        <PuanKalemi etiket="E-Club" deger={satir.eclub_puani ?? 0} />
+        {eclubAcik && <PuanKalemi etiket="E-Club" deger={satir.eclub_puani ?? 0} />}
       </div>
       <div className="min-w-0">
         <PuanKalemi etiket="İleri sarma" deger={satir.ileri_sarma_kaybi} kayip />
@@ -67,8 +67,8 @@ function puanToplamlari(satir: SiraliSatir) {
   return { toplamKazanc, toplamKayip };
 }
 
-function KapsulLigListesi({ satirlar, benimId, ayrintiGoster, ayrintiIcerigi }: {
-  satirlar: SiraliSatir[]; benimId: string; ayrintiGoster: boolean;
+function KapsulLigListesi({ satirlar, benimId, ayrintiGoster, ayrintiIcerigi, eclubAcik }: {
+  satirlar: SiraliSatir[]; benimId: string; ayrintiGoster: boolean; eclubAcik: boolean;
   ayrintiIcerigi?: (satir: SiraliSatir) => ReactNode;
 }) {
   const [acikId, setAcikId] = useState<string | null>(null);
@@ -122,11 +122,11 @@ function KapsulLigListesi({ satirlar, benimId, ayrintiGoster, ayrintiIcerigi }: 
             ) : (
               <div id={ayrintiId} className={`${styles.capsuleColumns} items-start border-t border-[#e3eaf2] bg-[#f8fbff] p-3`}>
                 <div className={`${styles.capsuleGain} min-w-0 rounded-xl border border-emerald-100 bg-white px-3 py-1`}>
-                  <PuanKalemi etiket="Öğrenme Tamamlama" deger={satir.izleme_puani} />
+                  <PuanKalemi etiket="Yayın Tamamlama" deger={satir.izleme_puani} />
                   <PuanKalemi etiket="Cevaplama" deger={satir.cevaplama_puani} />
                   <PuanKalemi etiket="Öneri" deger={satir.oneri_puani} />
                   <PuanKalemi etiket="Extra" deger={satir.extra_puani} />
-                  <PuanKalemi etiket="E-Club" deger={satir.eclub_puani ?? 0} />
+                  {eclubAcik && <PuanKalemi etiket="E-Club" deger={satir.eclub_puani ?? 0} />}
                 </div>
                 <div className={`${styles.capsuleLoss} min-w-0 rounded-xl border border-rose-100 bg-white px-3 py-1`}>
                   <PuanKalemi etiket="İleri sarma" deger={satir.ileri_sarma_kaybi} kayip />
@@ -148,6 +148,7 @@ export default function CompetitorComparison({
   baslik,
   organizasyonFiltresi,
   ayrintiGoster = true,
+  eclubAcik = true,
   ayrintiIcerigi,
 }: {
   satirlar: SiraliSatir[];
@@ -155,6 +156,7 @@ export default function CompetitorComparison({
   baslik: string;
   organizasyonFiltresi?: OrganizasyonTabloFiltresi;
   ayrintiGoster?: boolean;
+  eclubAcik?: boolean;
   ayrintiIcerigi?: (satir: SiraliSatir) => ReactNode;
 }) {
   const [acikKullanici, setAcikKullanici] = useState<string | null>(null);
@@ -194,7 +196,7 @@ export default function CompetitorComparison({
         </div>
       )}
 
-      {!organizasyonFiltresi && <KapsulLigListesi satirlar={satirlar} benimId={benimId} ayrintiGoster={ayrintiGoster} ayrintiIcerigi={ayrintiIcerigi} />}
+      {!organizasyonFiltresi && <KapsulLigListesi satirlar={satirlar} benimId={benimId} ayrintiGoster={ayrintiGoster} ayrintiIcerigi={ayrintiIcerigi} eclubAcik={eclubAcik} />}
 
       {organizasyonFiltresi && <><div className="space-y-2 md:hidden">
         {satirlar.map((satir) => {
@@ -238,7 +240,7 @@ export default function CompetitorComparison({
               )}
               {acik && detayGorulebilir && (
                 <div id={ayrintiId} className="border-t border-[#dfe8f2] bg-[#f8fbff] p-3">
-                  <PuanAyrintisi satir={satir} />
+                  <PuanAyrintisi satir={satir} eclubAcik={eclubAcik} />
                 </div>
               )}
             </article>
@@ -358,7 +360,7 @@ export default function CompetitorComparison({
                   {acik && detayGorulebilir && (
                     <TableRow id={ayrintiId} className="border-[#dfe8f2] bg-[#f8fbff] hover:bg-[#f8fbff]">
                       <TableCell colSpan={organizasyonFiltresi ? 8 : 6} className="h-auto whitespace-normal px-4 py-3">
-                        <PuanAyrintisi satir={satir} />
+                        <PuanAyrintisi satir={satir} eclubAcik={eclubAcik} />
                       </TableCell>
                     </TableRow>
                   )}

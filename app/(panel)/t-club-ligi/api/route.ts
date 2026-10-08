@@ -12,6 +12,7 @@ import { getBmPerformans } from "@/lib/tclub/hbligi/getBmPerformans";
 import { getUreticiEtkiLigi } from "@/lib/tclub/hbligi/getUreticiEtkiLigi";
 import type { LigPeriyot } from "@/lib/tclub/hbligi/ligRpcCagir";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { ligEclubDurumu, ligModulDurumunuUygula } from "@/lib/tclub/hbligi/eclubDurumu";
 import {
   ADMIN_ROLLER,
   IU_ROLU,
@@ -79,6 +80,12 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+      const modulKontrolluRol = TUKETICI_ROLLER.includes(rol) || rol === 'bm' || rol === 'tm';
+      const eclubAcik = modulKontrolluRol ? await ligEclubDurumu(adminSupabase, kullanici.firma_id) : null;
+      if (searchParams.get('modul') === '1') {
+        if (eclubAcik === null) return yetkiHatasi();
+        return NextResponse.json({ success: true, eclub_acik: eclubAcik }, { headers: { 'Cache-Control': 'no-store' } });
+      }
       if (TUKETICI_ROLLER.includes(rol)) {
         if (!kullanici.bolge_id) {
           return hataYaniti("Kullanıcıya bölge atanmamış.", "kullanicilar SELECT — bolge_id kontrolü", null);
@@ -88,7 +95,7 @@ export async function GET(request: NextRequest) {
           takim_id: kullanici.takim_id,
           firma_id: kullanici.firma_id,
         }, periyot);
-        return NextResponse.json(sonuc, { status: 200 });
+        return NextResponse.json(ligModulDurumunuUygula(sonuc, eclubAcik!), { status: 200, headers: { 'Cache-Control': 'no-store' } });
       }
 
       let gorunum: SahaGorunumu | null = null;
@@ -136,7 +143,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      return NextResponse.json(gosterilecekSonuc, { status: 200 });
+      return NextResponse.json(eclubAcik === null ? gosterilecekSonuc : ligModulDurumunuUygula(gosterilecekSonuc, eclubAcik), { status: 200, headers: { 'Cache-Control': 'no-store' } });
 
     } catch (err) {
       return hataYaniti(

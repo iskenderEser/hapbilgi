@@ -26,11 +26,13 @@ export default function LeaguePage({
   ligler,
   aylikKursu,
   userId,
+  eclubAcik,
   periyotSecici,
 }: {
   ligler: Record<LigKapsami, LigSatiri[]>;
   aylikKursu?: AylikKursu;
   userId: string;
+  eclubAcik: boolean;
   periyotSecici: ReactNode;
 }) {
   const [kapsam, setKapsam] = useState<LigKapsami>("bolge");
@@ -115,6 +117,7 @@ export default function LeaguePage({
         <div className="flex flex-wrap items-center justify-end gap-2">{filtreler}</div>
         <div className={styles.listViewport}>
           <CompetitorComparison
+            eclubAcik={eclubAcik}
             satirlar={sirali}
             benimId={userId}
             baslik={`${KAPSAMLAR.find((secenek) => secenek.id === kapsam)?.etiket ?? "Bölge"} Ligi`}

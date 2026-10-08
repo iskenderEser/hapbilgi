@@ -56,6 +56,7 @@ export interface SahaAylikKursu {
 }
 
 export interface SahaLigSonuc {
+  eclub_acik?: boolean;
   tip: "saha";
   gorunum: SahaGorunumu;
   kapsam_adi: string;

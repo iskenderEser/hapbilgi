@@ -71,13 +71,13 @@ export default function TmLeaguePage({ veri, periyotSecici }: { veri: SahaLigSon
           {periyotSecici}
         </div>
         <div className={styles.listViewport}>
-        <CompetitorComparison key={kapsam} satirlar={satirlar} benimId=""
+        <CompetitorComparison eclubAcik={veri.eclub_acik === true} key={kapsam} satirlar={satirlar} benimId=""
           baslik={kapsam === "takim" ? `${veri.kapsam_adi} Takım Bölgeleri Ligi` : "Firma Takımları Ligi"}
           ayrintiGoster={kapsam === "takim"}
           ayrintiIcerigi={kapsam === "takim" ? (satir) => {
             const bolge = bolgeler.get(satir.kullanici_id);
             if (!bolge) return null;
-            return <CompetitorComparison satirlar={sirala(bolge.uttler)} benimId="" baslik={`${bolge.ad} Temsilcileri`} />;
+            return <CompetitorComparison eclubAcik={veri.eclub_acik === true} satirlar={sirala(bolge.uttler)} benimId="" baslik={`${bolge.ad} Temsilcileri`} />;
           } : undefined} />
         {satirlar.length === 0 && <p className={`${styles.panel} p-6 text-center text-xs text-[#7b8ca5]`}>Seçili kapsamda temsilci bulunamadı.</p>}
         </div>

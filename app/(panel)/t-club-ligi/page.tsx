@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { ligModulDurumunuUygula } from "@/lib/tclub/hbligi/eclubDurumu";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
 import LeaguePage from "@/components/hbligi/league/LeaguePage";
@@ -52,13 +54,14 @@ interface UttAylikKursu {
 
 type HBLigiVeri = {
   tip: "utt";
+  eclub_acik?: boolean;
   lig: UttSatiri[];
   ligler?: { bolge: UttSatiri[]; takim: UttSatiri[]; firma: UttSatiri[] };
   aylik_kursu?: UttAylikKursu;
 } | SahaLigSonuc;
 
 const LIG_ONBELLEK_SURESI = 60_000;
-const LIG_OTURUM_ONBELLEK_PREFIXI = "hb_tclub_lig_cache_v4_";
+const LIG_OTURUM_ONBELLEK_PREFIXI = "hb_tclub_lig_cache_v5_";
 const ligOnbellegi = new Map<string, { veri: HBLigiVeri; zaman: number }>();
 const devamEdenLigIstekleri = new Map<string, { promise: Promise<HBLigiVeri>; controller: AbortController }>();
 
@@ -176,8 +179,26 @@ export default function HBLigiPage() {
     aktifIstek.current?.abort();
     aktifIstek.current = null;
     const onbellekKaydi = ligOnbelleginiOku(onbellekAnahtari);
+    const modulKontrolluRol = TUKETICI_ROLLER.includes(kullanici.rol) || kullanici.rol === 'bm' || kullanici.rol === 'tm';
+    let eclubAcik: boolean | undefined;
+    if (modulKontrolluRol) {
+      try {
+        const modulParams = new URLSearchParams(params); modulParams.set('modul', '1');
+        const modulController = new AbortController(); aktifIstek.current = modulController;
+        const res = await fetch(`/t-club-ligi/api?${modulParams}`, { signal: modulController.signal, cache: 'no-store' });
+        const modul = await res.json();
+        if (!res.ok || !modul.success || typeof modul.eclub_acik !== 'boolean') throw new Error(modul.error ?? 'E-Club modül durumu alınamadı.');
+        if (istekNo !== sonIstek.current) return;
+        eclubAcik = modul.eclub_acik;
+        aktifIstek.current = null;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (istekNo === sonIstek.current) { setHata(error instanceof Error ? error.message : 'Modül durumu alınamadı.'); setLoading(false); setYenileniyor(false); }
+        return;
+      }
+    }
     if (!manuelYenileme && onbellekKaydi) {
-      setVeri(onbellekKaydi.veri);
+      setVeri(eclubAcik === undefined ? onbellekKaydi.veri : ligModulDurumunuUygula(onbellekKaydi.veri, eclubAcik));
       veriVar.current = true;
       setLoading(false);
       setYenileniyor(false);
@@ -223,6 +244,15 @@ export default function HBLigiPage() {
   }, [veriCek]);
 
   useEffect(() => () => aktifIstek.current?.abort(), []);
+
+  useEffect(() => {
+    if (!kullanici || !(TUKETICI_ROLLER.includes(kullanici.rol) || kullanici.rol === 'bm' || kullanici.rol === 'tm')) return;
+    const yenile = () => { void veriCek(false); };
+    const gorunurOldu = () => { if (document.visibilityState === 'visible') yenile(); };
+    window.addEventListener('focus', yenile);
+    document.addEventListener('visibilitychange', gorunurOldu);
+    return () => { window.removeEventListener('focus', yenile); document.removeEventListener('visibilitychange', gorunurOldu); };
+  }, [kullanici, veriCek]);
 
   useEffect(() => {
     if (!kullanici || !veri || veri.tip === "utt" || veri.gorunum !== "uretici" || ureticiBakisi !== "genel") return;
@@ -277,6 +307,7 @@ export default function HBLigiPage() {
             ligler={veri.ligler ?? { bolge: veri.lig, takim: veri.lig, firma: veri.lig }}
             aylikKursu={veri.aylik_kursu}
             userId={kullanici.id}
+            eclubAcik={veri.eclub_acik === true}
             periyotSecici={periyotSecici}
           />
         </div>
