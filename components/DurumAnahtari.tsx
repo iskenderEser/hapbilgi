@@ -14,8 +14,10 @@
 
 "use client";
 
-import { durumMesaji, type Asama, type DurumKodu } from "@/lib/utils/durum/mesaj";
+import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+
 import { uretimDurumSirasi } from "@/lib/utils/durum/filtre";
+import { durumMesaji, type Asama, type DurumKodu } from "@/lib/utils/durum/mesaj";
 
 interface PillTanim {
   kod: DurumKodu;
@@ -69,31 +71,19 @@ export default function DurumAnahtari({ baslik, rol, asama, aktif, onSec, sayim 
         <span className="text-xs text-gray-500 whitespace-nowrap">{sayim[aktif] ?? 0} kayıt</span>
       </div>
       <div className="min-w-0">
-        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
+        <SadeKontrolGrubu tur="kapsul">
           {piller.filter((p) => !(p.yalnizKayitVarsa && (sayim[p.kod] ?? 0) === 0 && aktif !== p.kod)).map((p) => {
             const secili = aktif === p.kod;
             const n = sayim[p.kod] ?? 0;
             const m = durumMesaji(p.kod, rol, { asama });
             return (
-              <button
-                key={p.kod}
-                onClick={() => onSec(p.kod)}
-                aria-pressed={secili}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-shadow text-left whitespace-nowrap shrink-0"
-                style={{
-                  background: m.renk.bg,
-                  color: m.renk.text,
-                  border: `1px solid ${m.renk.border}`,
-                  fontSize: 11,
-                  fontWeight: secili ? 600 : 400,
-                }}
-              >
+              <SadeKontrolButonu key={p.kod} onClick={() => onSec(p.kod)} aria-pressed={secili}>
                 {m.metin}
                 <span style={{ background: m.renk.text, color: "#fff", borderRadius: 999, padding: "0 6px", fontSize: 10 }}>{n}</span>
-              </button>
+              </SadeKontrolButonu>
             );
           })}
-        </div>
+        </SadeKontrolGrubu>
       </div>
     </div>
   );

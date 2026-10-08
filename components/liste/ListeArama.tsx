@@ -9,6 +9,8 @@
 
 "use client";
 
+import { SadeListeSecimi } from "@/components/kontrol/SadeKontroller";
+
 import type { AramaAlani } from "./useListe";
 
 interface Props<T> {
@@ -32,29 +34,24 @@ export function ListeArama<T>({ arama, ipucu, genislik }: Props<T>) {
   const secili = alanlar.find((a) => a.anahtar === alanAnahtari) ?? alanlar[0];
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
       {alanlar.length > 1 && (
-        <select
-          value={alanAnahtari}
-          onChange={(e) => alanDegistir(e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-          className="text-xs text-gray-600 bg-white border border-gray-200 rounded-lg px-2 py-1.5 cursor-pointer outline-none"
-        >
+        <SadeListeSecimi value={alanAnahtari} onChange={(e) => alanDegistir(e.target.value)} onClick={(e) => e.stopPropagation()} aria-label="Arama alanı" className="w-[160px] max-[480px]:w-[140px] flex-none">
           {alanlar.map((a) => (
             <option key={a.anahtar} value={a.anahtar}>
               {a.etiket}
             </option>
           ))}
-        </select>
+        </SadeListeSecimi>
       )}
 
-      <div className="relative">
+      <div className="relative min-w-0 max-w-full">
         <input
           type="text"
           value={aranan}
           onChange={(e) => aramaDegistir(e.target.value)}
           placeholder={ipucu ?? `${secili.etiket} ara`}
-          className={`text-xs text-gray-700 bg-white border border-gray-200 rounded-lg pl-2.5 pr-7 py-1.5 outline-none focus:border-gray-300 ${genislik ?? "w-44"}`}
+          className={`max-w-full text-xs text-gray-700 bg-white border border-gray-200 rounded-lg pl-2.5 pr-7 py-1.5 outline-none focus:border-gray-300 ${genislik ?? "w-44"}`}
         />
         {aranan && (
           // Temizleme: aramayı sıfırlar. Klavyeyle uğraşmadan tam listeye dönüş.
