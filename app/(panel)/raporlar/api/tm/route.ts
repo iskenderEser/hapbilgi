@@ -1,90 +1,41 @@
+import { firmaEclubDurumu } from '@/lib/firma/eclubDurumu';
+import { raporModulDurumunuUygula } from '@/lib/rapor/paylasilan/eclubDurumu';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
+import { hataYaniti, yetkiHatasi, validasyonHatasi, sunucuHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
-import { getTmData } from '@/lib/rapor/tm/getTmData';
-import { kategorileriTopla, ozetToplami, urunleriTopla } from '@/lib/rapor/bm/toplamlar';
-import { katkiYuzdesi } from '@/lib/rapor/paylasilan/oran';
+import { PERIYOTLAR } from '@/lib/utils/raporUtils';
+import { getTmDavranis, getTmKarsilastirma } from '@/lib/rapor/tm/getTmDavranis';
+import { TemsilciKapsamHatasi } from '@/lib/rapor/bm/getBmDavranis';
 
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const adminSupabase = createAdminClient();
-  const { searchParams } = new URL(request.url);
-  const periyot = searchParams.get('periyot') || 'bu_ay';
-  const { baslangic, bitis } = tarihAraligi(periyot);
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return yetkiHatasi('Oturum açılmamış');
-
-  const { data: kullanici, error: kullaniciError } = await adminSupabase
-    .from('kullanicilar')
-    .select('kullanici_id, ad, soyad, rol, takim_id, firma_id')
-    .eq('eposta', user.email)
-    .single();
-
-  if (kullaniciError || !kullanici) {
-    return hataYaniti('Kullanıcı bulunamadı', 'kullanici_bulamadi', kullaniciError);
+  try {
+    const params = new URL(request.url).searchParams;
+    const periyot = params.get('periyot') ?? 'bu_hafta';
+    if (!PERIYOTLAR.some(p => p.key === periyot)) return validasyonHatasi('Geçersiz rapor zamanı.', ['periyot']);
+    const supabase = await createClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) return yetkiHatasi();
+    const db = createAdminClient();
+    const { data: kullanici, error: kullaniciError } = await db.from('kullanicilar')
+      .select('kullanici_id,rol,takim_id,firma_id').eq('kullanici_id', user.id).eq('aktif_mi', true).single();
+    if (kullaniciError || !kullanici) return hataYaniti('Kullanıcı bulunamadı.', 'TM rapor kimliği', kullaniciError);
+    if (kullanici.rol !== 'tm') return yetkiHatasi('Bu rapora erişim yetkiniz yok.');
+    if (!kullanici.takim_id || !kullanici.firma_id) return validasyonHatasi('Takım veya firma bilgisi eksik.', ['takim_id', 'firma_id']);
+    const eclubAcik = await firmaEclubDurumu(db, kullanici.firma_id);
+    if (new URL(request.url).searchParams.get('modul') === '1') {
+      return NextResponse.json({ success: true, eclub_acik: eclubAcik }, { headers: { 'Cache-Control': 'no-store' } });
+    }
+    const { baslangic, bitis } = tarihAraligi(periyot);
+    const bmId = params.get('bm') ?? '';
+    const ikinciBmId = params.get('karsilastir') ?? '';
+    const yenile = params.get('yenile') === '1';
+    if (ikinciBmId && (!bmId || bmId === ikinciBmId || params.get('temsilci'))) return validasyonHatasi('İki farklı bölge müdürü seçiniz.', ['bm', 'karsilastir']);
+    const data = ikinciBmId ? await getTmKarsilastirma(db, kullanici, baslangic, bitis, bmId, ikinciBmId, yenile)
+      : await getTmDavranis(db, kullanici, baslangic, bitis, bmId, params.get('temsilci') ?? '', yenile);
+    return NextResponse.json({ success: true, data: raporModulDurumunuUygula(data, eclubAcik) }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    if (error instanceof TemsilciKapsamHatasi) return yetkiHatasi(error.message);
+    return sunucuHatasi(error, 'GET /raporlar/api/tm — takım öğrenme davranışları');
   }
-  if ((kullanici.rol ?? '').toLowerCase() !== 'tm') {
-    return yetkiHatasi('Bu rapora erişim yetkiniz yok');
-  }
-
-  const d = await getTmData(adminSupabase, kullanici, baslangic, bitis);
-  if (d.hata) return d.hata;
-
-  const genel = ozetToplami(d.takimOzet);
-  const kategoriDagilimi = kategorileriTopla(d.kategoriDagilimi);
-  const urunDagilimi = urunleriTopla(d.urunDagilimi);
-  const istatistikler = {
-    izleme_puani: genel.video_puani,
-    cevaplama_puani: genel.soru_puani,
-    oneri_puani: genel.oneri_puani,
-    extra_puan: genel.extra_puan,
-    eclub_puani: genel.eclub_puani,
-    ileri_sarma_kaybi: genel.ileri_sarma_kaybi,
-    yanlis_cevap_kaybi: genel.yanlis_cevap_kaybi,
-    oneri_kaybi: genel.oneri_kaybi,
-    toplam_net_puan: genel.toplam_net_puan,
-  };
-
-  return NextResponse.json({
-    success: true,
-    data: {
-      kullanici: {
-        ad: kullanici.ad,
-        soyad: kullanici.soyad,
-        rol: kullanici.rol,
-        takim_adi: d.takim?.takim_adi ?? '-',
-        firma_adi: d.firma?.firma_adi ?? '-',
-      },
-      katki: {
-        sirket_katki_yuzdesi: katkiYuzdesi(genel.toplam_net_puan, d.sirketToplamPuan),
-        takim_mevcut_puan: genel.toplam_net_puan,
-        sirket_toplam_puan: d.sirketToplamPuan,
-      },
-      bm_performans: d.bmPerformans.map(bm => ({
-        ...bm,
-        utt_listesi: d.uttPerformans.filter(utt => utt.bm_id === bm.bm_id),
-      })),
-      istatistikler,
-      kategori_dagilimi: kategoriDagilimi,
-      urun_dagilimi: urunDagilimi,
-      begeni_listesi: d.etkilesim
-        .filter(satir => satir.begeni_sayisi > 0)
-        .map(satir => ({
-          yayin_id: satir.yayin_id,
-          urun_adi: satir.icerik_adi,
-          teknik_adi: satir.teknik_adi,
-          begeni_sayisi: satir.begeni_sayisi,
-        })),
-      favori_listesi: d.etkilesim
-        .filter(satir => satir.favori_sayisi > 0)
-        .map(satir => ({
-          yayin_id: satir.yayin_id,
-          urun_adi: satir.icerik_adi,
-          teknik_adi: satir.teknik_adi,
-          favori_sayisi: satir.favori_sayisi,
-        })),
-    },
-  });
 }

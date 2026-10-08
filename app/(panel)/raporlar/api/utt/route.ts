@@ -1,153 +1,37 @@
-// app/raporlar/api/utt/route.ts
+import { firmaEclubDurumu } from '@/lib/firma/eclubDurumu';
+import { raporModulDurumunuUygula } from '@/lib/rapor/paylasilan/eclubDurumu';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { hataYaniti, sunucuHatasi, yetkiHatasi } from '@/lib/utils/hataIsle';
+import { hataYaniti, sunucuHatasi, yetkiHatasi, validasyonHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { TUKETICI_ROLLER } from '@/lib/utils/roller';
-import { getUttData, netPuanToplami } from '@/lib/rapor/utt/getUttData';
-import { katkiYuzdesi } from '@/lib/rapor/paylasilan/oran';
+import { PERIYOTLAR } from '@/lib/utils/raporUtils';
+import { getUttDavranis } from '@/lib/rapor/utt/getUttDavranis';
+import { getUttKatki } from '@/lib/rapor/utt/getUttKatki';
 
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const adminSupabase = createAdminClient();
-  const { searchParams } = new URL(request.url);
-  const periyot = searchParams.get('periyot') || 'bu_ay';
-  const { baslangic, bitis } = tarihAraligi(periyot);
-
-  // Auth
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return yetkiHatasi('Oturum açılmamış');
-
-  // Kullanıcı
-  const { data: kullanici, error: kullaniciError } = await adminSupabase
-    .from('kullanicilar')
-    .select('kullanici_id, ad, soyad, rol, bolge_id, takim_id, firma_id')
-    .eq('eposta', user.email)
-    .single();
-
-  if (kullaniciError || !kullanici) {
-    return hataYaniti('Kullanıcı bulunamadı', 'kullanici_bulamadi', kullaniciError);
-  }
-
-  const rol = (kullanici.rol ?? '').toLowerCase();
-  if (!TUKETICI_ROLLER.includes(rol)) {
-    return yetkiHatasi('Bu rapora erişim yetkiniz yok');
-  }
-
-  // Veri
-  let d;
   try {
-    d = await getUttData(adminSupabase, kullanici, baslangic, bitis);
-  } catch (err) {
-    return sunucuHatasi(err, 'GET /raporlar/api/utt — dönemsel katkı verisi');
+    const periyot = new URL(request.url).searchParams.get('periyot') ?? 'bu_hafta';
+    if (!PERIYOTLAR.some(p => p.key === periyot)) return validasyonHatasi('Geçersiz rapor zamanı.', ['periyot']);
+    const supabase = await createClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) return yetkiHatasi();
+    const db = createAdminClient();
+    const { data: kullanici, error: kullaniciError } = await db.from('kullanicilar')
+      .select('kullanici_id,rol,bolge_id,takim_id,firma_id').eq('kullanici_id', user.id).eq('aktif_mi', true).single();
+    if (kullaniciError || !kullanici) return hataYaniti('Kullanıcı bulunamadı.', 'UTT rapor kimliği', kullaniciError);
+    if (!TUKETICI_ROLLER.includes(kullanici.rol)) return yetkiHatasi('Bu rapora erişim yetkiniz yok.');
+    const eclubAcik = await firmaEclubDurumu(db, kullanici.firma_id);
+    if (new URL(request.url).searchParams.get('modul') === '1') {
+      return NextResponse.json({ success: true, eclub_acik: eclubAcik }, { headers: { 'Cache-Control': 'no-store' } });
+    }
+    const { baslangic, bitis } = tarihAraligi(periyot);
+    const [data, katki] = await Promise.all([
+      getUttDavranis(db, user.id, baslangic, bitis),
+      getUttKatki(db, kullanici, baslangic, bitis),
+    ]);
+    return NextResponse.json({ success: true, data: raporModulDurumunuUygula({ ...data, katki }, eclubAcik) }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    return sunucuHatasi(error, 'GET /raporlar/api/utt — öğrenme davranışları');
   }
-  // ─── İstatistikler — RPC çıktısından doğrudan ────────────────────────────
-  const ozet = d.ozet ?? {
-    izlenme_sayisi: 0,
-    video_puani: 0,
-    soru_puani: 0,
-    oneri_puani: 0,
-    extra_puan: 0,
-    eclub_puani: 0,
-    ileri_sarma_kaybi: 0,
-    yanlis_cevap_kaybi: 0,
-    oneri_kaybi: 0,
-    toplam_net_puan: 0,
-  };
-
-  const istatistikler = {
-    izleme_puani: ozet.video_puani ?? 0,
-    extra_puan: ozet.extra_puan ?? 0,
-    eclub_puani: ozet.eclub_puani ?? 0,
-    oneri_puani: ozet.oneri_puani ?? 0,
-    cevaplama_puani: ozet.soru_puani ?? 0,
-    ileri_sarma_kaybi: ozet.ileri_sarma_kaybi ?? 0,
-    yanlis_cevap_kaybi: ozet.yanlis_cevap_kaybi ?? 0,
-    oneri_kaybi: ozet.oneri_kaybi ?? 0,
-    toplam_net_puan: ozet.toplam_net_puan ?? 0,
-  };
-
-  // ─── Katkı (bölge/takım/firma payı) ──────────────────────────────────────
-  const kisiselPuan = ozet.toplam_net_puan ?? 0;
-  const toplamBolgePuan = netPuanToplami(d.bolgeOzet);
-  const toplamTakimPuan = netPuanToplami(d.takimOzet);
-  const toplamFirmaPuan = netPuanToplami(d.firmaOzet);
-
-  const bolgePuanMax = katkiYuzdesi(kisiselPuan, toplamBolgePuan);
-  const takimPuanMax = katkiYuzdesi(kisiselPuan, toplamTakimPuan);
-  const firmaPuanMax = katkiYuzdesi(kisiselPuan, toplamFirmaPuan);
-
-  // ─── Beğeni / Favori ─────────────────────────────────────────────────────
-  const benimBegeniSet = new Set(d.aylikBenimBegenim.map((b) => b.yayin_id));
-  const benimFavoriSet = new Set(d.aylikBenimFavorim.map((f) => f.yayin_id));
-
-  const begeniListesi = d.begeniRaw.map((v) => ({
-    ...v,
-    benim_begenim: benimBegeniSet.has(v.yayin_id),
-  }));
-
-  const favoriListesi = d.favoriRaw.map((v) => ({
-    ...v,
-    benim_favorim: benimFavoriSet.has(v.yayin_id),
-  }));
-
-  const urunEtkilesimHaritasi = new Map(
-    d.urunEtkilesimleri.map((urun) => [urun.urun_id, urun])
-  );
-  const enYuksekUrunPuani = d.urunDagilimi.reduce(
-    (enYuksek, urun) => Math.max(enYuksek, urun.toplam_net_puan ?? 0),
-    Number.NEGATIVE_INFINITY
-  );
-  const oneCikanUrunler = d.urunDagilimi
-    .filter((urun) => (urun.toplam_net_puan ?? 0) === enYuksekUrunPuani)
-    .sort((a, b) => {
-      const aEtkilesim = urunEtkilesimHaritasi.get(a.urun_id);
-      const bEtkilesim = urunEtkilesimHaritasi.get(b.urun_id);
-      const aOncelik = aEtkilesim?.benim_begenim && aEtkilesim?.benim_favorim
-        ? 3
-        : aEtkilesim?.benim_favorim
-          ? 2
-          : aEtkilesim?.benim_begenim
-            ? 1
-            : 0;
-      const bOncelik = bEtkilesim?.benim_begenim && bEtkilesim?.benim_favorim
-        ? 3
-        : bEtkilesim?.benim_favorim
-          ? 2
-          : bEtkilesim?.benim_begenim
-            ? 1
-            : 0;
-      return bOncelik - aOncelik || a.urun_adi.localeCompare(b.urun_adi, 'tr');
-    })
-    .slice(0, 3);
-
-  // ─── Response ────────────────────────────────────────────────────────────
-  return NextResponse.json({
-    success: true,
-    data: {
-      kullanici: {
-        ad: kullanici.ad,
-        soyad: kullanici.soyad,
-        rol: kullanici.rol,
-        bolge_adi: d.bolge?.bolge_adi ?? '-',
-        takim_adi: d.takim?.takim_adi ?? '-',
-      },
-      katki: {
-        bolge_katki_yuzdesi: bolgePuanMax,
-        takim_katki_yuzdesi: takimPuanMax,
-        firma_katki_yuzdesi: firmaPuanMax,
-        bolge_mevcut_puan: kisiselPuan,
-        bolge_toplam_puan: toplamBolgePuan,
-        takim_toplam_puan: toplamTakimPuan,
-        firma_toplam_puan: toplamFirmaPuan,
-      },
-      istatistikler,
-      arac_puan_dagilimi: d.aracPuanDagilimi,
-      kategori_dagilimi: d.kategoriDagilimi,
-      urun_dagilimi: d.urunDagilimi,
-      one_cikan_urunler: oneCikanUrunler,
-      begeni_listesi: begeniListesi,
-      favori_listesi: favoriListesi,
-    },
-  });
 }
