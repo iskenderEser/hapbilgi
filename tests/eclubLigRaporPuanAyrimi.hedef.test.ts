@@ -44,12 +44,10 @@ test("çekli/çeksiz ayrımı eksikse geçmiş veri varsayımı yapılmaz", () =
   );
 });
 
-test("lig ve Excel çıktısı üç puan değerini açıkça adlandırır", () => {
+test("lig üç puan değerini açıkça adlandırır", () => {
   const lig = oku("app/(panel)/eclub/ligi/page.tsx");
-  const excel = oku("app/(panel)/eclub/ligi/api/export/route.ts");
 
   for (const etiket of ["Çekli Puan", "Çeksiz Puan", "Lig Puanı"]) {
     assert.match(lig, new RegExp(etiket));
-    assert.match(excel, new RegExp(etiket));
   }
 });

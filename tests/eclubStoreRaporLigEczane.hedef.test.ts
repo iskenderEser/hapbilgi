@@ -7,10 +7,7 @@ const sql = readFileSync(
   "utf8"
 );
 const ligApi = readFileSync("app/(panel)/eclub/ligi/api/route.ts", "utf8");
-const ligExportApi = readFileSync(
-  "app/(panel)/eclub/ligi/api/export/route.ts",
-  "utf8"
-);
+
 
 function fonksiyonBloku(ad: string): string {
   const baslangic = sql.indexOf(`CREATE OR REPLACE FUNCTION public.${ad}(`);
@@ -137,10 +134,8 @@ test("cevap metrikleri transfer sonrası UTT kapsamı dışındaki eczaneye sız
   assert.equal(kapsamFiltreleri.length, 2);
 });
 
-test("lig ve lig Excel API'leri aynı eczane-boyutlu RPC'yi kullanır", () => {
-  for (const api of [ligApi, ligExportApi]) {
-    assert.match(api, /\.rpc\("get_eclub_utt_rapor"/);
-  }
+test("lig API'si eczane-boyutlu RPC'yi kullanır", () => {
+  assert.match(ligApi, /\.rpc\("get_eclub_utt_rapor"/);
 });
 
 test("dört RPC'nin search_path ve çalıştırma yetkileri korunur", () => {

@@ -77,8 +77,7 @@
   box-shadow: 0 0 0 3px rgba(86, 174, 255, 0.12);
 }
 
-.editorAction,
-.excelButton {
+.editorAction {
   border-radius: 9px;
   padding: 6px 10px;
   font-size: 10px;
@@ -97,14 +96,7 @@
   background: #237ac8;
 }
 
-.excelButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid #cfe8d9;
-  color: #16865f;
-  background: #effaf4;
-}
+
 
 .statsGrid {
   display: grid;
@@ -561,10 +553,6 @@
 @media (max-width: 560px) {
   .container {
     padding: 12px;
-  }
-
-  .excelButton {
-    display: none;
   }
 
   .statsGrid {

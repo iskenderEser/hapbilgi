@@ -7,7 +7,6 @@ import { eclubRaporunuTopla, eclubTakimlarLiginiOlustur, type EclubRaporHamSatir
 const oku = (yol: string) => readFileSync(yol, "utf8");
 
 const rolloutSql = oku("scripts/sql/eclub_cekli_ceksiz_puan_tam_rollout.sql");
-const exportRouteKod = oku("app/(panel)/eclub/ligi/api/export/route.ts");
 const ligSayfasiKod = oku("app/(panel)/eclub/ligi/page.tsx");
 const yayinApiKod = oku("app/(panel)/yayin-yonetimi/api/yayinlar/route.ts");
 
@@ -221,13 +220,7 @@ test("Senaryo 24: Çift hediye çeki talebi oluşmaz", () => {
   assert.match(rolloutSql, /IF EXISTS\(SELECT 1 FROM public\.eclub_store_cek_talepleri WHERE eczane_id=v_eczane AND yayin_id=p_yayin_id AND donem_kodu=v_d\.donem_kodu AND durum<>'iptal'\) THEN/);
 });
 
-test("Senaryo 25: E-Club Ligi Excel çıktısında Çekli Puan, Çeksiz Puan ve Lig Puanı doğru görünür", () => {
-  assert.match(exportRouteKod, /"Çekli Puan"/);
-  assert.match(exportRouteKod, /"Çeksiz Puan"/);
-  assert.match(exportRouteKod, /"Lig Puanı"/);
-  assert.match(exportRouteKod, /kisi\.cekli_puan,\s*kisi\.ceksiz_puan,\s*kisi\.toplam_puan/);
-  assert.match(exportRouteKod, /icerik\.cekli_puan,\s*icerik\.ceksiz_puan,\s*icerik\.toplam_puan/);
-});
+
 
 test("Senaryo 26: Mevcut Store siparişi, hediye çeki, UTT, BM ve admin akışları bozulmaz", () => {
   assert.match(rolloutSql, /GRANT EXECUTE ON FUNCTION public\.eclub_store_cek_talebi_olustur\(uuid, uuid, boolean\) TO service_role;/);

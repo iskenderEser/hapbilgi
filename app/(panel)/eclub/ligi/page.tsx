@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Download, Eye, Layers, Trophy, Users } from "lucide-react";
+import { CheckCircle2, Eye, Layers, Trophy, Users } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
 import type { EclubTakimLigSatiri } from "@/lib/eclub/rapor";
@@ -309,9 +309,6 @@ export default function EclubLigiPage() {
         <div className={`${styles.headerActions} mb-[14px] [&_.hb-ligi-periyot-secici]:mb-0`}>
           {periyotSecici}
           <YenileButonu yenileniyor={yenileniyor} onYenile={() => void veriCek(true)} disabled={yenileniyor || takimDuzenleniyor || takimKaydediliyor} />
-          <button type="button" className={styles.excelButton} onClick={() => window.open(`/eclub/ligi/api/export?${query}`, "_blank")}>
-            <Download className="h-3.5 w-3.5" /> Excel
-          </button>
         </div>
 
         {hata && data && (

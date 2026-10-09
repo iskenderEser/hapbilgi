@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   eclubTakimlarLiginiOlustur,
-  eclubLiginiOlustur,
   type EclubRaporHamSatir,
   type EclubTakimGirdi,
 } from "@/lib/eclub/rapor";
@@ -11,7 +10,6 @@ import {
 const oku = (yol: string) => readFileSync(yol, "utf8");
 
 const pageContent = oku("app/(panel)/eclub/ligi/page.tsx");
-const exportRouteContent = oku("app/(panel)/eclub/ligi/api/export/route.ts");
 const cssContent = oku("app/(panel)/eclub/ligi/eclub-league.module.css");
 
 const satir = (degisiklik: Partial<EclubRaporHamSatir>): EclubRaporHamSatir => ({
@@ -105,35 +103,7 @@ test("Hedef Test 3: Çeksiz Puan lig sıralamasına dahildir", () => {
   assert.equal(lig[1].ceksiz_puan, 0);
 });
 
-test("Hedef Test 4: Excel çıktısında üç puan alanı doğru görünür, sayısal değerler korunur", () => {
-  // Başlıklar Excel dosyasında yer alıyor mu?
-  assert.match(exportRouteContent, /"Çekli Puan", "Çeksiz Puan", "Lig Puanı"/);
 
-  // Değerler ham sayı olarak aktarılıyor mu?
-  assert.match(exportRouteContent, /kisi\.cekli_puan, kisi\.ceksiz_puan, kisi\.toplam_puan/);
-  assert.match(exportRouteContent, /icerik\.cekli_puan, icerik\.ceksiz_puan, icerik\.toplam_puan/);
-
-  // Simülasyon: Excel'e gidecek satırların tipleri ve eşitliği
-  const satirlar = [
-    satir({ kisi_id: "k-1", cekli_puan: 60, ceksiz_puan: 40 }),
-  ];
-  const lig = eclubLiginiOlustur(satirlar);
-  const kisi = lig[0];
-  const icerik = kisi.icerikler[0];
-
-  // Sayısal tip kontrolü
-  assert.equal(typeof kisi.cekli_puan, "number");
-  assert.equal(typeof kisi.ceksiz_puan, "number");
-  assert.equal(typeof kisi.toplam_puan, "number");
-
-  assert.equal(typeof icerik.cekli_puan, "number");
-  assert.equal(typeof icerik.ceksiz_puan, "number");
-  assert.equal(typeof icerik.toplam_puan, "number");
-
-  // Toplam = Çekli + Çeksiz
-  assert.equal(kisi.toplam_puan, kisi.cekli_puan + kisi.ceksiz_puan);
-  assert.equal(icerik.toplam_puan, icerik.cekli_puan + icerik.ceksiz_puan);
-});
 
 test("Hedef Test 5: Mobil ve masaüstü render hatası oluşmaz", () => {
   // CSS dosyasında overflow ve responsive kuralları tanımlı olmalı
