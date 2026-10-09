@@ -779,12 +779,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `route.ts` | API / Route Handler | `/eclub/ligi/api` uç noktasında GET isteklerini işler; E-Club için E-Club ligi sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
-### 📁 app/(panel)/eclub/ligi/api/export/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | API / Route Handler | `/eclub/ligi/api/export` uç noktasında GET isteklerini işler; E-Club için ligi dışa aktarma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
-
 ### 📁 app/(panel)/eclub/ligi/api/takim-adi/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
@@ -3171,6 +3165,84 @@ Görünümün ortaklaştırılması rol yetkisini, firma/modül sınırını, ve
 - Pasiflik, kalan öneri hakkı ve gönderim engeli gibi işlem bilgileri isimden ayrı satırda gösterilir. Tekli seçim kapsülünde yalnız kişi adı bulunur. Çoklu seçim kapsülünde **N kişi seçildi** yazılır.
 - E-Club Yayınları'nda otomatik seçilen temsilci mevcut veri kapsamını korur; kullanıcı listeden seçim yapana kadar kapsülde **Temsilciler** başlığı gösterilir. Bölge müdürü seçimi değişince bu başlangıç gösterimine dönülür.
 
+### 13.6. Kontrol Checklisti
+
+Her sayfada yalnız kullanılan kontrol aileleri için uygulanacak checklist:
+
+| No | Kontrol | Sonuç |
+|---|---|---|
+| 1 | Kontrol, uygun ortak bileşenden kullanılıyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 2 | Sayfaya özel boyut, font, renk, köşe veya gölge değişikliği yapılmamış mı? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 3 | Dış kapsül içinde ikinci çerçeveli seçim butonu bulunmuyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+
+**Ölçüler ve görünüm**
+
+| No | Kontrol | Sonuç |
+|---|---|---|
+| 4 | Kişi/kapsam seçimi: **40 px**, **11 px / 800**, **14 px köşe** mi? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 5 | Kişi/kapsam seçimi: beyaz yüzey, ince kenarlık, mavi metin ve sağ aşağı ok kullanıyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 6 | Tablo seçimi: **40 px**, **11 px / 800**, **10 px köşe** mi? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 7 | Kapsül: dış **40 px / 14 px köşe**, iç buton **30 px / 10 px köşe**, iç boşluk **4 px** mi? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 8 | Kapsül yazısı **11 px / 800** mü? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 9 | Kapsül seçenekleri tek kapsül içinde mi; aktif seçenek mavi zemin/beyaz metin mi? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 10 | Sekme yazısı **13 px / 800** mü; ortak alt ayraç ve aktif **2 px mavi çizgi** var mı? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 11 | Çoklu alıcı seçimi **40 px**, **11 px / 800** mü; ortak seçim görünümünü kullanıyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 12 | Form seçimi **40 px**, **11 px / 800**, **12 px köşe** mi? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 13 | Form etiketi üstte, seçili değer görünür ve giriş alanı tek mi? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 14 | Dokunmatik cihazdaki form seçimi yazısı **16 px** istisnasına uygun mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 15 | Tarih ve arama alanlarının yüksekliği yanındaki seçimle eşleşiyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+
+**Oklar, seçim ve klavye**
+
+| No | Kontrol | Sonuç |
+|---|---|---|
+| 16 | Aşağı ok biçimi ortak mı ve dikey merkezde mi? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 17 | Form okunun sağ boşluğu kenarlık hariç **12 px**, dış kenardan **13 px** mi; metin ok alanına taşmıyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 18 | Uzun listelerde arama, seçili öğede onay işareti ve anlaşılır boş sonuç var mı? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 19 | Tekli seçimde menü kapanıyor, değer güncelleniyor ve odak tetikleyiciye dönüyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 20 | Çoklu seçimde menü açık kalıyor ve seçili sayısı güncelleniyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 21 | Menü dışarı tıklama ve `Escape` ile kapanıyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 22 | Açık/kapalı, seçili ve devre dışı durumları erişilebilirlik özellikleriyle bildiriliyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 23 | Klavyeyle açma, arama, seçim ve kapatma çalışıyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 24 | Sekmeler klavyeyle gezilebiliyor ve seçilen sekmenin içeriği gösteriliyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+
+**Mobil ve veri davranışı**
+
+| No | Kontrol | Sonuç |
+|---|---|---|
+| 25 | Mobilde metinler okunabilir mi; satır düzeni veya yatay kaydırma kullanılıyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 26 | Menüler ekrana sığıyor ve dokunmatik hedefler kullanılabilir mi? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 27 | Filtre/sekme değişimi gereksiz sayfa atlaması oluşturmuyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 28 | Yükleme sırasında seçili kapsam korunuyor; eski yanıt yeni seçimin üzerine yazılmıyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 29 | Kullanıcı yalnız yetkili seçenekleri görüyor; üst kapsam değişince geçersiz alt seçim temizleniyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 30 | “Tümü” seçenekleri gerçekten desteklenen kapsamı ifade ediyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 31 | Görünüm değişikliği mevcut yetki, veri kapsamı, puan ve kayıt kurallarını koruyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+
+**Ölçüm zamanı ve isimler**
+
+| No | Kontrol | Sonuç |
+|---|---|---|
+| 32 | Ölçüm seçenekleri yalnız **Haftalık, Aylık, Dönemlik, Yıllık** mı ve `PERIYOTLAR` kaynağından mı geliyor? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 33 | İşlem ayı, ölçüm zamanı seçeneğiyle karıştırılmamış mı? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 34 | İsim listeleri `KisiKontroller.tsx` ve `kisiGorunenAdi` kullanıyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 35 | Seçim öncesi kapsam başlığı ve karşılaştırmalarda 1/2 ayrımı var mı? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 36 | İsimler ad soyad mı; yalnız **Ecz. / Ecz.Tekn.** önekleri korunuyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 37 | BM altında bölge/il gösterilmiyor; işlem bilgileri isimden ayrı mı? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 38 | Tekli seçimde kişi adı, çoklu seçimde **N kişi seçildi** gösteriliyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 39 | Toplam seçeneklerin adları açık mı; desteklenmeyen tümünü seçme eklenmemiş mi? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 40 | E-Club otomatik temsilci seçiminde başlangıç ve sıfırlama başlığı **Temsilciler** mi? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+
+**Sayfaya özel kayıtlı kurallar**
+
+| No | Kontrol | Sonuç |
+|---|---|---|
+| 41 | BM ana sayfasında mobil yayın türü ve zaman kapsülleri alt alta mı? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 42 | Mobil öneride Temsilciler tam satır, tarihler yan yana, Gönder ayrı satır mı? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 43 | E-Club mobil filtreleri ve BM T-Club kapsülleri aynı başlangıç hizasında mı? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 44 | Belirtilen Rapor/Karşılaştırma ve Tümü/Kazandıranlar/Kaybettirenler içerikleri sekme çizgisinden **20 px** sonra mı başlıyor? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+
+**İşlem butonları:** §13’te ayrı ölçü standardı bulunmadığından Ekle, Gönder, Kaydet, İptal, Yenile ve Kapat butonlarına seçim ölçüleri uygulanarak uyumsuzluk yazılmaz.
+
 ---
 
 ## 🎯 GENEL SONUÇ VE KALİTE SİCİLİ
@@ -3211,3 +3283,5 @@ Bu kayıt, doğrulanmış mevcut durumu ifade eder; mutlak kusursuzluk veya tama
 3. *Hayalet Tanbur (`HayaletTanburSecici`):* 13 üretici rolü, 7 yönetici rolü, UTT, KD_UTT, BM ve TM ana sayfalarında mobil dikey gezinmeyi hızlandıran kayan tanbur devreye alınmıştır (`iu` ve `admin` kapsam dışıdır). Tanbur'un render davranışları yüzeylere göre belirlenmiştir: Üretici ana sayfasında koşulsuz render edilir; Yönetici ana sayfasında `tanburBolumleri.length > 1` koşuluna bağlıdır; Saha BM ve TM ana sayfalarında mevcut `SahaVideoRaflari` içinde render edilir; UTT ve KD_UTT ana sayfasında ise aktif durum filtresi açık değilken render edilir.
 4. *İstemci Performansı ve Önbellek:* UTT ana sayfa verileri kullanıcı kimliğine göre izole edilerek önbelleğe alınır (`utt_anasayfa_veri_${user.id}`) ve aynı cihazdaki hesaplar arasında veri karışması engellenir; organizasyon zinciri için 5 dakikalık bellek içi önbellek (`ORG_CACHE_TTL = 5 * 60 * 1000`) kurulmuştur.
 5. *Önerilen Yayınlar Sekme Düzeni:* `/oneriler` (Bekleyen) ve `/oneriler/tamamlanan` (Tamamlanan) alt sekmeleri ayrılmış; `useListe` ve `IcerikFiltreBari` standardı getirilmiştir.
+
+**9 Ekim 2026 — Kullanıcı kararı:** E-Club Ligi Excel indirme özelliği tüm rollerden kaldırıldı; indirme butonu ve dışa aktarma API uç noktası kaldırıldı.
