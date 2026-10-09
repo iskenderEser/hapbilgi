@@ -366,7 +366,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
             {aciklama && <p className="mt-1 text-sm text-[#6b7f9b]">{aciklama}</p>}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <ListeArama arama={katalogListesi.arama} ipucu="Ürün adı, talep ID veya diğer alanlarda ara" />
+            <ListeArama arama={katalogListesi.arama} ipucu="Ürün adı, talep ID veya diğer alanlarda ara" yukseklik="secim" />
             <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
           </div>
         </header>

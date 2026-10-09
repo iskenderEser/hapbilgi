@@ -274,7 +274,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   );
 
   return (
-    <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
+    <div className="max-w-6xl mx-auto px-3 pr-10 py-4 sm:pr-3 md:px-6 md:py-5 lg:px-8 lg:py-7">
 
       {/* Karşılama */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 mb-6">
@@ -334,12 +334,12 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
       )}
 
       {/* İçerik tablosu başlık */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="inline-flex items-center">
           <span className="text-base font-bold text-gray-900">Yayın Listesi</span>
           <SayfaRehberi anahtar="uretici-yayin-listesi" className="ml-1.5 -translate-y-1.5" />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           {aktifFiltre !== "tumu" && (
             <button
               onClick={() => setAktifFiltre("tumu")}
@@ -349,7 +349,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
               Filtreyi Kaldır
             </button>
           )}
-          <ListeArama arama={liste.arama} />
+          <ListeArama arama={liste.arama} yukseklik="secim" className="w-full sm:w-auto" />
         </div>
       </div>
 

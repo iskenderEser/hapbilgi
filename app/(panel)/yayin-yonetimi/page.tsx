@@ -201,7 +201,7 @@ function YayinYonetimiIcerik() {
         ) : (
           <>
         {aktifSekme === "bekleyen" && (
-          <ListeBasligi baslik="Yayına Hazır İçerikler" sayi={bekleyenListe.toplam} arama={<ListeArama arama={bekleyenListe.arama} />} />
+          <ListeBasligi baslik="Yayına Hazır İçerikler" sayi={bekleyenListe.toplam} arama={<ListeArama arama={bekleyenListe.arama} yukseklik="secim" />} />
         )}
         {aktifSekme === "bekleyen" && (
           bekleyenListe.toplam === 0
@@ -244,7 +244,7 @@ function YayinYonetimiIcerik() {
         )}
 
         {aktifSekme === "yayinda" && (
-          <ListeBasligi baslik="Aktif Yayınlar" aciklama="Canlı ve planlanmış içeriklerin yaşam döngüsünü yönetin." sayi={yayindaListe.toplam} arama={<ListeArama arama={yayindaListe.arama} />} />
+          <ListeBasligi baslik="Aktif Yayınlar" aciklama="Canlı ve planlanmış içeriklerin yaşam döngüsünü yönetin." sayi={yayindaListe.toplam} arama={<ListeArama arama={yayindaListe.arama} yukseklik="secim" />} />
         )}
         {aktifSekme === "yayinda" && (
           yayindaListe.toplam === 0
@@ -312,7 +312,7 @@ function YayinYonetimiIcerik() {
         )}
 
         {aktifSekme === "durdurulan" && (
-          <ListeBasligi baslik="Durdurulan Yayınlar" aciklama="Yayından kaldırılan içerikleri inceleyin veya yeniden başlatın." sayi={durdurulanListe.toplam} arama={<ListeArama arama={durdurulanListe.arama} />} />
+          <ListeBasligi baslik="Durdurulan Yayınlar" aciklama="Yayından kaldırılan içerikleri inceleyin veya yeniden başlatın." sayi={durdurulanListe.toplam} arama={<ListeArama arama={durdurulanListe.arama} yukseklik="secim" />} />
         )}
         {aktifSekme === "durdurulan" && (
           durdurulanListe.toplam === 0

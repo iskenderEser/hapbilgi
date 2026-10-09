@@ -64,13 +64,13 @@ export function IsListesi({ talepler, seciliTalepId, rol, onSec }: Props) {
           </div>
           <span className="rounded-full bg-[#eef5fd] px-3 py-1 text-xs font-extrabold text-[#4479b7]">{liste.toplam} aktif</span>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2">
           <SadeListeSecimi aria-label="Üretim aşamasına göre süz" value={asamaSuzgeci} onChange={(e) => setAsamaSuzgeci(e.target.value as AsamaSuzgeci)} className="w-full">
             {ASAMA_SUZGEC_SECENEKLERI.map((s) => (
               <option key={s.deger} value={s.deger}>{s.etiket}</option>
             ))}
           </SadeListeSecimi>
-          <ListeArama arama={liste.arama} />
+          <ListeArama arama={liste.arama} yukseklik="secim" className="w-full" />
         </div>
       </div>
 

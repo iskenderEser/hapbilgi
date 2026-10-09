@@ -27,16 +27,17 @@ interface Props<T> {
   genislik?: string;
   /** Seçim kapsülüyle aynı dış ölçü için ortak seçim yüksekliği. */
   yukseklik?: "normal" | "secim";
+  className?: string;
 }
 
-export function ListeArama<T>({ arama, ipucu, genislik, yukseklik = "normal" }: Props<T>) {
+export function ListeArama<T>({ arama, ipucu, genislik, yukseklik = "normal", className }: Props<T>) {
   const { aranan, aramaDegistir, alanAnahtari, alanDegistir, alanlar } = arama;
   if (alanlar.length === 0) return null;
 
   const secili = alanlar.find((a) => a.anahtar === alanAnahtari) ?? alanlar[0];
 
   return (
-    <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
+    <div className={`flex min-w-0 max-w-full items-center justify-end gap-2 ${yukseklik === "secim" ? "flex-nowrap" : "flex-wrap"} ${className ?? ""}`}>
       {alanlar.length > 1 && (
         <SadeListeSecimi value={alanAnahtari} onChange={(e) => alanDegistir(e.target.value)} onClick={(e) => e.stopPropagation()} aria-label="Arama alanı" className="w-[160px] max-[480px]:w-[140px] flex-none">
           {alanlar.map((a) => (
@@ -47,7 +48,7 @@ export function ListeArama<T>({ arama, ipucu, genislik, yukseklik = "normal" }: 
         </SadeListeSecimi>
       )}
 
-      <div className="relative min-w-0 max-w-full">
+      <div className={`relative min-w-0 max-w-full ${yukseklik === "secim" ? "flex-1" : ""}`}>
         <input
           type="text"
           value={aranan}
