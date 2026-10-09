@@ -1,9 +1,7 @@
 // app/talepler/_components/YeniTalepFormV2.tsx
 //
-// Yeni Talep formunun v2 yerleşimi — dört karar bölümü:
-//   1) Hedef kitle            2) İçerik türü
-//   3) Ürün + teknik          4) Ölçme ayarları
-// Altında açıklama tam genişlikte, en altta dosya ekle ve gönder.
+// Kompakt yayın kartı: ürün/konu ve kitle yan yana; altında yayın tipi,
+// araç ve soru seti üretimi. Hazır içerik editörleri tam genişlikte korunur.
 //
 // KURAL KOPYALANMIYOR: bu dosya yalnız YERLEŞİMDİR. Hedef rol kapısı, tür-ürün-
 // teknik zorunlulukları, Eczanem dörtlü kilidi, hazır set parametre kilidi,
@@ -12,7 +10,7 @@
 
 "use client";
 
-import { SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
+import { SadeFormSecimi, SadeIslemButonu, SadeKontrolButonu, SadeKontrolGrubu } from "@/components/kontrol/SadeKontroller";
 
 import { EkDosyaYukleme } from "@/app/(panel)/talepler/_components/EkDosyaYukleme";
 import { HazirSoruSetiBlogu } from "@/app/(panel)/talepler/_components/HazirSoruSetiBlogu";
@@ -22,7 +20,7 @@ import { TalepOnayModal } from "@/app/(panel)/talepler/_components/TalepOnayModa
 import { UrunTeknikSecici } from "@/app/(panel)/talepler/_components/UrunTeknikSecici";
 import { VideoYukleme } from "@/app/(panel)/talepler/_components/VideoYukleme";
 import type { useTalepFormu } from "@/app/(panel)/talepler/_hooks/useTalepFormu";
-import { HEDEF_ROL_TASARIM, TALEP_TURU_ALT_ACIKLAMA, TUM_TURLER } from "@/app/(panel)/talepler/_types";
+import { HEDEF_ROL_TASARIM, TUM_TURLER } from "@/app/(panel)/talepler/_types";
 import {
     AlertDialog,
     AlertDialogContent,
@@ -51,9 +49,10 @@ interface IkiliUretimSecimiProps {
   hazir: boolean;
   hazirEtiketi: string;
   onDegistir: () => void;
+  kapsulClassName?: string;
 }
 
-function IkiliUretimSecimi({ baslik, hazir, hazirEtiketi, onDegistir }: IkiliUretimSecimiProps) {
+function IkiliUretimSecimi({ baslik, hazir, hazirEtiketi, onDegistir, kapsulClassName }: IkiliUretimSecimiProps) {
   const secenekler = [
     { hazir: false, etiket: "Üretilmesini istiyorum" },
     { hazir: true, etiket: hazirEtiketi },
@@ -61,33 +60,28 @@ function IkiliUretimSecimi({ baslik, hazir, hazirEtiketi, onDegistir }: IkiliUre
 
   return (
     <div className="min-w-0 flex-1">
-      <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#7a8da8]">{baslik}</p>
-      <div
+      <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#7a8da8]">{baslik}</p>
+      <SadeKontrolGrubu
         role="radiogroup"
         aria-label={`${baslik} üretim yöntemi`}
-        className="grid grid-cols-2 rounded-lg border border-[#dce5f0] bg-[#f5f8fc] p-1"
+        className={kapsulClassName ?? "w-fit max-w-full"}
       >
         {secenekler.map((secenek) => {
           const secili = hazir === secenek.hazir;
           return (
-            <button
+            <SadeKontrolButonu
               key={secenek.etiket}
-              type="button"
               role="radio"
               aria-checked={secili}
+              tabIndex={secili ? 0 : -1}
               onClick={() => { if (!secili) onDegistir(); }}
-              className="min-h-9 rounded-md px-2 py-1.5 text-[11px] font-extrabold leading-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] focus-visible:ring-offset-1"
-              style={{
-                background: secili ? "#56aeff" : "transparent",
-                color: secili ? "#fff" : "#526782",
-                boxShadow: secili ? "0 2px 7px rgba(50, 135, 220, 0.22)" : "none",
-              }}
+
             >
               {secenek.etiket}
-            </button>
+            </SadeKontrolButonu>
           );
         })}
-      </div>
+      </SadeKontrolGrubu>
     </div>
   );
 }
@@ -96,13 +90,14 @@ export function YeniTalepFormV2({ formu }: Props) {
   const yetenek = formu.yetenek;
   if (!formu.isUretici || !yetenek) return null;
 
-  const formAktif = formu.hedefRoller.length > 0;
-  const ucuncuAdimAktif = formAktif && formu.egitimTuruSecildiMi;
+  const urunTeknikAktif = formu.egitimTuruSecildiMi;
   const eclubHedef = formu.hedefRoller.some((hedef) => ECLUB_HEDEF_ROLLER.includes(hedef));
   const urunAdimiTamam = (formu.turKurali.urun !== "zorunlu" && !formu.eczanemHedef) || !!formu.seciliUrunId;
   const teknikAdimiTamam = eclubHedef || formu.eczanemHedef || formu.turKurali.teknik !== "zorunlu" || !!formu.seciliTeknikId;
   const serbestAdTamam = !formu.serbestAdGoster || !!formu.serbestAd.trim();
-  const dorduncuAdimAktif = ucuncuAdimAktif && urunAdimiTamam && teknikAdimiTamam && serbestAdTamam;
+  const yayinKitlesiAktif = urunTeknikAktif && urunAdimiTamam && teknikAdimiTamam && serbestAdTamam;
+  const formAktif = yayinKitlesiAktif && formu.hedefRoller.length > 0;
+  const dorduncuAdimAktif = formAktif;
   const ikiliHazir = formu.hazirVideo && formu.hazirSoruSeti;
   const videoIslemModalAcik = formu.videoYuklemeYuzdesi !== null || formu.videoIslemeBekleniyor;
   const icerikTuruSecimiGerekli = yetenek.acabilecegiTalepTurleri.length > 1;
@@ -112,85 +107,121 @@ export function YeniTalepFormV2({ formu }: Props) {
     (r) => (r !== "eczanem" || formu.eczanemSecilebilir) && hedefRolIkUreticisineAcikMi(formu.rol, r),
   );
 
+  const podcastAlanlari = formu.ogrenmeAraciTuru === "podcast" ? (
+    <PodcastTalepAlanlari
+      hazir={formu.hazirVideo}
+      iuTranskriptIstendi={formu.podcastIuTranskriptIstendi}
+      onIuTranskriptIstendiDegisti={formu.setPodcastIuTranskriptIstendi}
+      ses={formu.bekleyenPodcast}
+      kapak={formu.bekleyenPodcastKapak}
+      transkript={formu.bekleyenPodcastTranskript}
+      sesYuklendi={formu.podcastSesYuklendi}
+      sesDosyaAdi={formu.podcastYuklenenDosyaAdi}
+      kapakYuklendi={formu.podcastKapakYuklendi}
+      kapakDosyaAdi={formu.podcastYuklenenKapakAdi}
+      transkriptMetni={formu.podcastTranskriptMetni}
+      transkriptOnaylandi={formu.podcastTranskriptOnaylandi}
+      aiIstendi={formu.podcastAiTranskriptIstendi}
+      aracId={formu.podcastAracId ?? undefined}
+      islemDurumu={formu.podcastAiAsamasi}
+      yuklemeYuzdesi={formu.podcastAiYuklemeYuzdesi}
+      onAiBaslat={formu.handlePodcastAiTranskriptBaslat}
+      aiYukleniyor={formu.podcastAiYukleniyor}
+      aiHatasi={formu.podcastAiHatasi}
+      onAiIstendiDegisti={formu.handlePodcastAiTranskriptIstendiDegisti}
+      onSesSec={formu.handlePodcastSec}
+      onKapakSec={formu.handlePodcastKapakSec}
+      onTranskriptSec={formu.handlePodcastTranskriptSec}
+      onSesSil={formu.handleBekleyenPodcastSil}
+      onKapakSil={formu.handleBekleyenPodcastKapakSil}
+      onTranskriptSil={formu.handleBekleyenPodcastTranskriptSil}
+      onTranskriptMetinDegisti={formu.handlePodcastTranskriptMetinDegisti}
+      onTranskriptOnayla={formu.handlePodcastTranskriptOnayla}
+      onTranskriptIptal={formu.handlePodcastTranskriptIptal}
+      onSunucuOnayla={formu.handlePodcastTranskriptSunucuOnayla}
+      onSunucuIptal={formu.handlePodcastTranskriptSunucuIptal}
+      onTranskriptDosyaSecildi={formu.handlePodcastTranskriptDosyaSecildi}
+    />
+  ) : null;
+
   return (
-    <div>
-      {/* Başlık + hazır içerik anahtarları */}
-      <div className="mb-4 flex flex-col gap-3">
-        <div>
-          <h2 className="m-0 text-base font-extrabold text-[#203653]">Yayın tipi ve üretim yöntemi</h2>
-          <p className="mt-1 text-xs leading-4 text-[#7b8ca5]">
-            Yayın tipini seçtikten sonra üretim yöntemini belirleyebilirsiniz.
-          </p>
-        </div>
-        <div className="flex w-full flex-col gap-2 rounded-xl border border-[#e2e9f2] bg-white px-3 py-2.5">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7a8da8]">
-            Yayın tipi
-          </p>
-          <SadeKontrolGrubu aria-label="Öğrenme aracı seçimi" tur="kapsul">
-            {(["video", "podcast", "gorsel", "flip_pdf"] as const)
-              .filter((tur) => formu.ogrenmeAraciBayraklari[tur])
-              .map((tur) => {
-                const secenek = OGRENME_ARACI_SECENEKLERI[tur];
-                return (
-                  <SadeKontrolButonu key={tur} type="button" aria-pressed={formu.ogrenmeAraciTuru === tur} title={secenek.formatlar} onClick={() => formu.handleOgrenmeAraciTuruDegis(tur)}>
-                    {secenek.etiket}
-                  </SadeKontrolButonu>
-                );
-              })}
-          </SadeKontrolGrubu>
-          <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7a8da8]">
-            Üretim yöntemi
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <IkiliUretimSecimi
-              baslik={OGRENME_ARACI_METINLERI[formu.ogrenmeAraciTuru].ad}
-              hazir={formu.hazirVideo}
-              hazirEtiketi="Hazır içeriğim var"
-              onDegistir={formu.toggleHazirVideo}
-            />
-            <IkiliUretimSecimi
-              baslik="Soru seti"
-              hazir={formu.hazirSoruSeti}
-              hazirEtiketi="Hazır soru setim var"
-              onDegistir={formu.toggleHazirSoruSeti}
-            />
-          </div>
-        </div>
-      </div>
-
-      <form onSubmit={formu.handleSubmit} className="flex flex-col gap-4">
-        {/* Hazır kol bilgisi — sütunların üstünde, tam genişlik */}
-        {(formu.hazirVideo || formu.hazirSoruSeti) && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-900">
-            {formu.hazirVideo && formu.hazirSoruSeti &&
-              `Hazır ${formu.ogrenmeAraciTuru === "podcast" ? "podcast" : formu.ogrenmeAraciTuru === "gorsel" ? "dijital broşür" : formu.ogrenmeAraciTuru === "flip_pdf" ? "literatür" : "video"} ve soru seti talebi oluşturuyorsunuz. Dosyalarınızı yükledikten sonra yayın yönetimi aşamasındaki işlemler sonrası yayına açabilirsiniz.`}
-            {formu.hazirVideo && !formu.hazirSoruSeti &&
-              `Hazır ${formu.ogrenmeAraciTuru === "podcast" ? "podcast'inizi" : formu.ogrenmeAraciTuru === "gorsel" ? "dijital broşürünüzü" : formu.ogrenmeAraciTuru === "flip_pdf" ? "literatürünüzü" : "videonuzu"} yükledikten sonra soru seti İçerik Üreticisinden talep edilecektir.`}
-            {!formu.hazirVideo && formu.hazirSoruSeti &&
-              `Hazır soru seti ile talep oluşturuyorsunuz. ${formu.ogrenmeAraciTuru === "podcast" ? "Podcast konuşma metni ve ses üretimini" : formu.ogrenmeAraciTuru === "gorsel" ? "Dijital broşür üretimini" : formu.ogrenmeAraciTuru === "flip_pdf" ? "Literatür üretimini" : "Video için senaryo ve video üretimini"} içerik üreticiniz yapacaktır.`}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 gap-3.5">
-          {/* 1 — Hedef rol. Formun ilk karar noktası; seçilmeden alt alanlar pasif. */}
-          <section className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] md:grid md:grid-cols-[220px_minmax(0,1fr)] md:items-center md:gap-5">
-            <div className="mb-3 md:mb-0">
-              <h3 className="text-sm font-extrabold text-[#263b58]">
-                Yayın Kitlesi
-              </h3>
-              <p className="mt-1 text-xs leading-4 text-[#7b8ca5]">
-                Sadece Eczacı ve Eczane Teknisyenlerini birlikte tercih edebilirsiniz.
-              </p>
+    <div className="@container">
+      <form onSubmit={formu.handleSubmit} className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 gap-3 @[780px]:grid-cols-2">
+          <section className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white px-4 py-3.5">
+            <h3 className="mb-3 text-sm font-extrabold text-[#263b58]">Ürün / Konu ve Teknik</h3>
+            <div className="grid grid-cols-1 gap-3 @[1000px]:grid-cols-3">
+              <fieldset className="min-w-0">
+                <legend className="sr-only">İçerik Türü</legend>
+                <SadeFormSecimi
+                  etiket="İçerik Türü"
+                  aria-label="İçerik Türü"
+                  value={formu.egitimTuruSecildiMi ? formu.egitimTuru : ""}
+                  disabled={!icerikTuruSecimiGerekli}
+                  onChange={(event) => {
+                    const tur = TUM_TURLER.find((t) => t === event.target.value);
+                    if (tur) formu.handleEgitimTuruDegis(tur);
+                  }}
+                >
+                  <option value="" disabled>İçerik türünü seçiniz</option>
+                  {TUM_TURLER.filter((tur) => yetenek.acabilecegiTalepTurleri.includes(tur)).map((tur: TalepTuru) => (
+                    <option key={tur} value={tur}>{TALEP_TURU_KURALLARI[tur].ad}</option>
+                  ))}
+                </SadeFormSecimi>
+              </fieldset>
+              <fieldset disabled={!urunTeknikAktif} className="min-w-0 @[1000px]:col-span-2" style={{ opacity: urunTeknikAktif ? 1 : 0.58 }}>
+                <legend className="sr-only">Ürün ve Teknik</legend>
+                <div className="flex min-w-0 flex-col gap-3 [&>div>div]:min-w-0">
+                  <UrunTeknikSecici
+                    urunler={formu.urunler}
+                    teknikler={formu.teknikler}
+                    takimlar={formu.takimlar}
+                    kullaniciTakimId={formu.kullaniciTakimId}
+                    seciliUrunId={formu.seciliUrunId}
+                    seciliTeknikId={formu.seciliTeknikId}
+                    urunGosterilsin={formu.urunGosterilsin}
+                    teknikGosterilsin={formu.teknikGosterilsin}
+                    turKurali={formu.turKurali}
+                    onUrunSec={formu.setSeciliUrunId}
+                    onTeknikSec={formu.setSeciliTeknikId}
+                    onUrunEkle={formu.handleYeniUrunEkle}
+                    onTeknikEkle={formu.handleYeniTeknikEkle}
+                  />
+                  {formu.serbestAdGoster && (
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">
+                        Eğitim/İçerik Adı <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        value={formu.serbestAd}
+                        onChange={(e) => formu.setSerbestAd(e.target.value)}
+                        placeholder="İzleyicinin göreceği ad"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white box-border"
+                        style={{ fontFamily: "'Nunito', sans-serif" }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </fieldset>
             </div>
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-3 xl:grid-cols-5">
-              {hedefRoller.map((rolKey) => {
+          </section>
+          <fieldset
+            disabled={!yayinKitlesiAktif}
+            aria-disabled={!yayinKitlesiAktif}
+            className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white px-4 py-3.5"
+            style={{ opacity: yayinKitlesiAktif ? 1 : 0.58 }}
+          >
+            <legend className="sr-only">Yayın Kitlesi</legend>
+            <h3 className="mb-3 text-sm font-extrabold text-[#263b58]">Yayın Kitlesi</h3>
+            <div className={`grid grid-cols-1 gap-2 @[384px]:grid-cols-2 ${hedefRoller.length === 5 ? "@[780px]:grid-cols-6" : ""}`}>
+              {hedefRoller.map((rolKey, index) => {
                 const tasarim = HEDEF_ROL_TASARIM[rolKey];
                 const eclubSecenegi = ECLUB_HEDEF_ROLLER.includes(rolKey);
                 const secili = formu.hedefRoller.includes(rolKey);
                 return (
                   <label
                     key={rolKey}
-                    className="flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 transition-all"
+                    className={`flex min-h-10 min-w-0 cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 transition-all ${hedefRoller.length === 5 ? (index < 2 ? "@[780px]:col-span-3" : "@[780px]:col-span-2") : ""}`}
                     style={{
                       background: secili ? tasarim.bg : "#fff",
                       borderColor: secili ? tasarim.renk : "#e5e7eb",
@@ -212,139 +243,77 @@ export function YeniTalepFormV2({ formu }: Props) {
                 );
               })}
             </div>
-          </section>
-
-          {/* Hedef rol seçilmeden kalan üç sütun pasif görünür ve tıklanamaz.
-              Pasiflik sütun sütun verilir: grid çocuğunu saran bir kapsayıcı
-              sütun düzenini bozardı. */}
-          <>
-            {/* 2 — Yayın içeriği (talep türü). Rolün açamadıkları soluk ve tıklanamaz. */}
-            {icerikTuruSecimiGerekli && <fieldset
-              disabled={!formAktif}
-              aria-disabled={!formAktif}
-              className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity md:grid md:grid-cols-[220px_minmax(0,1fr)] md:items-center md:gap-5"
-              style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}
-            >
-              <legend className="sr-only">İçerik Türü</legend>
-              <div className="mb-3 md:mb-0">
-                <h3 className="text-sm font-extrabold text-[#263b58]">İçerik Türü</h3>
-                <p className="mt-0.5 text-xs text-[#7a8ca5]">Talebin eğitim odağını belirleyin.</p>
-              </div>
-              <SadeKontrolGrubu tur="kapsul">
-                {TUM_TURLER.filter((tur) => yetenek.acabilecegiTalepTurleri.includes(tur)).map((tur: TalepTuru) => {
-                  const secili = formu.egitimTuruSecildiMi && formu.egitimTuru === tur;
-                  const secilebilir = yetenek.acabilecegiTalepTurleri.includes(tur);
-                  return (
-                    <SadeKontrolButonu type="button" key={tur} disabled={!secilebilir} onClick={() => formu.handleEgitimTuruDegis(tur)} aria-pressed={secili} title={TALEP_TURU_ALT_ACIKLAMA[tur]}>
-                      <span className="inline-flex items-center gap-1">{TALEP_TURU_KURALLARI[tur].ad}</span>
-                    </SadeKontrolButonu>
-                  );
-                })}
-              </SadeKontrolGrubu>
-            </fieldset>}
-
-            <div className="grid grid-cols-1 gap-3.5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-            {/* 3 — Ürün + teknik. Ürünsüz+tekniksiz türlerde yeri serbest ada geçer. */}
-            <fieldset
-              disabled={!ucuncuAdimAktif}
-              aria-disabled={!ucuncuAdimAktif}
-              className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity"
-              style={{ opacity: ucuncuAdimAktif ? 1 : 0.58, pointerEvents: ucuncuAdimAktif ? "auto" : "none" }}
-            >
-              <legend className="sr-only">Ürün ve Teknik</legend>
-              <div className="mb-3">
-                <h3 className="text-sm font-extrabold text-[#263b58]">Ürün ve Teknik</h3>
-                <p className="mt-1 text-xs leading-4 text-[#7b8ca5]">
-                  Yayının hangi ürün/konu ve (varsa) teknik için olduğunu tercih edebilirsiniz.
-                </p>
-              </div>
-              {/* UrunTeknikSecici kendi içinde md+ ekranda ürün ve tekniği YAN YANA
-                  diziyor (flex-row). Burada sütun dar olduğu için ikisi alt alta
-                  olmalı — yön zorla değiştirilir, ortak bileşene dokunulmaz. */}
-              <div className="flex flex-col gap-3 [&>div]:!flex-col md:[&>div]:!flex-row md:[&>div]:!gap-2 [&>div>div]:min-w-0 [&_select]:min-w-0 [&_select]:px-2 [&_select]:text-xs">
-                <UrunTeknikSecici
-                  urunler={formu.urunler}
-                  teknikler={formu.teknikler}
-                  takimlar={formu.takimlar}
-                  kullaniciTakimId={formu.kullaniciTakimId}
-                  seciliUrunId={formu.seciliUrunId}
-                  seciliTeknikId={formu.seciliTeknikId}
-                  urunGosterilsin={formu.urunGosterilsin}
-                  teknikGosterilsin={formu.teknikGosterilsin}
-                  turKurali={formu.turKurali}
-                  onUrunSec={formu.setSeciliUrunId}
-                  onTeknikSec={formu.setSeciliTeknikId}
-                  onUrunEkle={formu.handleYeniUrunEkle}
-                  onTeknikEkle={formu.handleYeniTeknikEkle}
-                />
-                {formu.serbestAdGoster && (
-                  <div>
-                    <label className="text-xs text-gray-500 block mb-1">
-                      Eğitim/İçerik Adı <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      value={formu.serbestAd}
-                      onChange={(e) => formu.setSerbestAd(e.target.value)}
-                      placeholder="İzleyicinin göreceği ad"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white box-border"
-                      style={{ fontFamily: "'Nunito', sans-serif" }}
-                    />
-                  </div>
-                )}
-              </div>
-            </fieldset>
-
-            {/* 4 — Soru ayarları. ORTAK BİLEŞEN (28.07 düzeltmesi): üç select bir
-                süre burada elle yazılıydı; seçenek listeleri ikinci kez kopyalanmış
-                oluyordu. Artık /talepler ile aynı bileşen çağrılıyor — adlar
-                (İskender, A-10b) etiket parametreleriyle geçiriliyor.
-                Bileşen kendi içinde md+ ekranda üçünü YAN YANA diziyor; bu sütun
-                dar olduğu için yön sarmalayıcıda `!flex-col` ile zorlanır —
-                UrunTeknikSecici'de olduğu gibi, ortak bileşene dokunulmaz. */}
-            <fieldset
-              disabled={!dorduncuAdimAktif}
-              aria-disabled={!dorduncuAdimAktif}
-              className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity [&>div:last-child]:!flex-col md:[&>div:last-child]:!flex-row md:[&>div:last-child]:!gap-2 [&>div:last-child>div]:min-w-0 [&_label]:whitespace-nowrap [&_label]:text-[11px] [&_select]:min-w-0 [&_select]:px-2 [&_select]:text-xs"
-              style={{ opacity: dorduncuAdimAktif ? 1 : 0.58, pointerEvents: dorduncuAdimAktif ? "auto" : "none" }}
-            >
-              <legend className="sr-only">Sorular ve Seçenekler</legend>
-              <div className="mb-3">
-                <h3 className="text-sm font-extrabold text-[#263b58]">Sorular ve Seçenekler</h3>
-                <p className="mt-1 text-xs leading-4 text-[#7b8ca5]">
-                  Her yayın için toplam soru adedi, seçenek sayısını ve yayın başına soru sayısını belirleyebilirsiniz.
-                </p>
-              </div>
-              <SoruSetiAyarlari
-                buyukluk={formu.soruSetiBuyuklugu}
-                videoBasi={formu.videoBasiSoruSayisi}
-                secenek={formu.secenekSayisi}
-                onBuyuklukChange={formu.setSoruSetiBuyuklugu}
-                onVideoBasiChange={formu.setVideoBasiSoruSayisi}
-                onSecenekChange={formu.setSecenekSayisi}
-                buyuklukEtiketi="Toplam soru sayısı"
-                videoBasiEtiketi={`${OGRENME_ARACI_SECENEKLERI[formu.ogrenmeAraciTuru].etiket} başına soru sayısı`}
-              />
-            </fieldset>
-            </div>
-          </>
+            <p className="mt-2 text-xs leading-4 text-[#7b8ca5]">Sadece Eczacı ve Eczane Teknisyenlerini birlikte tercih edebilirsiniz.</p>
+          </fieldset>
         </div>
 
+        <fieldset
+          disabled={!formAktif}
+          aria-disabled={!formAktif}
+          className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white px-4 py-3.5"
+          style={{ opacity: formAktif ? 1 : 0.58 }}
+        >
+          <legend className="sr-only">Yayın ve Üretim Yönetimi</legend>
+          <h3 className="mb-3 text-sm font-extrabold text-[#263b58]">Yayın ve Üretim Yönetimi</h3>
+          <div className="grid grid-cols-1 items-start gap-3 @[650px]:grid-cols-2 @[936px]:grid-cols-[minmax(301px,1fr)_minmax(264px,1fr)_minmax(312px,1fr)]">
+            <div className="min-w-0 @[650px]:col-span-2 @[936px]:col-span-1">
+              <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#7a8da8]">Yayın Tipi</p>
+              <SadeKontrolGrubu aria-label="Öğrenme aracı seçimi" tur="kapsul" className="w-fit max-w-full">
+                {(["video", "podcast", "gorsel", "flip_pdf"] as const).filter((tur) => formu.ogrenmeAraciBayraklari[tur]).map((tur) => {
+                  const secenek = OGRENME_ARACI_SECENEKLERI[tur];
+                  return <SadeKontrolButonu key={tur} type="button" aria-pressed={formu.ogrenmeAraciTuru === tur} title={secenek.formatlar} onClick={() => formu.handleOgrenmeAraciTuruDegis(tur)}>{secenek.etiket}</SadeKontrolButonu>;
+                })}
+              </SadeKontrolGrubu>
+            </div>
+            <div className="min-w-0">
+              <IkiliUretimSecimi baslik={OGRENME_ARACI_METINLERI[formu.ogrenmeAraciTuru].ad} hazir={formu.hazirVideo} hazirEtiketi="Hazır içeriğim var" onDegistir={formu.toggleHazirVideo} />
+              {!formu.hazirVideo && <div style={{ opacity: formAktif ? 1 : 0.4, pointerEvents: formAktif ? "auto" : "none" }}>{podcastAlanlari}</div>}
+            </div>
+            <div className="min-w-0">
+              <IkiliUretimSecimi baslik="Soru Seti" hazir={formu.hazirSoruSeti} hazirEtiketi="Hazır soru setim var" onDegistir={formu.toggleHazirSoruSeti} kapsulClassName="w-[312px] max-w-full [&>button]:flex-1" />
+              <fieldset disabled={!dorduncuAdimAktif} className="mt-3 min-w-0 [&>div]:grid [&>div]:grid-cols-[repeat(auto-fit,96px)] [&>div>div]:grid [&>div>div]:grid-rows-[1fr_auto] [&>div>div]:min-w-0" style={{ opacity: dorduncuAdimAktif ? 1 : 0.58 }}>
+                <legend className="sr-only">Sorular ve Seçenekler</legend>
+                <SoruSetiAyarlari
+                  buyukluk={formu.soruSetiBuyuklugu}
+                  videoBasi={formu.videoBasiSoruSayisi}
+                  secenek={formu.secenekSayisi}
+                  onBuyuklukChange={formu.setSoruSetiBuyuklugu}
+                  onVideoBasiChange={formu.setVideoBasiSoruSayisi}
+                  onSecenekChange={formu.setSecenekSayisi}
+                  buyuklukEtiketi="Soru sayısı"
+                  videoBasiEtiketi="Soru / Yayın"
+                />
+              </fieldset>
+            </div>
+          </div>
+        </fieldset>
+        {(formu.hazirVideo || formu.hazirSoruSeti) && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-900">
+            {formu.hazirVideo && formu.hazirSoruSeti &&
+              `Hazır ${formu.ogrenmeAraciTuru === "podcast" ? "podcast" : formu.ogrenmeAraciTuru === "gorsel" ? "dijital broşür" : formu.ogrenmeAraciTuru === "flip_pdf" ? "literatür" : "video"} ve soru seti talebi oluşturuyorsunuz. Dosyalarınızı yükledikten sonra yayın yönetimi aşamasındaki işlemler sonrası yayına açabilirsiniz.`}
+            {formu.hazirVideo && !formu.hazirSoruSeti &&
+              `Hazır ${formu.ogrenmeAraciTuru === "podcast" ? "podcast'inizi" : formu.ogrenmeAraciTuru === "gorsel" ? "dijital broşürünüzü" : formu.ogrenmeAraciTuru === "flip_pdf" ? "literatürünüzü" : "videonuzu"} yükledikten sonra soru seti İçerik Üreticisinden talep edilecektir.`}
+            {!formu.hazirVideo && formu.hazirSoruSeti &&
+              `Hazır soru seti ile talep oluşturuyorsunuz. ${formu.ogrenmeAraciTuru === "podcast" ? "Podcast konuşma metni ve ses üretimini" : formu.ogrenmeAraciTuru === "gorsel" ? "Dijital broşür üretimini" : formu.ogrenmeAraciTuru === "flip_pdf" ? "Literatür üretimini" : "Video için senaryo ve video üretimini"} içerik üreticiniz yapacaktır.`}
+          </div>
+        )}
+
         {/* Açıklama ve ek dosyalar: mobilde alt alta, geniş ekranda yan yana. */}
-        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-[minmax(0,1fr)_220px]">
-          <div className="rounded-2xl border border-[#dfe8f3] bg-white p-4" style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}>
+        <section className="grid grid-cols-1 gap-3 rounded-2xl border border-[#dfe8f3] bg-white px-4 py-3.5 @[650px]:grid-cols-[minmax(0,1fr)_180px]">
+          <div className="min-w-0" style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}>
             <label className="mb-1.5 block text-xs font-extrabold text-[#425672]">Talep Açıklaması</label>
             <textarea
               value={formu.aciklama}
               onChange={(e) => formu.setAciklama(e.target.value)}
               placeholder="Açıklama yazınız"
-              rows={3}
+              rows={2}
               disabled={!formAktif || ikiliHazir}
               className="box-border w-full resize-y rounded-xl border border-[#dce5f0] bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#56aeff] focus:ring-2 focus:ring-[#56aeff]/15 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
               style={{ fontFamily: "'Nunito', sans-serif" }}
             />
           </div>
           <div
-            className="rounded-2xl border border-[#dfe8f3] bg-white p-4"
+            className="min-w-0"
             style={{ opacity: formAktif ? 1 : 0.4, pointerEvents: formAktif ? "auto" : "none" }}
           >
             <EkDosyaYukleme
@@ -355,7 +324,7 @@ export function YeniTalepFormV2({ formu }: Props) {
               onSil={formu.handleBekleyenDosyaSil}
             />
           </div>
-        </div>
+        </section>
 
         {/* Hazır kol blokları — tam genişlik; soru kartları 25'e kadar çıkabiliyor */}
         <div
@@ -398,42 +367,7 @@ export function YeniTalepFormV2({ formu }: Props) {
               />
             </div>
           )}
-          {formu.ogrenmeAraciTuru === "podcast" && (
-            <PodcastTalepAlanlari
-              hazir={formu.hazirVideo}
-              iuTranskriptIstendi={formu.podcastIuTranskriptIstendi}
-              onIuTranskriptIstendiDegisti={formu.setPodcastIuTranskriptIstendi}
-              ses={formu.bekleyenPodcast}
-              kapak={formu.bekleyenPodcastKapak}
-              transkript={formu.bekleyenPodcastTranskript}
-              sesYuklendi={formu.podcastSesYuklendi}
-              sesDosyaAdi={formu.podcastYuklenenDosyaAdi}
-              kapakYuklendi={formu.podcastKapakYuklendi}
-              kapakDosyaAdi={formu.podcastYuklenenKapakAdi}
-              transkriptMetni={formu.podcastTranskriptMetni}
-              transkriptOnaylandi={formu.podcastTranskriptOnaylandi}
-              aiIstendi={formu.podcastAiTranskriptIstendi}
-              aracId={formu.podcastAracId ?? undefined}
-              islemDurumu={formu.podcastAiAsamasi}
-              yuklemeYuzdesi={formu.podcastAiYuklemeYuzdesi}
-              onAiBaslat={formu.handlePodcastAiTranskriptBaslat}
-              aiYukleniyor={formu.podcastAiYukleniyor}
-              aiHatasi={formu.podcastAiHatasi}
-              onAiIstendiDegisti={formu.handlePodcastAiTranskriptIstendiDegisti}
-              onSesSec={formu.handlePodcastSec}
-              onKapakSec={formu.handlePodcastKapakSec}
-              onTranskriptSec={formu.handlePodcastTranskriptSec}
-              onSesSil={formu.handleBekleyenPodcastSil}
-              onKapakSil={formu.handleBekleyenPodcastKapakSil}
-              onTranskriptSil={formu.handleBekleyenPodcastTranskriptSil}
-              onTranskriptMetinDegisti={formu.handlePodcastTranskriptMetinDegisti}
-              onTranskriptOnayla={formu.handlePodcastTranskriptOnayla}
-              onTranskriptIptal={formu.handlePodcastTranskriptIptal}
-              onSunucuOnayla={formu.handlePodcastTranskriptSunucuOnayla}
-              onSunucuIptal={formu.handlePodcastTranskriptSunucuIptal}
-              onTranskriptDosyaSecildi={formu.handlePodcastTranskriptDosyaSecildi}
-            />
-          )}
+          {formu.hazirVideo && podcastAlanlari}
           {formu.hazirSoruSeti && (
             <HazirSoruSetiBlogu
               buyukluk={formu.soruSetiBuyuklugu}
@@ -453,15 +387,9 @@ export function YeniTalepFormV2({ formu }: Props) {
                 {formu.gonderButonuPasifNedeni}
               </span>
             )}
-            <button
+            <SadeIslemButonu
               type="submit"
               disabled={!formAktif || formu.formLoading || formu.dosyaYukleniyor || !formu.gonderButonuEtkin}
-              className="min-w-[150px] cursor-pointer whitespace-nowrap rounded-xl border-none px-5 py-3 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(37,131,226,0.2)] transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed"
-              style={{
-                background: "#56aeff",
-                opacity: !formAktif || formu.formLoading || formu.dosyaYukleniyor || !formu.gonderButonuEtkin ? 0.6 : 1,
-                fontFamily: "'Nunito', sans-serif",
-              }}
             >
               {formu.dosyaYukleniyor
                 ? formu.hazirVideo
@@ -472,7 +400,7 @@ export function YeniTalepFormV2({ formu }: Props) {
                 : formu.hazirVideo || formu.hazirSoruSeti
                 ? "Gönderiniz"
                 : "Yayın Oluştur"}
-            </button>
+            </SadeIslemButonu>
           </div>
         </div>
       </form>

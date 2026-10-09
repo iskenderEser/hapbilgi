@@ -43,8 +43,8 @@ export function SoruSetiAyarlari({
         </SadeFormSecimi>
       </div>
       <div className="flex-1">
-        <label className="text-xs text-gray-500 block mb-1">Soru başına seçenek sayısı</label>
-        <SadeFormSecimi value={secenek} onChange={(e) => onSecenekChange(Number(e.target.value))} aria-label="Soru başına seçenek sayısı" className="w-full">
+        <label className="text-xs text-gray-500 block mb-1">Seçenek / Soru</label>
+        <SadeFormSecimi value={secenek} onChange={(e) => onSecenekChange(Number(e.target.value))} aria-label="Seçenek / Soru" className="w-full">
           {[2, 3, 4].map((s) => (
             <option key={s} value={s}>{s} seçenek</option>
           ))}
@@ -53,7 +53,6 @@ export function SoruSetiAyarlari({
       <div className="flex-1">
         <label className="text-xs text-gray-500 block mb-1">
           {videoBasiEtiketi}
-          <span className="text-gray-400 font-normal ml-1">(max {buyukluk})</span>
         </label>
         <SadeFormSecimi value={videoBasi} onChange={(e) => onVideoBasiChange(Number(e.target.value))} aria-label={videoBasiEtiketi} className="w-full">
           {Array.from({ length: buyukluk }, (_, i) => i + 1).map((n) => (

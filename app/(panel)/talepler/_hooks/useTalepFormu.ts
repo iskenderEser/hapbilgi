@@ -1076,7 +1076,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
       if (podcastIuTranskriptIstendi === null) {
         return {
           gonderButonuEtkin: false,
-          gonderButonuPasifNedeni: "Transkript tercihinizi seçin (istiyorum / istemiyorum)",
+          gonderButonuPasifNedeni: null,
         };
       }
       return { gonderButonuEtkin: true, gonderButonuPasifNedeni: null };

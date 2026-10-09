@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { SadeKapsulFiltre } from "@/components/kontrol/SadeKontroller";
 import {
   type BekleyenDosya,
   PODCAST_FORMATLAR,
@@ -131,57 +132,19 @@ export function PodcastTalepAlanlari(props: PodcastTalepAlanlariProps) {
               <label className="text-xs font-bold text-[#263b58]">
                 Transkript Tercihi <span className="text-[#e53e3e]">*</span>
               </label>
-              <p className="text-xs text-[#5a7184]">
-                Üretilecek podcast için transkript hazırlanmasını istiyor musunuz?
-              </p>
             </div>
 
-            <div className="mt-3 flex flex-wrap gap-2.5">
-              <button
-                type="button"
-                onClick={() => props.onIuTranskriptIstendiDegisti?.(true)}
-                className={`flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${
-                  props.iuTranskriptIstendi === true
-                    ? "border-2 border-[#287fce] bg-[#ebf5ff] text-[#287fce] shadow-sm"
-                    : "border border-[#dfe8f3] bg-white text-[#4a5568] hover:border-[#b0c7de]"
-                }`}
-              >
-                <span
-                  className={`flex h-4 w-4 items-center justify-center rounded-full border ${
-                    props.iuTranskriptIstendi === true
-                      ? "border-[#287fce] bg-[#287fce]"
-                      : "border-[#a0aec0] bg-white"
-                  }`}
-                >
-                  {props.iuTranskriptIstendi === true && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                  )}
-                </span>
-                Transkript istiyorum
-              </button>
-
-              <button
-                type="button"
-                onClick={() => props.onIuTranskriptIstendiDegisti?.(false)}
-                className={`flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${
-                  props.iuTranskriptIstendi === false
-                    ? "border-2 border-[#287fce] bg-[#ebf5ff] text-[#287fce] shadow-sm"
-                    : "border border-[#dfe8f3] bg-white text-[#4a5568] hover:border-[#b0c7de]"
-                }`}
-              >
-                <span
-                  className={`flex h-4 w-4 items-center justify-center rounded-full border ${
-                    props.iuTranskriptIstendi === false
-                      ? "border-[#287fce] bg-[#287fce]"
-                      : "border-[#a0aec0] bg-white"
-                  }`}
-                >
-                  {props.iuTranskriptIstendi === false && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                  )}
-                </span>
-                Transkript istemiyorum
-              </button>
+            <div className="mt-3">
+              <SadeKapsulFiltre<"istiyorum" | "istemiyorum" | "">
+                etiket="Transkript Tercihi"
+                secenekler={[
+                  { deger: "istiyorum", etiket: "Transkript istiyorum" },
+                  { deger: "istemiyorum", etiket: "Transkript istemiyorum" },
+                ]}
+                deger={props.iuTranskriptIstendi === true ? "istiyorum" : props.iuTranskriptIstendi === false ? "istemiyorum" : ""}
+                onDegistir={(deger) => props.onIuTranskriptIstendiDegisti?.(deger === "istiyorum")}
+                className="w-fit max-w-full"
+              />
             </div>
 
             {props.iuTranskriptIstendi === true && (
@@ -196,11 +159,6 @@ export function PodcastTalepAlanlari(props: PodcastTalepAlanlariProps) {
               </div>
             )}
 
-            {props.iuTranskriptIstendi === null && (
-              <p className="mt-2 text-[11px] font-medium text-[#e53e3e]">
-                * Talebi oluşturabilmek için lütfen transkript tercihinizi belirleyin.
-              </p>
-            )}
           </div>
         </div>
       )}

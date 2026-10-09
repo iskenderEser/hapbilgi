@@ -7,6 +7,7 @@
 "use client";
 
 import { useRef } from "react";
+import { SadeIslemButonu } from "@/components/kontrol/SadeKontroller";
 import {
   type BekleyenDosya,
   dosyaTipiRenk,
@@ -37,20 +38,17 @@ export function EkDosyaYukleme({ bekleyenler, hazirVideo, disabled = false, onSe
         Ek Dosyalar <span className="text-gray-400 font-normal">(isteğe bağlı)</span>
       </label>
       <div className="mb-2 flex flex-col items-start gap-1.5">
-        <label
-          className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 whitespace-nowrap"
-          style={{
-            cursor: disabled ? "not-allowed" : "pointer",
-            opacity: disabled ? 0.5 : 1,
-            pointerEvents: disabled ? "none" : "auto",
-          }}
+        <SadeIslemButonu
+          disabled={disabled}
+          onClick={() => dosyaInputRef.current?.click()}
         >
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           Dosya Ekle
-          <input
+        </SadeIslemButonu>
+        <input
             ref={dosyaInputRef}
             type="file"
             multiple
@@ -58,8 +56,7 @@ export function EkDosyaYukleme({ bekleyenler, hazirVideo, disabled = false, onSe
             onChange={handleChange}
             disabled={disabled}
             className="hidden"
-          />
-        </label>
+        />
         <span className="text-[10px] font-semibold uppercase leading-snug text-gray-400">
           {hazirVideo
             ? "PDF · DOCX · PPTX · XLSX · TXT · PNG · JPG · JPEG"
