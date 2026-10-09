@@ -43,29 +43,33 @@ const BOLUMLER = [
   { grup: 'kaybettirenler', ad: 'Öneri kaybı', icon: Clock3, aciklama: 'Süresi geçen öneriler ile gerçekten ceza kaydı oluşan olaylar.', rows: [['Öneri Puan Kaybı', 'oneri_kaybi'], ['Tamamlanmadan süresi dolan öneri sayısı', 'oneri_doldu'], ['Süresi geçtikten sonra tamamlanan öneri sayısı', 'oneri_gec'], ['Puan kaybettiren öneri sayısı', 'oneri_ceza']] },
 ];
 
-export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' }) {
+export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' | 'yonetici' }) {
   const { kullanici, yukleniyor } = useAuth();
+  const yonetici = rol === 'yonetici';
+  const takimRolu = rol === 'tm' || yonetici;
+  const [takimId, setTakimId] = useState('');
   const [gorunum, setGorunum] = useState<'rapor' | 'karsilastirma'>('rapor');
   const [ikinciId, setIkinciId] = useState('');
   const karsilastirma = rol !== 'utt' && gorunum === 'karsilastirma';
   const [bmId, setBmId] = useState('');
   const [temsilciId, setTemsilciId] = useState('');
-  const takimGorunumu = rol === 'tm' && !bmId;
-  const bolgeGorunumu = (rol === 'bm' || (rol === 'tm' && !!bmId)) && !temsilciId;
+  const takimGorunumu = takimRolu && !bmId;
+  const bolgeGorunumu = (rol === 'bm' || (takimRolu && !!bmId)) && !temsilciId;
   const [periyot, setPeriyot] = useState<Periyot>('bu_hafta');
   const [kategori, setKategori] = useState<IcerikTuru>('urun');
   const [arac, setArac] = useState<string>('tumu');
   const [davranis, setDavranis] = useState<(typeof DAVRANIS_SEKMELERI)[number]['key']>('tumu');
-  const aktifTemsilciId = rol === 'tm' && karsilastirma ? '' : temsilciId;
-  const ilkKisiId = rol === 'tm' ? bmId : temsilciId;
-  const raporSorgusu = rol !== 'utt' ? `${periyot}&temsilci=${encodeURIComponent(aktifTemsilciId)}${rol === 'tm' ? `&bm=${encodeURIComponent(bmId)}` : ''}${karsilastirma ? `&karsilastir=${encodeURIComponent(ikinciId)}` : ''}` : periyot;
+  const aktifTemsilciId = takimRolu && karsilastirma ? '' : temsilciId;
+  const ilkKisiId = takimRolu ? bmId : temsilciId;
+  const raporSorgusu = rol !== 'utt' ? `${periyot}&temsilci=${encodeURIComponent(aktifTemsilciId)}${takimRolu ? `&bm=${encodeURIComponent(bmId)}` : ''}${yonetici ? `&takim=${encodeURIComponent(takimId)}` : ''}${karsilastirma ? `&karsilastir=${encodeURIComponent(ikinciId)}` : ''}` : periyot;
   const { eclubAcik, hata: modulHatasi, yenile: modulYenile } = useRaporModulDurumu(`/raporlar/api/${rol}`, kullanici?.id, raporSorgusu);
-  const { data: yanit, loading, yenileniyor, error, yenile } = useRapor<{ hucreler: DavranisHucre[]; baslangic: string; bitis: string; katki: UttKatki; karsilastirma?: { hucreler: DavranisHucre[]; katki: UttKatki; temsilciId: string; bmId?: string; temsilciSayisi?: number; kisiBasiNetPuan?: number | null }; temsilciSayisi?: number; kisiBasiNetPuan?: number | null; bmId?: string; bmler?: Array<{ kullanici_id: string; ad: string; soyad: string; altBilgi?: string }>; temsilciId?: string; temsilciler?: Array<{ kullanici_id: string; ad: string; soyad: string }> }>(`/raporlar/api/${rol}`, raporSorgusu, kullanici?.id, { onbellekSuresi: rol !== 'utt' ? 30_000 : 0, yenileParametresi: rol !== 'utt' });
+  const { data: yanit, loading, yenileniyor, error, yenile } = useRapor<{ hucreler: DavranisHucre[]; baslangic: string; bitis: string; katki: UttKatki; karsilastirma?: { hucreler: DavranisHucre[]; katki: UttKatki; temsilciId: string; bmId?: string; temsilciSayisi?: number; kisiBasiNetPuan?: number | null }; temsilciSayisi?: number; kisiBasiNetPuan?: number | null; takimId?: string; takimlar?: Array<{ id: string; ad: string }>; bmId?: string; bmler?: Array<{ kullanici_id: string; ad: string; soyad: string; altBilgi?: string }>; temsilciId?: string; temsilciler?: Array<{ kullanici_id: string; ad: string; soyad: string }> }>(`/raporlar/api/${rol}`, raporSorgusu, kullanici?.id, { onbellekSuresi: rol !== 'utt' ? 30_000 : 0, yenileParametresi: rol !== 'utt' });
   const raporuYenile = () => { yenile(); void modulYenile(); };
+  const takimVerisiHazir = !yonetici || !takimId || yanit?.takimId === takimId;
   const raporHatasi = error ?? modulHatasi;
   const gorunurBolumler = raporBolumleriniSec(BOLUMLER, eclubAcik === true);
   // Yeni temsilci yüklenirken önceki kişinin verilerini yeni isim altında göstermeyiz.
-  const data = (karsilastirma && (rol === 'tm' ? yanit?.karsilastirma?.bmId : yanit?.karsilastirma?.temsilciId) !== ikinciId) || (rol !== 'utt' && yanit?.temsilciId !== aktifTemsilciId) || (rol === 'tm' && yanit?.bmId !== bmId) ? null : yanit;
+  const data = (yonetici && takimId && yanit?.takimId !== takimId) || (karsilastirma && (takimRolu ? yanit?.karsilastirma?.bmId : yanit?.karsilastirma?.temsilciId) !== ikinciId) || (rol !== 'utt' && yanit?.temsilciId !== aktifTemsilciId) || (takimRolu && yanit?.bmId !== bmId) ? null : yanit;
   const hucreler = data?.hucreler.filter(h => h.kategori === kategori && h.arac === arac) ?? [];
   const d: Record<string, number> = {};
   // Farklı üyeler araçlar arasında tekrar edebilir; sunucu birleşik hücreyi sağlar.
@@ -77,25 +81,29 @@ export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' }) {
     : key === 'atlanan_saniye' ? sure(veriler[key] ?? 0) : fmt(veriler[key] ?? 0);
   const ikinciD: Record<string, number> = {};
   for (const h of data?.karsilastirma?.hucreler.filter(h => h.kategori === kategori && h.arac === arac) ?? []) for (const [key, value] of Object.entries(h.degerler)) ikinciD[key] = (ikinciD[key] ?? 0) + value;
-  const karsilastirmaKisileri = rol === 'tm' ? yanit?.bmler ?? [] : yanit?.temsilciler ?? [];
+  const karsilastirmaKisileri = !takimVerisiHazir ? [] : takimRolu ? yanit?.bmler ?? [] : yanit?.temsilciler ?? [];
   const isim = (id: string, varsayilan: string) => { const kisi = karsilastirmaKisileri.find(k => k.kullanici_id === id); return kisi ? `${kisi.ad} ${kisi.soyad}` : varsayilan; };
-  const ilkAd = isim(ilkKisiId, rol === 'tm' ? 'Bölge Müdürü 1' : 'Temsilci 1');
-  const ikinciAd = isim(ikinciId, rol === 'tm' ? 'Bölge Müdürü 2' : 'Temsilci 2');
+  const ilkAd = isim(ilkKisiId, takimRolu ? 'Bölge Müdürü 1' : 'Temsilci 1');
+  const ikinciAd = isim(ikinciId, takimRolu ? 'Bölge Müdürü 2' : 'Temsilci 2');
   const karsilastirmaSecildi = !!ilkKisiId && !!ikinciId;
   const bekliyor = yukleniyor || (!data && loading);
   return <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
     <div className={styles.container}>
       <Link href="/ana-sayfa" className="mb-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#7890aa]"><ArrowLeft size={14} /> Ana Sayfa</Link>
       <header className={styles.header}>
-        <div><h1 className="text-2xl font-extrabold tracking-tight text-[#10213d]">T-Club Raporları</h1><p className="mt-1 text-xs font-semibold text-[#78889d]">{karsilastirma ? rol === 'tm' ? 'İki bölgenin temsilcilerinin öğrenme davranışlarını karşılaştırın.' : 'Bölgenizdeki iki temsilcinin öğrenme davranışlarını karşılaştırın.' : takimGorunumu ? 'Takımınızın lig sonucunu oluşturan öğrenme davranışları.' : bolgeGorunumu ? 'Bölgenizin lig sonucunu oluşturan öğrenme davranışları.' : rol !== 'utt' ? 'Seçili temsilcinin lig sonucunu oluşturan öğrenme davranışları.' : 'Lig sonucunu oluşturan öğrenme davranışlarınız.'}</p></div>
+        <div><h1 className="text-2xl font-extrabold tracking-tight text-[#10213d]">T-Club Raporları</h1><p className="mt-1 text-xs font-semibold text-[#78889d]">{karsilastirma ? takimRolu ? 'İki bölgenin temsilcilerinin öğrenme davranışlarını karşılaştırın.' : 'Bölgenizdeki iki temsilcinin öğrenme davranışlarını karşılaştırın.' : takimGorunumu ? yonetici ? 'Seçili takımın lig sonucunu oluşturan öğrenme davranışları.' : 'Takımınızın lig sonucunu oluşturan öğrenme davranışları.' : bolgeGorunumu ? 'Bölgenizin lig sonucunu oluşturan öğrenme davranışları.' : rol !== 'utt' ? 'Seçili temsilcinin lig sonucunu oluşturan öğrenme davranışları.' : 'Lig sonucunu oluşturan öğrenme davranışlarınız.'}</p></div>
         <YenileButonu onYenile={raporuYenile} yenileniyor={loading || yenileniyor} />
       </header>
-      {karsilastirma ? <section className="mb-5 grid grid-cols-2 gap-2" aria-label={rol === 'tm' ? 'Karşılaştırılan bölgeler' : 'Karşılaştırılan temsilciler'} aria-busy={loading || yenileniyor}>
+      {yonetici && (yanit?.takimlar?.length ?? 0) > 1 && <div className="mb-5 flex min-w-0 justify-end"><SadeKontrolGrubu tur="kapsul" aria-label="Rapor takımı" className="min-w-0 max-w-full">
+        {yanit?.takimlar?.map(takim => <SadeKontrolButonu key={takim.id} type="button" aria-pressed={(takimId || yanit?.takimId) === takim.id} onClick={() => { setTakimId(takim.id); setBmId(''); setTemsilciId(''); setIkinciId(''); }}>{takim.ad}</SadeKontrolButonu>)}
+      </SadeKontrolGrubu></div>}
+      {yonetici && yanit?.takimlar?.length === 0 && <p className="mb-5 text-sm text-[#667e98]">Firma kapsamında takım bulunamadı.</p>}
+      {karsilastirma ? <section className="mb-5 grid grid-cols-2 gap-2" aria-label={takimRolu ? 'Karşılaştırılan bölgeler' : 'Karşılaştırılan temsilciler'} aria-busy={loading || yenileniyor}>
         {[{ ad: ilkAd, puan: data?.katki.netPuan, sayi: data?.temsilciSayisi, ortalama: data?.kisiBasiNetPuan }, { ad: ikinciAd, puan: data?.karsilastirma?.katki.netPuan, sayi: data?.karsilastirma?.temsilciSayisi, ortalama: data?.karsilastirma?.kisiBasiNetPuan }].map((k, i) => <div key={i} className="min-w-0 rounded-xl border border-gray-200 bg-white p-3 md:p-5" style={{ borderLeft: `3px solid ${i ? '#7c5ce7' : '#237ac8'}` }}>
           <h2 className="mb-2 truncate text-xs font-bold text-gray-400" title={k.ad}>{k.ad}</h2>
           <div className="text-2xl font-extrabold leading-none text-gray-900 tabular-nums md:text-3xl">{k.puan != null ? fmt(k.puan) : '—'}</div>
-          <p className="mt-1.5 text-xs text-gray-500">{rol === 'tm' ? 'Bölge Net Puanı' : 'Net Puan'}</p>
-          {rol === 'tm' && <div className="mt-2 space-y-1 text-xs text-[#667e98]"><p>Temsilci sayısı: <strong>{k.sayi != null ? fmt(k.sayi) : '—'}</strong></p><p>Temsilci başına net puan: <strong>{k.ortalama != null ? fmt(k.ortalama) : '—'}</strong></p></div>}
+          <p className="mt-1.5 text-xs text-gray-500">{takimRolu ? 'Bölge Net Puanı' : 'Net Puan'}</p>
+          {takimRolu && <div className="mt-2 space-y-1 text-xs text-[#667e98]"><p>Temsilci sayısı: <strong>{k.sayi != null ? fmt(k.sayi) : '—'}</strong></p><p>Temsilci başına net puan: <strong>{k.ortalama != null ? fmt(k.ortalama) : '—'}</strong></p></div>}
         </div>)}
       </section> : <>
       <section className={`mb-5 grid grid-cols-1 gap-2 ${takimGorunumu ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`} aria-label={takimGorunumu ? 'Takım net puanı ve katkısı' : bolgeGorunumu ? 'Bölge net puanı ve katkıları' : 'Net puan katkınız'} aria-busy={loading || yenileniyor}>
@@ -105,7 +113,7 @@ export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' }) {
           return <div key={kart.key} className="min-w-0 rounded-xl border border-gray-200 bg-white p-3 md:p-5" style={{ borderLeft: `3px solid ${kart.renk}` }}>
             <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">{kart.ad}</h2>
             <div className="text-2xl font-extrabold leading-none text-gray-900 tabular-nums md:text-3xl">{netKart ? (data ? fmt(data.katki.netPuan) : '—') : katki?.yuzde != null ? `%${fmt(katki.yuzde)}` : '—'}</div>
-            <p className="mt-1.5 min-h-4 text-xs text-gray-500 tabular-nums">{netKart ? takimGorunumu ? 'Takımınızdaki temsilcilerin toplamı' : 'Bölgenizdeki temsilcilerin toplamı' : katki && data ? `${fmt(data.katki.netPuan)} / ${fmt(katki.toplam)} net puan` : '\u00a0'}</p>
+            <p className="mt-1.5 min-h-4 text-xs text-gray-500 tabular-nums">{netKart ? takimGorunumu ? yonetici ? 'Seçili takımdaki temsilcilerin toplamı' : 'Takımınızdaki temsilcilerin toplamı' : 'Bölgenizdeki temsilcilerin toplamı' : katki && data ? `${fmt(data.katki.netPuan)} / ${fmt(katki.toplam)} net puan` : '\u00a0'}</p>
           </div>;
         })}
       </section>
@@ -121,12 +129,12 @@ export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' }) {
         <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
       </div>
         {rol !== 'utt' && <div className={styles.scopeRow}>
-          {rol === 'tm' && !karsilastirma && <div className={styles.scopePicker}><TemsilciSecici temsilciler={yanit?.bmler ?? []} deger={bmId} onDegistir={id => { setBmId(id); setTemsilciId(''); }} genelAdi="Tüm Bölgeler" etiket="Bölge Müdürleri" adOneki="BM " aramaEtiketi="Bölge müdürü adıyla ara" /></div>}
+          {takimRolu && !karsilastirma && <div className={styles.scopePicker}><TemsilciSecici temsilciler={takimVerisiHazir ? yanit?.bmler ?? [] : []} disabled={!takimVerisiHazir} deger={bmId} onDegistir={id => { setBmId(id); setTemsilciId(''); }} genelAdi="Tüm Bölgeler" etiket="Bölge Müdürleri" adOneki="BM " aramaEtiketi="Bölge müdürü adıyla ara" /></div>}
           {karsilastirma ? <>
-            <div className={styles.scopePicker}><TemsilciSecici temsilciler={karsilastirmaKisileri.filter(k => k.kullanici_id !== ikinciId)} deger={ilkKisiId} onDegistir={rol === 'tm' ? id => { setBmId(id); setTemsilciId(''); } : setTemsilciId} genelAdi={rol === 'tm' ? 'Bölge Müdürü 1' : 'Temsilci 1'} etiket={rol === 'tm' ? 'Bölge Müdürü 1' : 'Temsilci 1'} adOneki={rol === 'tm' ? 'BM ' : ''} aramaEtiketi={rol === 'tm' ? 'Bölge müdürü adıyla ara' : 'Temsilci adıyla ara'} /></div>
-            <div className={styles.scopePicker}><TemsilciSecici temsilciler={karsilastirmaKisileri.filter(k => k.kullanici_id !== ilkKisiId)} deger={ikinciId} onDegistir={setIkinciId} genelAdi={rol === 'tm' ? 'Bölge Müdürü 2' : 'Temsilci 2'} etiket={rol === 'tm' ? 'Bölge Müdürü 2' : 'Temsilci 2'} adOneki={rol === 'tm' ? 'BM ' : ''} aramaEtiketi={rol === 'tm' ? 'Bölge müdürü adıyla ara' : 'Temsilci adıyla ara'} /></div>
+            <div className={styles.scopePicker}><TemsilciSecici temsilciler={karsilastirmaKisileri.filter(k => k.kullanici_id !== ikinciId)} deger={ilkKisiId} onDegistir={takimRolu ? id => { setBmId(id); setTemsilciId(''); } : setTemsilciId} genelAdi={takimRolu ? 'Bölge Müdürü 1' : 'Temsilci 1'} etiket={takimRolu ? 'Bölge Müdürü 1' : 'Temsilci 1'} adOneki={takimRolu ? 'BM ' : ''} aramaEtiketi={takimRolu ? 'Bölge müdürü adıyla ara' : 'Temsilci adıyla ara'} /></div>
+            <div className={styles.scopePicker}><TemsilciSecici temsilciler={karsilastirmaKisileri.filter(k => k.kullanici_id !== ilkKisiId)} deger={ikinciId} onDegistir={setIkinciId} genelAdi={takimRolu ? 'Bölge Müdürü 2' : 'Temsilci 2'} etiket={takimRolu ? 'Bölge Müdürü 2' : 'Temsilci 2'} adOneki={takimRolu ? 'BM ' : ''} aramaEtiketi={takimRolu ? 'Bölge müdürü adıyla ara' : 'Temsilci adıyla ara'} /></div>
           </> : <>
-          <div className={styles.scopePicker}><TemsilciSecici temsilciler={rol === 'tm' && yanit?.bmId !== bmId ? [] : yanit?.temsilciler ?? []} deger={temsilciId} onDegistir={setTemsilciId} genelAdi="Tüm Temsilciler" etiket="Temsilciler" disabled={rol === 'tm' && (!bmId || yanit?.bmId !== bmId)} /></div></>}
+          <div className={styles.scopePicker}><TemsilciSecici temsilciler={takimRolu && yanit?.bmId !== bmId ? [] : yanit?.temsilciler ?? []} deger={temsilciId} onDegistir={setTemsilciId} genelAdi="Tüm Temsilciler" etiket="Temsilciler" disabled={takimRolu && (!bmId || yanit?.bmId !== bmId)} /></div></>}
 
         </div>}
       <SadeKontrolGrubu role="tablist" aria-label="Davranış grubu" tur="sekme">
@@ -141,7 +149,7 @@ export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' }) {
           }}>{sekme.ad}</SadeKontrolButonu>)}
       </SadeKontrolGrubu>
       {raporHatasi && <div role="alert" className="mt-5 mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{raporHatasi}<button onClick={raporuYenile} className="ml-3 font-bold underline">Tekrar dene</button></div>}
-      {karsilastirma && !karsilastirmaSecildi && <p className="mt-5 rounded-xl border border-[#dbe5ef] bg-white p-5 text-sm text-[#667e98]">{rol === 'tm' ? 'Karşılaştırmak için iki bölge müdürü seçiniz.' : 'Karşılaştırmak için iki temsilci seçiniz.'}</p>}
+      {karsilastirma && !karsilastirmaSecildi && <p className="mt-5 rounded-xl border border-[#dbe5ef] bg-white p-5 text-sm text-[#667e98]">{takimRolu ? 'Karşılaştırmak için iki bölge müdürü seçiniz.' : 'Karşılaştırmak için iki temsilci seçiniz.'}</p>}
       {(!karsilastirma || karsilastirmaSecildi) && (bekliyor || data) && <div className="pt-5" id="rapor-davranis-panel" role="tabpanel" aria-labelledby={`davranis-tab-${davranis}`} aria-busy={loading || yenileniyor}>
         {GRUPLAR.filter(grup => davranis === 'tumu' || grup.key === davranis).map(grup => <section key={grup.key} aria-label={grup.ad} className={styles.behaviorGroup}>
           {davranis === 'tumu' && <h2 className={styles.behaviorGroupTitle}>{grup.ad}</h2>}
