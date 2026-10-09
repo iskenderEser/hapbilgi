@@ -211,11 +211,11 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
 
       {/* Videolar */}
       <div>
-        <div className="mb-5 flex items-center justify-between gap-2">
-          <div className="min-w-0 flex-1 sm:flex-none">
+        <div className="mb-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="w-full min-w-0 sm:w-auto">
             <UttYayinTuruToggle yayinlar={gecerliVeri?.videolar ?? []} deger={aracTuru} onDegistir={setAracTuru} />
           </div>
-          <div className="ml-auto flex min-w-0 flex-1 justify-end sm:flex-none">
+          <div className="flex min-w-0 sm:ml-auto sm:justify-end">
             <PeriyotButonlari secenekler={PERIYOTLAR} deger={periyot} onDegistir={setPeriyot} ariaLabel="BM istatistik dönemi" />
           </div>
         </div>

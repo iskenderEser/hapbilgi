@@ -1,6 +1,6 @@
 "use client";
 
-import { SadeCokluAliciSecimi } from "@/components/kontrol/SadeKontroller";
+import { SadeKisiCokluSecimi } from "@/components/kontrol/KisiKontroller";
 
 import { DagitimIcerikOzeti } from "@/components/ogrenme-araci/DagitimIcerikOzeti";
 import { Button } from "@/components/ui/button";
@@ -111,9 +111,9 @@ function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; 
         {/* Alıcı seçimi + Gönder */}
         <div className="relative">
           <div className="flex flex-col gap-2 sm:flex-row">
-            <SadeCokluAliciSecimi
- etiket="BM" aliciAdi="BM" placeholder="Alıcı BM seçin"
- secenekler={(aliciler ?? []).map((a) => ({ deger: a.kullanici_id, etiket: "BM " + a.ad + " " + a.soyad, altBilgi: !a.gonderilebilir ? a.sebep : undefined, disabled: !a.gonderilebilir }))}
+            <SadeKisiCokluSecimi
+ baslik="Bölge Müdürleri"
+ kisiler={(aliciler ?? []).map((a) => ({ deger: a.kullanici_id, adSoyad: a.ad + " " + a.soyad, altBilgi: !a.gonderilebilir ? a.sebep : undefined, disabled: !a.gonderilebilir }))}
  degerler={secililer} onDegistir={(ids) => { setSecililer(ids); setSonuc(null); }}
  onAcikDegistir={acKapat} yukleniyor={aliciLoading} disabled={gonderiliyor}
 />

@@ -1,5 +1,6 @@
 "use client";
 
+import { SadeKisiSecimi } from "@/components/kontrol/KisiKontroller";
 import { SadeListeSecimi } from "@/components/kontrol/SadeKontroller";
 
 import { DahaFazlaGoster, useListe } from "@/components/liste";
@@ -211,15 +212,12 @@ export default function BmOneriTakibi({
               </SadeListeSecimi>
             </div>
             <div className="relative w-full sm:w-32">
-              <SadeListeSecimi value={uttFiltresi} onChange={(event) => setUttFiltresi(event.target.value)} aria-label="UTT Listesi" className="w-full">
-                <option value="">UTT Listesi</option>
-                {uttler.map((utt) => <option key={utt} value={utt}>{utt}</option>)}
-              </SadeListeSecimi>
+              <SadeKisiSecimi baslik="Temsilciler" bosSecenekEtiketi="Tüm Temsilciler" kisiler={uttler.map((ad) => ({ deger: ad, adSoyad: ad }))} deger={uttFiltresi} onDegistir={setUttFiltresi} className="w-full" />
             </div>
             <div className="relative w-full sm:w-36">
               <SadeListeSecimi value={durumFiltresi} onChange={(event) => setDurumFiltresi(event.target.value as DurumFiltresi)} aria-label="Öneri Durumları" className="w-full">
                 <option value="tum">Öneri Durumları</option>
-                <option value="planlandi">Planlar</option>
+                <option value="planlandi">Planlananlar</option>
                 <option value="bekliyor">Bekliyor</option>
                 <option value="tamamlandi">Tamamlandı</option>
                 <option value="suresi_gecmis">Süresi Geçti</option>

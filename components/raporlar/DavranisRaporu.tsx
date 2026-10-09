@@ -78,9 +78,9 @@ export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' }) {
   const ikinciD: Record<string, number> = {};
   for (const h of data?.karsilastirma?.hucreler.filter(h => h.kategori === kategori && h.arac === arac) ?? []) for (const [key, value] of Object.entries(h.degerler)) ikinciD[key] = (ikinciD[key] ?? 0) + value;
   const karsilastirmaKisileri = rol === 'tm' ? yanit?.bmler ?? [] : yanit?.temsilciler ?? [];
-  const isim = (id: string, varsayilan: string) => { const kisi = karsilastirmaKisileri.find(k => k.kullanici_id === id); return kisi ? `${rol === 'tm' ? 'BM ' : ''}${kisi.ad} ${kisi.soyad}` : varsayilan; };
-  const ilkAd = isim(ilkKisiId, rol === 'tm' ? 'BM 1' : 'UTT 1');
-  const ikinciAd = isim(ikinciId, rol === 'tm' ? 'BM 2' : 'UTT 2');
+  const isim = (id: string, varsayilan: string) => { const kisi = karsilastirmaKisileri.find(k => k.kullanici_id === id); return kisi ? `${kisi.ad} ${kisi.soyad}` : varsayilan; };
+  const ilkAd = isim(ilkKisiId, rol === 'tm' ? 'Bölge Müdürü 1' : 'Temsilci 1');
+  const ikinciAd = isim(ikinciId, rol === 'tm' ? 'Bölge Müdürü 2' : 'Temsilci 2');
   const karsilastirmaSecildi = !!ilkKisiId && !!ikinciId;
   const bekliyor = yukleniyor || (!data && loading);
   return <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -121,12 +121,12 @@ export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' }) {
         <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
       </div>
         {rol !== 'utt' && <div className={styles.scopeRow}>
-          {rol === 'tm' && !karsilastirma && <div className={styles.scopePicker}><TemsilciSecici temsilciler={yanit?.bmler ?? []} deger={bmId} onDegistir={id => { setBmId(id); setTemsilciId(''); }} genelAdi="Tüm Bölgeler" etiket="Bölge müdürü" adOneki="BM " aramaEtiketi="Bölge müdürü adıyla ara" /></div>}
+          {rol === 'tm' && !karsilastirma && <div className={styles.scopePicker}><TemsilciSecici temsilciler={yanit?.bmler ?? []} deger={bmId} onDegistir={id => { setBmId(id); setTemsilciId(''); }} genelAdi="Tüm Bölgeler" etiket="Bölge Müdürleri" adOneki="BM " aramaEtiketi="Bölge müdürü adıyla ara" /></div>}
           {karsilastirma ? <>
-            <div className={styles.scopePicker}><TemsilciSecici temsilciler={karsilastirmaKisileri.filter(k => k.kullanici_id !== ikinciId)} deger={ilkKisiId} onDegistir={rol === 'tm' ? id => { setBmId(id); setTemsilciId(''); } : setTemsilciId} genelAdi={rol === 'tm' ? 'BM 1 seçiniz' : 'UTT 1 seçiniz'} etiket={rol === 'tm' ? 'BM 1' : 'UTT 1'} adOneki={rol === 'tm' ? 'BM ' : ''} aramaEtiketi={rol === 'tm' ? 'Bölge müdürü adıyla ara' : 'Temsilci adıyla ara'} /></div>
-            <div className={styles.scopePicker}><TemsilciSecici temsilciler={karsilastirmaKisileri.filter(k => k.kullanici_id !== ilkKisiId)} deger={ikinciId} onDegistir={setIkinciId} genelAdi={rol === 'tm' ? 'BM 2 seçiniz' : 'UTT 2 seçiniz'} etiket={rol === 'tm' ? 'BM 2' : 'UTT 2'} adOneki={rol === 'tm' ? 'BM ' : ''} aramaEtiketi={rol === 'tm' ? 'Bölge müdürü adıyla ara' : 'Temsilci adıyla ara'} /></div>
+            <div className={styles.scopePicker}><TemsilciSecici temsilciler={karsilastirmaKisileri.filter(k => k.kullanici_id !== ikinciId)} deger={ilkKisiId} onDegistir={rol === 'tm' ? id => { setBmId(id); setTemsilciId(''); } : setTemsilciId} genelAdi={rol === 'tm' ? 'Bölge Müdürü 1' : 'Temsilci 1'} etiket={rol === 'tm' ? 'Bölge Müdürü 1' : 'Temsilci 1'} adOneki={rol === 'tm' ? 'BM ' : ''} aramaEtiketi={rol === 'tm' ? 'Bölge müdürü adıyla ara' : 'Temsilci adıyla ara'} /></div>
+            <div className={styles.scopePicker}><TemsilciSecici temsilciler={karsilastirmaKisileri.filter(k => k.kullanici_id !== ilkKisiId)} deger={ikinciId} onDegistir={setIkinciId} genelAdi={rol === 'tm' ? 'Bölge Müdürü 2' : 'Temsilci 2'} etiket={rol === 'tm' ? 'Bölge Müdürü 2' : 'Temsilci 2'} adOneki={rol === 'tm' ? 'BM ' : ''} aramaEtiketi={rol === 'tm' ? 'Bölge müdürü adıyla ara' : 'Temsilci adıyla ara'} /></div>
           </> : <>
-          <div className={styles.scopePicker}><TemsilciSecici temsilciler={rol === 'tm' && yanit?.bmId !== bmId ? [] : yanit?.temsilciler ?? []} deger={temsilciId} onDegistir={setTemsilciId} genelAdi={rol === 'tm' ? 'Tüm Bölge' : 'Bölge Geneli'} etiket={rol === 'tm' ? 'Temsilci' : 'Rapor kapsamı'} disabled={rol === 'tm' && (!bmId || yanit?.bmId !== bmId)} /></div></>}
+          <div className={styles.scopePicker}><TemsilciSecici temsilciler={rol === 'tm' && yanit?.bmId !== bmId ? [] : yanit?.temsilciler ?? []} deger={temsilciId} onDegistir={setTemsilciId} genelAdi="Tüm Temsilciler" etiket="Temsilciler" disabled={rol === 'tm' && (!bmId || yanit?.bmId !== bmId)} /></div></>}
 
         </div>}
       <SadeKontrolGrubu role="tablist" aria-label="Davranış grubu" tur="sekme">
@@ -140,9 +140,9 @@ export default function DavranisRaporu({ rol }: { rol: 'utt' | 'bm' | 'tm' }) {
             event.currentTarget.parentElement?.querySelectorAll('button')[hedef]?.focus();
           }}>{sekme.ad}</SadeKontrolButonu>)}
       </SadeKontrolGrubu>
-      {raporHatasi && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{raporHatasi}<button onClick={raporuYenile} className="ml-3 font-bold underline">Tekrar dene</button></div>}
-      {karsilastirma && !karsilastirmaSecildi && <p className="rounded-xl border border-[#dbe5ef] bg-white p-5 text-sm text-[#667e98]">{rol === 'tm' ? 'Karşılaştırmak için iki bölge müdürü seçiniz.' : 'Karşılaştırmak için iki temsilci seçiniz.'}</p>}
-      {(!karsilastirma || karsilastirmaSecildi) && (bekliyor || data) && <div id="rapor-davranis-panel" role="tabpanel" aria-labelledby={`davranis-tab-${davranis}`} aria-busy={loading || yenileniyor}>
+      {raporHatasi && <div role="alert" className="mt-5 mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{raporHatasi}<button onClick={raporuYenile} className="ml-3 font-bold underline">Tekrar dene</button></div>}
+      {karsilastirma && !karsilastirmaSecildi && <p className="mt-5 rounded-xl border border-[#dbe5ef] bg-white p-5 text-sm text-[#667e98]">{rol === 'tm' ? 'Karşılaştırmak için iki bölge müdürü seçiniz.' : 'Karşılaştırmak için iki temsilci seçiniz.'}</p>}
+      {(!karsilastirma || karsilastirmaSecildi) && (bekliyor || data) && <div className="pt-5" id="rapor-davranis-panel" role="tabpanel" aria-labelledby={`davranis-tab-${davranis}`} aria-busy={loading || yenileniyor}>
         {GRUPLAR.filter(grup => davranis === 'tumu' || grup.key === davranis).map(grup => <section key={grup.key} aria-label={grup.ad} className={styles.behaviorGroup}>
           {davranis === 'tumu' && <h2 className={styles.behaviorGroupTitle}>{grup.ad}</h2>}
           <div className={styles.analysisGrid}>

@@ -1,19 +1,16 @@
 "use client";
 
-import { SadeSecim } from "@/components/kontrol/SadeKontroller";
+import { SadeKisiSecimi } from "@/components/kontrol/KisiKontroller";
 
-export default function TemsilciSecici({ temsilciler, deger, onDegistir, genelAdi = "Bölge Geneli", etiket = "Rapor kapsamı", aramaEtiketi = "Temsilci adıyla ara", disabled = false, adOneki = "" }: {
+export default function TemsilciSecici({ temsilciler, deger, onDegistir, genelAdi = "Tüm Temsilciler", etiket = "Temsilciler", aramaEtiketi = "Temsilci adıyla ara", disabled = false, adOneki = "" }: {
   temsilciler: Array<{ kullanici_id: string; ad: string; soyad: string; altBilgi?: string }>;
-  genelAdi?: string; etiket?: string; aramaEtiketi?: string; disabled?: boolean; adOneki?: string;
+  genelAdi?: string; etiket?: string; aramaEtiketi?: string; disabled?: boolean;
+  /** Eski çağrılar için korunur; isme önek eklemez. */
+  adOneki?: string;
   deger: string;
   onDegistir: (id: string) => void;
 }) {
-  const bmSecimi = adOneki.trim() === "BM";
-  return <SadeSecim
-    secenekler={[
-      { deger: "", etiket: genelAdi },
-      ...temsilciler.map((k) => ({ deger: k.kullanici_id, etiket: `${adOneki}${k.ad} ${k.soyad}`.trim(), altBilgi: bmSecimi ? undefined : k.altBilgi })),
-    ]}
-    deger={deger} onDegistir={onDegistir} etiket={etiket} aramaEtiketi={aramaEtiketi} disabled={disabled} placeholder={genelAdi}
-  />;
+  return <SadeKisiSecimi baslik={etiket} bosSecenekEtiketi={genelAdi}
+    kisiler={temsilciler.map((k) => ({ deger: k.kullanici_id, adSoyad: `${k.ad} ${k.soyad}`, altBilgi: adOneki.trim() === "BM" ? undefined : k.altBilgi }))}
+    deger={deger} onDegistir={onDegistir} aramaEtiketi={aramaEtiketi} disabled={disabled} />;
 }

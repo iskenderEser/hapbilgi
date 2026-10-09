@@ -1,6 +1,6 @@
 "use client";
 
-import { SadeTabloSecimi } from "@/components/kontrol/SadeKontroller";
+import { SadeKisiSecimi } from "@/components/kontrol/KisiKontroller";
 
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
@@ -100,7 +100,7 @@ interface TemsilciSecenegi {
 }
 
 function TemsilciFiltresi({ temsilciler, deger, onDegistir }: { temsilciler: TemsilciSecenegi[]; deger: string; onDegistir: (id: string) => void }) {
- return <SadeTabloSecimi etiket="Temsilci filtresi" secenekler={[{ deger: "", etiket: "Tüm Temsilciler" }, ...temsilciler.map((t) => ({ deger: t.id, etiket: t.ad }))]} deger={deger} onDegistir={onDegistir} />;
+ return <SadeKisiSecimi baslik="Temsilciler" bosSecenekEtiketi="Tüm Temsilciler" varyant="tablo" kisiler={temsilciler.map((t) => ({ deger: t.id, adSoyad: t.ad }))} deger={deger} onDegistir={onDegistir} />;
 }
 
 export default function TmOneriTakibi({

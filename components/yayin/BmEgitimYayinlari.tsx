@@ -1,6 +1,7 @@
 "use client";
 
-import { SadeListeSecimi } from "@/components/kontrol/SadeKontroller";
+import { SadeKisiSecimi } from "@/components/kontrol/KisiKontroller";
+import { SadeTarihAlani } from "@/components/kontrol/SadeKontroller";
 
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -174,28 +175,25 @@ export default function BmEgitimYayinlari({ kategoriBilgisi }: { kategoriBilgisi
       <div className="mb-5 flex min-w-0 flex-wrap items-center justify-between gap-3">
         <UttYayinTuruToggle yayinlar={kategoriYayinlari} deger={aktifTur} onDegistir={setAktifTur} className="min-w-0" />
         <div className="ml-auto flex min-w-0 max-w-full items-center justify-end">
-          <ListeArama arama={liste.arama} ipucu="Bu kategoride ara..." genislik="w-48 sm:w-60" />
+          <ListeArama arama={liste.arama} ipucu="Bu kategoride ara..." genislik="w-48 sm:w-60" yukseklik="secim" />
         </div>
       </div>
 
       {bmMi && (
-        <div className="mb-5 flex flex-wrap items-end justify-end gap-2" aria-label="Yayın önerisi gönderimi">
-          <label className="flex min-w-36 flex-col">
-            <span className="sr-only">UTT</span>
-            <SadeListeSecimi value={aliciId} onChange={(event) => setAliciId(event.target.value)} aria-label="Öneri gönderilecek UTT" className="w-full">
-              <option value="">UTT seçin</option>
-              {alicilar.map((alici) => <option key={alici.kullanici_id} value={alici.kullanici_id}>{alici.ad} {alici.soyad} · {alici.haftalik_kalan} kalan</option>)}
-            </SadeListeSecimi>
+        <div className="mb-5 grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap sm:justify-end" aria-label="Yayın önerisi gönderimi">
+          <label className="col-span-2 flex min-w-0 flex-col gap-1.5 text-[11px] font-bold text-[#718198] sm:min-w-36">
+            <span>Temsilciler</span>
+            <SadeKisiSecimi baslik="Temsilciler" kisiler={alicilar.map((alici) => ({ deger: alici.kullanici_id, adSoyad: `${alici.ad} ${alici.soyad}`, altBilgi: `${alici.haftalik_kalan} kalan öneri hakkı` }))} deger={aliciId} onDegistir={setAliciId} className="w-full" />
           </label>
-          <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#718198]">
+          <label className="flex min-w-0 flex-col gap-1.5 text-[11px] font-bold text-[#718198]">
             Başlangıç
-            <input type="date" value={baslangic} min={trGunEkle(trGunu(), 1)} onChange={(event) => { setBaslangic(event.target.value); if (bitis && event.target.value >= bitis) setBitis(""); }} className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-[11px] font-bold text-[#718198]" />
+            <SadeTarihAlani value={baslangic} min={trGunEkle(trGunu(), 1)} onChange={(event) => { setBaslangic(event.target.value); if (bitis && event.target.value >= bitis) setBitis(""); }} className="sm:w-36" />
           </label>
-          <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#718198]">
+          <label className="flex min-w-0 flex-col gap-1.5 text-[11px] font-bold text-[#718198]">
             Bitiş
-            <input type="date" value={bitis} min={baslangic ? trGunEkle(baslangic, 1) : trGunEkle(trGunu(), 2)} onChange={(event) => setBitis(event.target.value)} className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-[11px] font-bold text-[#718198]" />
+            <SadeTarihAlani value={bitis} min={baslangic ? trGunEkle(baslangic, 1) : trGunEkle(trGunu(), 2)} onChange={(event) => setBitis(event.target.value)} className="sm:w-36" />
           </label>
-          <button type="button" onClick={() => void gonder()} disabled={!gonderilebilir} className="h-8 rounded-lg bg-[#237ac8] px-3 text-[11px] font-bold text-white hover:bg-[#1d69ae] disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" onClick={() => void gonder()} disabled={!gonderilebilir} className="col-span-2 h-10 rounded-lg bg-[#237ac8] px-3 text-[11px] font-bold text-white hover:bg-[#1d69ae] disabled:cursor-not-allowed disabled:opacity-50">
             {gonderiliyor ? "Gönderiliyor..." : "Gönder"}
           </button>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { SadeCokluAliciSecimi } from "@/components/kontrol/SadeKontroller";
+import { SadeKisiCokluSecimi } from "@/components/kontrol/KisiKontroller";
 
 import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -13,7 +13,7 @@ import { YenileButonu } from "@/components/ui/yenile-butonu";
 import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 import { UttYayinTuruToggle } from "@/components/yayin/UttYayinListeOrtaklari";
 import { yayinAlicisiBekliyor, yayinAlicisiUygun, yayinGonderimListeleri, type GonderimFiltresi } from "@/lib/eclub/yayinGonderimFiltreleri";
-import { ECLUB_GOREN_ROLLER, eclubKisiHedefRolu } from "@/lib/utils/roller";
+import { ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
@@ -37,8 +37,6 @@ const hedefGrubu = (video: OneriYayin): HedefGrubu => {
   return teknisyen ? "eczane_teknisyeni" : "eczaci";
 };
 
-const aliciGorunenAdi = (kisi: OneriKisi) =>
-  `${eclubKisiHedefRolu(kisi.rol) === "eczane_teknisyeni" ? "Ecz.Tekn." : "Ecz."} ${kisi.ad} ${kisi.soyad}`;
 
 export default function EclubVideolarimPage() {
   const { kullanici, yukleniyor } = useAuth();
@@ -249,8 +247,8 @@ function UttEclubVideolarimPage() {
             <span className="lg:hidden">{seciliYayinlar.length} yayın</span>
             <span className="hidden lg:inline">Gönderilecek: {seciliYayinlar.length} yayın</span>
           </span>
-          <SadeCokluAliciSecimi key={seciliYayinIdleri.join(",")}
- etiket="Alıcı" secenekler={ortakUygunKisiler.map((kisi) => ({ deger: kisi.kisi_id, etiket: aliciGorunenAdi(kisi), altBilgi: (kisi.eczane_adi || "Eczane bilgisi yok") + (ortakSecilebilirIdler.has(kisi.kisi_id) ? "" : " · Tekrar gönderim süresi dolmadı"), disabled: !ortakSecilebilirIdler.has(kisi.kisi_id) }))}
+          <SadeKisiCokluSecimi key={seciliYayinIdleri.join(",")}
+ baslik="Alıcılar" kisiler={ortakUygunKisiler.map((kisi) => ({ deger: kisi.kisi_id, adSoyad: `${kisi.ad} ${kisi.soyad}`, rol: kisi.rol, altBilgi: (kisi.eczane_adi || "Eczane bilgisi yok") + (ortakSecilebilirIdler.has(kisi.kisi_id) ? "" : " · Tekrar gönderim süresi dolmadı"), disabled: !ortakSecilebilirIdler.has(kisi.kisi_id) }))}
  degerler={gecerliSeciliKisiIdleri} onDegistir={setSeciliKisiIdleri} disabled={seciliYayinlar.length === 0 || topluGonderiliyor || gonderLoading}
 />
           <button type="button" onClick={() => void gonder()} disabled={seciliYayinlar.length === 0 || gecerliSeciliKisiIdleri.length === 0 || topluGonderiliyor || gonderLoading} className="h-[30px] rounded-[10px] bg-[#237ac8] px-3 text-[11px] font-bold text-white hover:bg-[#1d68ad] disabled:cursor-not-allowed disabled:bg-[#9fc4e5]">

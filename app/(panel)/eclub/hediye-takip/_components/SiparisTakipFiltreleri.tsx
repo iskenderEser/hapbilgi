@@ -1,3 +1,4 @@
+import { SadeKisiSecimi } from "@/components/kontrol/KisiKontroller";
 import { SadeListeSecimi, SadeTarihAlani } from "@/components/kontrol/SadeKontroller";
 import type { SiparisTakipApiYaniti } from "@/lib/eclub/hediyeTakip/siparisTakip";
 import { RotateCcw } from "lucide-react";
@@ -28,11 +29,8 @@ export default function SiparisTakipFiltreleri({ deger, secenekler, onDegistir, 
   return (
     <section aria-label="Sipariş takibi filtreleri" className="rounded-2xl border border-[#dfe7f1] bg-white p-3 shadow-[0_6px_18px_rgba(31,55,90,0.035)] md:p-4">
       <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${uttler ? "lg:grid-cols-6" : "lg:grid-cols-5"}`}>
-        {uttler && <label htmlFor="siparis-takip-utt" className={etiketSinifi}>UTT
-          <SadeListeSecimi id="siparis-takip-utt" value={uttId} onChange={(event) => onUttDegistir?.(event.target.value)} aria-label="UTT" className="w-full">
-            <option value="">Tüm UTT’ler</option>
-            {uttler.map((utt) => <option key={utt.utt_id} value={utt.utt_id}>{utt.utt_adi}</option>)}
-          </SadeListeSecimi>
+        {uttler && <label htmlFor="siparis-takip-utt" className={etiketSinifi}>Temsilciler
+          <SadeKisiSecimi baslik="Temsilciler" bosSecenekEtiketi="Tüm Temsilciler" kisiler={uttler.map((utt) => ({ deger: utt.utt_id, adSoyad: utt.utt_adi }))} deger={uttId} onDegistir={(id) => onUttDegistir?.(id)} triggerProps={{ id: "siparis-takip-utt" }} className="w-full" />
         </label>}
         <label htmlFor="siparis-takip-eczane" className={etiketSinifi}>Eczane
           <SadeListeSecimi id="siparis-takip-eczane" value={deger.eczane_id} onChange={(event) => degistir("eczane_id", event.target.value)} aria-label="Eczane" className="w-full">

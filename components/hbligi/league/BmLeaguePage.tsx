@@ -37,7 +37,7 @@ export default function BmLeaguePage({ veri, periyotSecici }: { veri: SahaLigSon
       <div className={`${styles.dashboard} ${styles.fixedDashboard}`}>
         <LeagueHeader periyotSecici={null} />
         <MonthlyLeaders top3={kursu} baslik={`${veri.aylik_kursu?.ay_adi ?? "Geçen"} Ayının Bölge Öğrenme Liderleri`} />
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <SadeKontrolGrubu tur="kapsul">
             {(["bolge", "takim"] as const).map((id) => (
               <SadeKontrolButonu key={id} type="button" onClick={() => setKapsam(id)} aria-pressed={kapsam === id}>

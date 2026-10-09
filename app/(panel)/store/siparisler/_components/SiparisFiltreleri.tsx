@@ -11,6 +11,7 @@
 
 "use client";
 
+import { SadeKisiSecimi } from "@/components/kontrol/KisiKontroller";
 import { SadeListeSecimi, SadeTarihAlani } from "@/components/kontrol/SadeKontroller";
 
 import { DURUM_ETIKETLERI } from "@/lib/tclub/store/sabitler";
@@ -162,15 +163,8 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
 
       {/* KULLANICI */}
       <div className="min-w-0">
-        <label style={labelStyle}>{rol === "bm" ? "UTT / KD_UTT" : "Kullanıcı"}</label>
-        <SadeListeSecimi value={p.filtreler.kullanici_id} onChange={(e) => p.filtreDegistir("kullanici_id", e.target.value)} disabled={rol !== "bm" && !p.filtreler.bolge_id} aria-label="Rol" className="w-full">
-          <option value="">Tümü</option>
-          {kullanicilar.map((k) => (
-            <option key={k.kullanici_id} value={k.kullanici_id}>
-              {k.ad} {k.soyad} ({k.rol})
-            </option>
-          ))}
-        </SadeListeSecimi>
+        <label style={labelStyle}>{rol === "bm" ? "Temsilciler" : "Kullanıcılar"}</label>
+        <SadeKisiSecimi baslik={rol === "bm" ? "Temsilciler" : "Kullanıcılar"} bosSecenekEtiketi={rol === "bm" ? "Tüm Temsilciler" : "Tüm Kullanıcılar"} kisiler={kullanicilar.map((k) => ({ deger: k.kullanici_id, adSoyad: `${k.ad} ${k.soyad}`, rol: k.rol }))} deger={p.filtreler.kullanici_id} onDegistir={(id) => p.filtreDegistir("kullanici_id", id)} disabled={rol !== "bm" && !p.filtreler.bolge_id} className="w-full" />
       </div>
 
       {/* DURUM */}

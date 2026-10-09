@@ -1,7 +1,7 @@
+import { SadeKisiSecimi } from "@/components/kontrol/KisiKontroller";
 import { SadeListeSecimi, SadeTarihAlani } from "@/components/kontrol/SadeKontroller";
 import type { CekTakipFiltreSecenekleri } from "@/lib/eclub/hediyeTakip/cekTakip";
 import { CEK_TALEP_DURUM_META, CEK_TALEP_DURUMLARI } from "@/lib/eclub/store/eclubStoreTipler";
-import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import { RotateCcw } from "lucide-react";
 
 export interface CekTakipFiltreDegerleri {
@@ -57,11 +57,8 @@ export default function CekTakipFiltreleri({
       <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 ${uttler ? "xl:grid-cols-7" : "xl:grid-cols-6"}`}>
         {uttler && (
           <label htmlFor="cek-takip-utt" className="flex min-w-0 flex-col gap-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
-            UTT
-            <SadeListeSecimi id="cek-takip-utt" value={uttId} onChange={(event) => onUttDegistir?.(event.target.value)} aria-label="UTT" className="w-full">
-              <option value="">Tüm UTT’ler</option>
-              {uttler.map((utt) => <option key={utt.utt_id} value={utt.utt_id}>{utt.utt_adi}</option>)}
-            </SadeListeSecimi>
+            Temsilciler
+            <SadeKisiSecimi baslik="Temsilciler" bosSecenekEtiketi="Tüm Temsilciler" kisiler={uttler.map((utt) => ({ deger: utt.utt_id, adSoyad: utt.utt_adi }))} deger={uttId} onDegistir={(id) => onUttDegistir?.(id)} triggerProps={{ id: "cek-takip-utt" }} className="w-full" />
           </label>
         )}
         <label htmlFor="cek-takip-eczane" className="flex min-w-0 flex-col gap-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
@@ -73,10 +70,7 @@ export default function CekTakipFiltreleri({
         </label>
         <label htmlFor="cek-takip-uye" className="flex min-w-0 flex-col gap-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
           Üye
-          <SadeListeSecimi id="cek-takip-uye" value={deger.kisi_id} onChange={(event) => alanDegistir("kisi_id", event.target.value)} aria-label="Üye" className="w-full">
-            <option value="">Tüm üyeler</option>
-            {uyeler.map((uye) => <option key={uye.kisi_id} value={uye.kisi_id}>{eclubKisiRolEtiketi(uye.rol)} · {uye.ad_soyad}</option>)}
-          </SadeListeSecimi>
+          <SadeKisiSecimi baslik="Üyeler" bosSecenekEtiketi="Tüm Üyeler" kisiler={uyeler.map((uye) => ({ deger: uye.kisi_id, adSoyad: uye.ad_soyad, rol: uye.rol }))} deger={deger.kisi_id} onDegistir={(id) => alanDegistir("kisi_id", id)} triggerProps={{ id: "cek-takip-uye" }} className="w-full" />
         </label>
         <label htmlFor="cek-takip-urun" className="flex min-w-0 flex-col gap-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#7d8fa5]">
           Ürün

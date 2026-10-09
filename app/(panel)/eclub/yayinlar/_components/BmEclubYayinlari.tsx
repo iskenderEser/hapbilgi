@@ -1,6 +1,6 @@
 "use client";
 
-import { SadeSecim } from "@/components/kontrol/SadeKontroller";
+import { SadeKisiSecimi } from "@/components/kontrol/KisiKontroller";
 
 import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
 import { OgrenmeAraciOnizlemeModal } from "@/app/(panel)/yayin-yonetimi/_components/Modallar";
@@ -29,12 +29,14 @@ const HEDEF_GRUPLARI: { anahtar: HedefGrubu; etiket: string; aciklama: string; r
 ];
 const hedefGrubu = (yayin: OneriYayin): HedefGrubu => yayin.hedef_roller.includes("eczaci") && yayin.hedef_roller.includes("eczane_teknisyeni") ? "ortak" : yayin.hedef_roller.includes("eczane_teknisyeni") ? "eczane_teknisyeni" : "eczaci";
 
-function YoneticiSecimi({ etiket, deger, secenekler, engelli, onSec }: { etiket: string; deger: string; secenekler: { id: string; ad: string }[]; engelli: boolean; onSec: (id: string) => void }) {
- return <SadeSecim etiket={etiket} secenekler={secenekler.map((s) => ({ deger: s.id, etiket: etiket === "BM" && s.id !== "" && !s.ad.startsWith("BM ") ? "BM " + s.ad : s.ad }))} deger={deger} onDegistir={onSec} disabled={engelli} placeholder={etiket + " seçin"} />;
+function YoneticiSecimi({ etiket, deger, secenekler, engelli, onSec, baslikGoster = false }: { baslikGoster?: boolean; etiket: string; deger: string; secenekler: { id: string; ad: string }[]; engelli: boolean; onSec: (id: string) => void }) {
+ const baslik = etiket === "BM" ? "Bölge Müdürleri" : "Temsilciler";
+ return <SadeKisiSecimi baslik={baslik} kisiler={secenekler.filter((s) => s.id !== "").map((s) => ({ deger: s.id, adSoyad: s.ad }))} deger={deger} onDegistir={onSec} disabled={engelli} bosSecenekEtiketi={etiket === "BM" ? "Tüm Bölgeler" : false} baslikGoster={baslikGoster} />;
 }
 
 export default function BmEclubYayinlari({ rol = "bm" }: { rol?: "bm" | "tm" }) {
   const [veri, setVeri] = useState<BmYayinYaniti | null>(null);
+  const [uttSecimiYapildi, setUttSecimiYapildi] = useState(false);
   const [seciliUttId, setSeciliUttId] = useState<string | null>(null);
   const [seciliBmId, setSeciliBmId] = useState("");
   const istekSirasi = useRef(0);
@@ -61,7 +63,7 @@ export default function BmEclubYayinlari({ rol = "bm" }: { rol?: "bm" | "tm" }) 
       const sonraki = govde as BmYayinYaniti;
       setVeri(sonraki);
       setSeciliUttId(sonraki.secili_utt_id);
-      if (bmId !== undefined) setSeciliBmId(bmId);
+      if (bmId !== undefined) { setSeciliBmId(bmId); setUttSecimiYapildi(false); }
       setSimdi(Date.now());
     } catch (err) {
       if (istek !== istekSirasi.current) return;
@@ -110,15 +112,16 @@ export default function BmEclubYayinlari({ rol = "bm" }: { rol?: "bm" | "tm" }) 
       <section aria-label="E-Club öğrenme içeriği hedefleri" className="grid grid-cols-2 gap-2 md:grid-cols-3">
         {HEDEF_GRUPLARI.map((grup) => { const secili = aktifHedef === grup.anahtar; const gonderilen = gruplar[grup.anahtar].filter((yayin) => bolgeGonderilenler.has(yayin.yayin_id)).length; const stil = { "--stat-renk": grup.renk, boxShadow: secili ? `0 0 0 2px ${grup.renk}22` : "none" } as CSSProperties; return <button type="button" key={grup.anahtar} onClick={() => { setAktifHedef(grup.anahtar); setGonderimFiltresi("tumu"); sifirla(); }} aria-pressed={secili} className="cursor-pointer rounded-xl border border-gray-200 border-l-[3px] bg-white p-3 text-left transition-all [border-left-color:var(--stat-renk)] hover:-translate-y-0.5 hover:shadow-md md:p-5" style={stil}><div className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">{grup.etiket}</div><div className="text-2xl font-extrabold leading-none text-gray-900 md:text-3xl">{gruplar[grup.anahtar].length.toLocaleString("tr-TR")}</div><div className="mt-1.5 hidden text-xs text-gray-500 md:block">{rol === "tm" ? "Takımda yayındaki toplam yayın" : "Bölgede yayındaki toplam yayın"} · {gonderilen} yayın gönderildi</div></button>; })}
       </section>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <PeriyotButonlari<GonderimFiltresi> secenekler={[{ key: "tumu", label: `Tümü ${listeler.tumu.length}` }, { key: "gonderilebilir", label: `Gönderime Hazır ${listeler.gonderilebilir.length}` }, { key: "gonderilen", label: `Gönderilenler ${listeler.gonderilen.length}` }]} deger={gonderimFiltresi} onDegistir={(filtre) => { setGonderimFiltresi(filtre); sifirla(); }} ariaLabel="Gönderim durumu" className="w-fit flex-none" />
-        <div className={`ml-auto grid max-w-full flex-none items-center gap-2 ${rol === "tm" ? "w-[288px] grid-cols-2 sm:w-[328px]" : "w-[140px] grid-cols-1 sm:w-[160px]"}`}>
+        <div className={`grid w-full max-w-full flex-none items-center gap-2 sm:ml-auto ${rol === "tm" ? "grid-cols-2 sm:w-[328px]" : "grid-cols-1 sm:w-[160px]"}`}>
           {rol === "tm" && <YoneticiSecimi etiket="BM" deger={seciliBmId} engelli={yenileniyor || !bmGruplari.length} secenekler={[{ id: "", ad: "Tüm BM’ler" }, ...bmGruplari]} onSec={(bmId) => {
             const uttler = bmId ? bmGruplari.find((bm) => bm.id === bmId)?.uttler ?? [] : veri?.uttler ?? [];
             const uttId = uttler.find((utt) => utt.utt_id === seciliUttId)?.utt_id ?? uttler[0]?.utt_id;
             setGonderimFiltresi("tumu"); sifirla(); void veriCek(uttId, false, bmId);
           }} />}
-          <YoneticiSecimi etiket="UTT" deger={seciliUttId ?? ""} engelli={yenileniyor || !filtreliUttler.length} secenekler={filtreliUttler.map((utt) => ({ id: utt.utt_id, ad: utt.utt_adi }))} onSec={(uttId) => {
+          <YoneticiSecimi baslikGoster={!uttSecimiYapildi} etiket="UTT" deger={seciliUttId ?? ""} engelli={yenileniyor || !filtreliUttler.length} secenekler={filtreliUttler.map((utt) => ({ id: utt.utt_id, ad: utt.utt_adi }))} onSec={(uttId) => {
+            setUttSecimiYapildi(true);
             setGonderimFiltresi("tumu"); sifirla(); void veriCek(uttId);
           }} />
         </div>
