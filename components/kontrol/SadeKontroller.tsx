@@ -237,6 +237,10 @@ export function SadeKontrolButonu({ className, ...props }: Omit<ComponentProps<"
   return <button {...props} type="button" data-sade-kontrol="true" className={cn(styles.controlButton, className)} />;
 }
 
+export function SadeIslemButonu({ className, type = "button", ...props }: Omit<ComponentProps<"button">, "style">) {
+  return <button {...props} type={type} data-sade-kontrol="true" className={cn(styles.trigger, styles.controlButton, className)} />;
+}
+
 /** Özel veri yükleme/kayıt akışları da aynı seçim görünümünü kullanır. */
 export function SadeSecimButonu({ children, className, ...props }: Omit<ComponentProps<"button">, "style">) {
   return <button {...props} type="button" className={cn(styles.trigger, className)}><span className={styles.value}>{children}</span><SadeAsagiOk /></button>;

@@ -68,7 +68,7 @@
   background: transparent; color: var(--muted); white-space: nowrap; cursor: pointer;
 }
 .capsule button:hover { background: var(--hover); }
-.capsule button[aria-pressed=true], .capsule button[aria-selected=true] {
+.capsule button[aria-pressed=true], .capsule button[aria-selected=true], .capsule button[aria-checked=true] {
   background: var(--blue); color: #fff; box-shadow: 0 5px 14px rgba(35,122,200,.2);
 }
 .tabs { display: flex; flex-wrap: wrap; gap: 24px; border-bottom: 1px solid var(--line); }
