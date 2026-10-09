@@ -250,7 +250,7 @@ export default function TclubUreticiRaporPage() {
 
           <section className={`${styles.panel} ${styles.section}`}>
             <KartBasligi baslik="İçerik Puan Dağılımı" aciklama="Yayın puanlarının öğrenme aracı, eğitim konusu ve ürün bazındaki dağılımı" icon={Layers3} />
-            <SadeKontrolGrubu tur="sekme">
+            <SadeKontrolGrubu tur="sekme" className="mb-3">
               {(["araclar", "kategoriler", "urunler"] as const).map((sekme) => <SadeKontrolButonu key={sekme} type="button" onClick={() => setIcerikSekmesi(sekme)} aria-pressed={icerikSekmesi === sekme}>{sekme === "araclar" ? "Öğrenme Araçları" : sekme === "kategoriler" ? "Eğitim Konuları" : "Ürünler"}</SadeKontrolButonu>)}
             </SadeKontrolGrubu>
             <DagilimGrafik veri={icerikSatirlari.map((satir) => ({ ad: satir.ad, puan: satir.net_puan }))} modlar={["bar", "pie", "line", "tablo"]} apsisAdi="İçerik" ordinatAdi="Net puan" indirAdi={`tclub-${icerikSekmesi}`} height={270} modern />

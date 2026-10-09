@@ -254,14 +254,14 @@ export default function CompetitorComparison({
                   <TableHead className="h-9 min-w-[130px] align-middle text-left text-[10px] font-bold uppercase tracking-wide text-[#94a0b1]">
                     <label className="sr-only" htmlFor="lig-takim-filtresi">Takım filtresi</label>
                     <SadeListeSecimi id="lig-takim-filtresi" value={organizasyonFiltresi.takimId} onChange={(event) => organizasyonFiltresi.onTakimDegistir(event.target.value)} aria-label="Takım filtresi" className="w-full">
-                      <option value="">Takım ▾</option>
+                      <option value="">Takım</option>
                       {organizasyonFiltresi.takimlar.map((takim) => <option key={takim.id} value={takim.id}>{takim.ad}</option>)}
                     </SadeListeSecimi>
                   </TableHead>
                   <TableHead className="h-9 min-w-[130px] align-middle text-left text-[10px] font-bold uppercase tracking-wide text-[#94a0b1]">
                     <label className="sr-only" htmlFor="lig-bolge-filtresi">Bölge filtresi</label>
                     <SadeListeSecimi id="lig-bolge-filtresi" value={organizasyonFiltresi.bolgeId} onChange={(event) => organizasyonFiltresi.onBolgeDegistir(event.target.value)} aria-label="Bölge filtresi" className="w-full">
-                      <option value="">Bölge ▾</option>
+                      <option value="">Bölge</option>
                       {organizasyonFiltresi.bolgeler.map((bolge) => <option key={bolge.id} value={bolge.id}>{bolge.ad}</option>)}
                     </SadeListeSecimi>
                   </TableHead>
