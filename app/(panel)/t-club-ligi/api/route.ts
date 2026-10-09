@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
         ? await getUreticiEtkiLigi(adminSupabase, sonuc, kullanici.kullanici_id, periyot, firmaLigi)
         : { ...sonuc, bakis: "genel" as const };
 
-      if (gorunum !== "bm" && gorunum !== "tm" && gorunum !== "uretici") {
+      if (gorunum === "admin") {
         gosterilecekSonuc.bm_performans = await getBmPerformans(
           adminSupabase,
           {

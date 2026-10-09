@@ -335,7 +335,7 @@ export default function HBLigiPage() {
     );
   }
 
-  if (veri.gorunum === "bm" || veri.gorunum === "tm") {
+  if (veri.gorunum === "bm" || veri.gorunum === "tm" || veri.gorunum === "yonetici") {
     return (
       <div className="h-full min-h-0 overflow-y-auto md:overflow-hidden bg-[linear-gradient(135deg,#f8fbff_0%,#f6f8fb_48%,#fbfcfe_100%)]" style={{ fontFamily: "'Nunito', sans-serif" }}>
         <div className="mx-auto min-h-full max-w-[1440px] px-3 py-3 md:flex md:h-full md:min-h-0 md:flex-col md:px-5 md:py-3">

@@ -80,7 +80,7 @@ export interface SahaLigSonuc {
     kaybedilen: number;
     net: number;
   }>;
-  bolge_yoneticileri?: Array<{ bm_id: string; bm_adi: string; bolge_id: string | null }>;
+  bolge_yoneticileri?: Array<{ bm_id: string; bm_adi: string; bolge_id: string | null; takim_id?: string | null }>;
   yetki_kapsami?: "takim" | "firma";
   organizasyon?: {
     takimlar: Array<{ id: string; ad: string }>;
@@ -262,7 +262,7 @@ export async function getSahaLig(
   let oncekiAy: LigPeriyot | null = null;
   let oncekiAyHamSatirlar: Awaited<ReturnType<typeof ligRpcCagir>> = [];
   let ikiOncekiAyHamSatirlar: Awaited<ReturnType<typeof ligRpcCagir>> = [];
-  if (kapsam.gorunum === "uretici" || kapsam.gorunum === "bm" || kapsam.gorunum === "tm") {
+  if (kapsam.gorunum === "uretici" || kapsam.gorunum === "bm" || kapsam.gorunum === "tm" || kapsam.gorunum === "yonetici") {
     const buAy: LigPeriyot = { periyot: "ay", ...aktifPeriyot(simdi) };
     oncekiAy = oncekiLigPeriyodu(buAy);
     const ikiOncekiAy = oncekiLigPeriyodu(oncekiAy);
@@ -318,6 +318,31 @@ export async function getSahaLig(
     : [];
 
   if (kapsam.gorunum === "yonetici") {
+    let organizasyon = organizasyonOlustur(firmaSatirlari);
+    let bolgeYoneticileri: NonNullable<SahaLigSonuc["bolge_yoneticileri"]> = [];
+    if (typeof supabase.from === "function") {
+      const [takimSonucu, bmSonucu] = await Promise.all([
+        supabase.from("takimlar").select("takim_id, takim_adi").eq("firma_id", kapsam.firma_id),
+        supabase.from("kullanicilar").select("kullanici_id, ad, soyad, bolge_id, takim_id")
+          .eq("rol", "bm").eq("aktif_mi", true).eq("firma_id", kapsam.firma_id),
+      ]);
+      if (takimSonucu.error) throw new Error(`Lig takımları alınamadı: ${takimSonucu.error.message}`);
+      if (bmSonucu.error) throw new Error(`Lig bölge yöneticileri alınamadı: ${bmSonucu.error.message}`);
+      const takimlar = (takimSonucu.data ?? []).map((takim) => ({ id: String(takim.takim_id), ad: String(takim.takim_adi) }))
+        .sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
+      let bolgeler: NonNullable<SahaLigSonuc["organizasyon"]>["bolgeler"] = [];
+      if (takimlar.length > 0) {
+        const { data, error } = await supabase.from("bolgeler").select("bolge_id, bolge_adi, takim_id")
+          .in("takim_id", takimlar.map((takim) => takim.id));
+        if (error) throw new Error(`Lig bölgeleri alınamadı: ${error.message}`);
+        bolgeler = (data ?? []).map((bolge) => ({ id: String(bolge.bolge_id), ad: String(bolge.bolge_adi), takim_id: String(bolge.takim_id) }));
+      }
+      organizasyon = { takimlar, bolgeler };
+      bolgeYoneticileri = (bmSonucu.data ?? []).map((bm) => ({
+        bm_id: String(bm.kullanici_id), bm_adi: `${bm.ad ?? ""} ${bm.soyad ?? ""}`.trim(),
+        bolge_id: bm.bolge_id ? String(bm.bolge_id) : null, takim_id: bm.takim_id ? String(bm.takim_id) : null,
+      }));
+    }
     return {
       tip: "saha",
       gorunum: "yonetici",
@@ -326,6 +351,9 @@ export async function getSahaLig(
       ana_birim: "takim",
       odak_birim_id: null,
       lig: firmaSatirlari,
+      organizasyon,
+      bolge_yoneticileri: bolgeYoneticileri,
+      aylik_kursu: oncekiAy ? aylikKursuOlustur(oncekiAySatirlari, ikiOncekiAySatirlari, kapsam.firma_id, oncekiAy) : undefined,
     };
   }
 

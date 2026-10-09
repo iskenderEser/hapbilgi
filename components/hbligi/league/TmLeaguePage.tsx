@@ -19,9 +19,21 @@ function sirala(satirlar: LigSatiri[]): SiraliSatir[] {
 
 export default function TmLeaguePage({ veri, periyotSecici }: { veri: SahaLigSonuc; periyotSecici: ReactNode }) {
   const [kapsam, setKapsam] = useState<"takim" | "firma">("takim");
-  const takimLigi = sirala(veri.lig.filter((r) => r.takim_id === veri.odak_birim_id)
+  const [seciliTakimId, setSeciliTakimId] = useState<string | null>(null);
+  const yonetici = veri.gorunum === "yonetici";
+  const takimlar = veri.organizasyon?.takimlar ?? [];
+  const odakTakimId = yonetici
+    ? (takimlar.some((takim) => takim.id === seciliTakimId) ? seciliTakimId : takimlar[0]?.id ?? null)
+    : veri.odak_birim_id;
+  const takimAdi = yonetici ? takimlar.find((takim) => takim.id === odakTakimId)?.ad ?? "Takım" : veri.kapsam_adi;
+  const takimLigi = sirala(veri.lig.filter((r) => odakTakimId !== null && r.takim_id === odakTakimId)
     .map((r) => ({ ...r, detay_gorulebilir: true })));
   const bolgeler = new Map<string, { ad: string; uttler: SiraliSatir[] }>();
+  if (yonetici) {
+    for (const bolge of veri.organizasyon?.bolgeler ?? []) {
+      if (bolge.takim_id === odakTakimId) bolgeler.set(`bolge-${bolge.id}`, { ad: bolge.ad, uttler: [] });
+    }
+  }
   for (const utt of takimLigi) {
     const id = `bolge-${utt.bolge_id ?? "atanmamis"}`;
     const bolge = bolgeler.get(id) ?? { ad: utt.bolge || "Bölge atanmamış", uttler: [] };
@@ -29,9 +41,10 @@ export default function TmLeaguePage({ veri, periyotSecici }: { veri: SahaLigSon
     bolgeler.set(id, bolge);
   }
   const bolgeLigi = sirala([...bolgeler].map(([id, bolge]) => {
-    const bolgeId = bolge.uttler[0].bolge_id;
+    const bolgeId = bolge.uttler[0]?.bolge_id ?? id.slice("bolge-".length);
     const yoneticiler = (veri.bolge_yoneticileri ?? [])
-      .filter((bm) => bm.bolge_id === bolgeId).map((bm) => bm.bm_adi).filter(Boolean);
+      .filter((bm) => bm.bolge_id === bolgeId && (!yonetici || bm.takim_id === odakTakimId))
+      .map((bm) => bm.bm_adi).filter(Boolean);
     const kazanilan = bolge.uttler.reduce((n, r) => n + r.izleme_puani + r.cevaplama_puani
       + r.oneri_puani + r.extra_puani + (r.eclub_puani ?? 0), 0);
     const kaybedilen = bolge.uttler.reduce((n, r) => n + r.ileri_sarma_kaybi
@@ -60,27 +73,31 @@ export default function TmLeaguePage({ veri, periyotSecici }: { veri: SahaLigSon
     <div className={styles.shell} style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className={`${styles.dashboard} ${styles.fixedDashboard}`}>
         <LeagueHeader periyotSecici={null} />
-        <MonthlyLeaders top3={kursu} baslik={`${veri.aylik_kursu?.ay_adi ?? "Geçen"} Ayının Takım Öğrenme Liderleri`} />
+        <MonthlyLeaders top3={kursu} baslik={`${veri.aylik_kursu?.ay_adi ?? "Geçen"} Ayının ${yonetici ? "Firma" : "Takım"} Öğrenme Liderleri`} />
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <SadeKontrolGrubu tur="kapsul">
-            {(["takim", "firma"] as const).map((id) => (
+          {(!yonetici || takimlar.length > 1) && <SadeKontrolGrubu tur="kapsul" aria-label={yonetici ? "Lig takımı" : "Lig kapsamı"} className="min-w-0 max-w-full">
+            {yonetici ? takimlar.map((takim) => (
+              <SadeKontrolButonu key={takim.id} type="button" onClick={() => setSeciliTakimId(takim.id)} aria-pressed={odakTakimId === takim.id}>
+                {takim.ad}
+              </SadeKontrolButonu>
+            )) : (["takim", "firma"] as const).map((id) => (
               <SadeKontrolButonu key={id} type="button" onClick={() => setKapsam(id)} aria-pressed={kapsam === id}>
                 {id === "takim" ? "Takım" : "Firma"}
               </SadeKontrolButonu>
             ))}
-          </SadeKontrolGrubu>
+          </SadeKontrolGrubu>}
           {periyotSecici}
         </div>
         <div className={styles.listViewport}>
-        <CompetitorComparison eclubAcik={veri.eclub_acik === true} key={kapsam} satirlar={satirlar} benimId=""
-          baslik={kapsam === "takim" ? `${veri.kapsam_adi} Takım Bölgeleri Ligi` : "Firma Takımları Ligi"}
+        <CompetitorComparison eclubAcik={veri.eclub_acik === true} key={`${kapsam}-${odakTakimId}`} satirlar={satirlar} benimId=""
+          baslik={kapsam === "takim" ? `${takimAdi} Takım Bölgeleri Ligi` : "Firma Takımları Ligi"}
           ayrintiGoster={kapsam === "takim"}
           ayrintiIcerigi={kapsam === "takim" ? (satir) => {
             const bolge = bolgeler.get(satir.kullanici_id);
             if (!bolge) return null;
             return <CompetitorComparison eclubAcik={veri.eclub_acik === true} satirlar={sirala(bolge.uttler)} benimId="" baslik={`${bolge.ad} Temsilcileri`} />;
           } : undefined} />
-        {satirlar.length === 0 && <p className={`${styles.panel} p-6 text-center text-xs text-[#7b8ca5]`}>Seçili kapsamda temsilci bulunamadı.</p>}
+        {satirlar.length === 0 && <p className={`${styles.panel} p-6 text-center text-xs text-[#7b8ca5]`}>{yonetici && takimlar.length === 0 ? "Firma kapsamında takım bulunamadı." : "Seçili kapsamda temsilci bulunamadı."}</p>}
         </div>
       </div>
     </div>

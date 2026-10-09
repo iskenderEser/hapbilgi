@@ -10,6 +10,12 @@ import { dirname, join } from "node:path";
 const kok = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 export async function resolve(specifier, context, nextResolve) {
+  if (specifier === "next/image") {
+    return {
+      url: `data:text/javascript,import{createElement}from'${pathToFileURL(join(kok, "node_modules/react/index.js")).href}';export default function Image({fill,priority,sizes,...props}){return createElement('img',props)}`,
+      shortCircuit: true,
+    };
+  }
   if (specifier === "server-only") {
     return { url: "data:text/javascript,export%20default%20undefined", shortCircuit: true };
   }
