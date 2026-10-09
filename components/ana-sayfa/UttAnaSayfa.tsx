@@ -145,6 +145,7 @@ function KategoriYayinlariGoster({
           <ListeArama
             arama={liste.arama}
             ipucu="Bu kategoride ara..."
+            yukseklik="secim"
             genislik="w-48 sm:w-60"
           />
         </div>
@@ -295,7 +296,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategoriBilgisi, temel
 
   if (aktifVideo) {
     return (
-      <div className="max-w-6xl mx-auto px-3 py-4 pb-20 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
+      <div className="max-w-6xl mx-auto px-3 pr-10 py-4 pb-20 sm:pr-3 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
         <VideoOynatici
           key={aktifVideo.yayin_id}
           video={aktifVideo}
@@ -377,7 +378,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategoriBilgisi, temel
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-3 py-4 pb-20 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
+    <div className="max-w-6xl mx-auto px-3 pr-10 py-4 pb-20 sm:pr-3 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
 
       {/* Karşılama */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">

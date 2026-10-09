@@ -55,7 +55,7 @@ export default function LeaguePage({
   );
 
   const filtreler = (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
       {kapsamSecici}
       {periyotSecici}
     </div>
@@ -69,7 +69,7 @@ export default function LeaguePage({
             <div className="shrink-0">
               <LeagueHeader periyotSecici={null} />
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">{filtreler}</div>
+            {filtreler}
             <div className={`${styles.panel} py-16 text-center`}>
               <div className="text-base font-bold text-foreground/80">Henüz lig verisi yok</div>
               <div className="mt-1 text-sm text-muted-foreground">Başka bir dönem seçebilir veya bu dönemde puan oluştukça tekrar kontrol edebilirsin.</div>
@@ -106,7 +106,7 @@ export default function LeaguePage({
           <LeagueHeader periyotSecici={null} />
         </div>
         <MonthlyLeaders top3={sirketTop3} ayAdi={aylikKursu?.ay_adi} />
-        <div className="flex flex-wrap items-center justify-end gap-2">{filtreler}</div>
+        {filtreler}
         <div className={styles.listViewport}>
           <CompetitorComparison
             eclubAcik={eclubAcik}

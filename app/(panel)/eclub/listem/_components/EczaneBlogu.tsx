@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog } from "radix-ui";
 import { Fragment, useRef, useState } from "react";
 import { ChevronDown, Clock3, Pencil, Plus, UserRoundX, X } from "lucide-react";
 import type { EclubGecisTalebi, Eczane, Kisi, YeniKisiForm } from "../_types";
@@ -140,13 +141,15 @@ export function EczaneBlogu({ eczane, kisiler, gecisTalepleri, islemLoading, onL
                         <span className="flex flex-wrap justify-end gap-1">{kisi.davet_bekliyor && <Button variant="outline" size="sm" disabled={!!davetIslem || islemLoading} onClick={() => void davetiGonder(kisi.kisi_id)}>{davetIslem === kisi.kisi_id ? "Gönderiliyor…" : "Daveti yeniden gönder"}</Button>}<Button variant="outline" size="sm" onClick={() => duzenBaslat(kisi)}><Pencil />Düzenle</Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive">Pasife al</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Kişiyi pasife alın mı?</AlertDialogTitle><AlertDialogDescription>{kisi.ad} {kisi.soyad} aktif E‑Club listesinden çıkarılacak.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction disabled={islemLoading} onClick={() => void onKisiPasifeAl(kisi.kisi_id, eczane.eczane_id)} className="bg-destructive hover:bg-destructive/90">Pasife al</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></span>
                       </div>
                       {duzenlenenKisi === kisi.kisi_id && (
-                        <div className={bmStyles.nestedUttDetail}>
+                        <Dialog.Root open onOpenChange={(open) => { if (!open) { setDuzenlenenKisi(null); setDuzenForm({}); } }}>
+                          <Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-50 bg-black/30" /><Dialog.Content aria-describedby={undefined} className="fixed left-1/2 top-1/2 z-50 grid max-h-[85svh] w-[calc(100vw-32px)] max-w-xl -translate-x-1/2 -translate-y-1/2 gap-3 overflow-y-auto rounded-xl border bg-white p-4 sm:grid-cols-2">
+                          <Dialog.Title className="text-sm font-bold sm:col-span-2">Kişi bilgilerini düzenle</Dialog.Title>
                           <div><Label>Ad</Label><Input value={duzenForm.ad ?? ""} onChange={(e) => setDuzenForm((form) => ({ ...form, ad: e.target.value }))} /></div>
                           <div><Label>Soyad</Label><Input value={duzenForm.soyad ?? ""} onChange={(e) => setDuzenForm((form) => ({ ...form, soyad: e.target.value }))} /></div>
                           <div><Label>E‑posta</Label><Input type="email" value={duzenForm.eposta ?? ""} onChange={(e) => setDuzenForm((form) => ({ ...form, eposta: e.target.value }))} /></div>
                           <div><Label>Telefon</Label><Input value={duzenForm.telefon ?? ""} onChange={(e) => setDuzenForm((form) => ({ ...form, telefon: e.target.value.replace(/\D/g, "") }))} maxLength={11} /></div>
                           <div className="flex items-end gap-2"><Button variant="outline" size="sm" onClick={() => { setDuzenlenenKisi(null); setDuzenForm({}); }}>Vazgeç</Button><Button size="sm" disabled={islemLoading} onClick={() => void duzenKaydet(kisi.kisi_id)}>Kaydet</Button></div>
-                        </div>
+                        </Dialog.Content></Dialog.Portal></Dialog.Root>
                       )}
                     </div>
                   ))}
@@ -176,8 +179,9 @@ export function EczaneBlogu({ eczane, kisiler, gecisTalepleri, islemLoading, onL
               )}
 
               {kisiFormAcik && (
-                <div className="rounded-xl border bg-white p-4">
-                  <div className="mb-3"><h3 className="text-sm font-bold">Yeni kişi bilgileri</h3><p className="text-[11px] text-muted-foreground">Kişinin bilgilerini girin. Yeni üyeye şifre oluşturma daveti e-postayla gönderilir.</p></div>
+                <Dialog.Root open onOpenChange={(open) => { if (!open) { setKisiFormAcik(false); setYeniKisi(BOS_KISI); } }}>
+                  <Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-50 bg-black/30" /><Dialog.Content aria-describedby={undefined} className="fixed left-1/2 top-1/2 z-50 max-h-[85svh] w-[calc(100vw-32px)] max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border bg-white p-4">
+                  <div className="mb-3"><Dialog.Title className="text-sm font-bold">Yeni kişi bilgileri</Dialog.Title><p className="text-[11px] text-muted-foreground">Kişinin bilgilerini girin. Yeni üyeye şifre oluşturma daveti e-postayla gönderilir.</p></div>
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <div><Label>Unvan</Label><Select value={yeniKisi.rol} onValueChange={(rol) => setYeniKisi((form) => ({ ...form, rol: rol as YeniKisiForm["rol"] }))}><SelectTrigger className="w-full"><SelectValue placeholder="Unvan seçin" /></SelectTrigger><SelectContent><SelectItem value="eczaci">Eczacı</SelectItem><SelectItem value="ikinci_eczaci">İkinci Eczacı</SelectItem><SelectItem value="yardimci_eczaci">Yardımcı Eczacı</SelectItem><SelectItem value="eczane_teknisyeni">Eczane Teknisyeni</SelectItem></SelectContent></Select></div>
                     <div><Label>Ad</Label><Input value={yeniKisi.ad} onChange={(e) => setYeniKisi((form) => ({ ...form, ad: e.target.value }))} /></div>
@@ -186,7 +190,7 @@ export function EczaneBlogu({ eczane, kisiler, gecisTalepleri, islemLoading, onL
                     <div><Label>Telefon</Label><Input value={yeniKisi.telefon} onChange={(e) => setYeniKisi((form) => ({ ...form, telefon: e.target.value.replace(/\D/g, "") }))} maxLength={11} /></div>
                   </div>
                   <div className="mt-4 flex justify-end gap-2"><Button variant="outline" size="sm" onClick={() => { setKisiFormAcik(false); setYeniKisi(BOS_KISI); }}>Vazgeç</Button><Button size="sm" disabled={islemLoading || !yeniKisiGecerli} onClick={() => void kisiKaydet()}>{islemLoading ? "Kaydediliyor…" : "Kişiyi kaydet"}</Button></div>
-                </div>
+                </Dialog.Content></Dialog.Portal></Dialog.Root>
               )}
             </div>
           </td>

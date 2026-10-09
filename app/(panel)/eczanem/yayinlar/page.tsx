@@ -306,12 +306,12 @@ export default function EczanemYayinlariPage() {
                 ariaLabel="Gönderim durumu"
                 className="w-fit flex-none"
               />
-              <div className="ml-auto flex w-fit max-w-full flex-none flex-wrap items-center gap-2 sm:flex-nowrap">
-                <span className="px-2 text-[11px] font-bold text-[#405976]">
+              <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:ml-auto sm:w-auto sm:grid-cols-[auto_minmax(140px,160px)_auto]">
+                <span className="col-span-2 px-2 text-[11px] font-bold text-[#405976] sm:col-span-1">
                   <span className="lg:hidden">{seciliYayinlar.length} yayın</span>
                   <span className="hidden lg:inline">Gönderilecek: {seciliYayinlar.length} yayın</span>
                 </span>
-                <SadeCokluAliciSecimi key={seciliYayinIdleri.join(",")}
+                <SadeCokluAliciSecimi key={seciliYayinIdleri.join(",")} className="w-full min-w-0"
  etiket="Eczane" aliciAdi="eczane" placeholder="Eczaneleri seçin"
  secenekler={ortakUygunEczaneler.map((eczane) => ({ deger: eczane.eczane_id, etiket: eczane.eczane_adi, altBilgi: String(eczane.aktif_uye_sayisi) + " aktif üye" + (ortakSecilebilirIdler.has(eczane.eczane_id) ? "" : " · Tekrar gönderim süresi dolmadı"), disabled: !ortakSecilebilirIdler.has(eczane.eczane_id) }))}
  degerler={gecerliSeciliEczaneIdleri} onDegistir={setSeciliEczaneIdleri} disabled={seciliYayinlar.length === 0 || topluGonderiliyor}

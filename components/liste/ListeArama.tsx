@@ -53,7 +53,7 @@ export function ListeArama<T>({ arama, ipucu, genislik, yukseklik = "normal" }: 
           value={aranan}
           onChange={(e) => aramaDegistir(e.target.value)}
           placeholder={ipucu ?? `${secili.etiket} ara`}
-          className={`max-w-full text-xs text-gray-700 bg-white border border-gray-200 rounded-lg pl-2.5 pr-7 py-1.5 outline-none focus:border-gray-300 ${yukseklik === "secim" ? "h-10" : ""} ${genislik ?? "w-44"}`}
+          className={`max-w-full text-gray-700 bg-white border border-gray-200 rounded-lg pl-2.5 pr-7 py-1.5 outline-none focus:border-gray-300 ${yukseklik === "secim" ? "h-10 text-[11px] font-extrabold" : "text-xs"} ${genislik ?? "w-44"}`}
         />
         {aranan && (
           // Temizleme: aramayı sıfırlar. Klavyeyle uğraşmadan tam listeye dönüş.

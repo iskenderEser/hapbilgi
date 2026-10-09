@@ -329,13 +329,13 @@ export default function UyeOnerilerGorunumu({
       </div>
 
       {/* ─── 2. Katman: Yayın türü ve yenileme ─── */}
-      <div className="mb-5 flex min-w-0 items-center justify-end gap-2">
+      <div className="mb-5 flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-end">
         <UttYayinTuruToggle
           yayinlar={durumFiltreliOneriler}
           deger={aktifTur}
           onDegistir={setAktifTur}
           sayilariGoster={false}
-          className="min-w-0 flex-1 sm:flex-none"
+          className="w-full min-w-0 sm:w-auto sm:flex-none"
         />
         <YenileButonu
           yenileniyor={yenileniyor}
