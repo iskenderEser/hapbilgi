@@ -5,11 +5,12 @@
   --line: #dbe5ef;
   --blue: #237ac8;
   --hover: #edf6ff;
+  --selection-height: 40px;
   font-family: var(--font-nunito), Nunito, system-ui, sans-serif;
   box-sizing: border-box;
 }
 .trigger {
-  display: inline-flex; height: 30px; min-width: min(160px, 100%); max-width: 100%;
+  display: inline-flex; height: var(--selection-height); min-width: min(160px, 100%); max-width: 100%;
   align-items: center; justify-content: space-between; gap: 14px;
   border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
   padding: 0 12px; color: var(--blue); font-size: 11px; font-weight: 800;
@@ -89,14 +90,14 @@
 .label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 7px; }
 .fieldControl { position: relative; }
 .native {
-  box-sizing: border-box; appearance: none; width: 100%; height: 30px;
+  box-sizing: border-box; appearance: none; width: 100%; height: var(--selection-height);
   border: 1px solid var(--line); border-radius: 12px; padding: 0 32px 0 10px;
   font-family: inherit; font-size: 11px; font-weight: 800;
   color: var(--text); background: var(--surface);
 }
 .fieldControl > .arrow { position: absolute; right: 13px; top: 50%; margin-top: -3.5px; pointer-events: none; }
 .date {
-  display: block; width: 100%; min-width: 0; height: 30px;
+  display: block; width: 100%; min-width: 0; height: var(--selection-height);
   border: 1px solid var(--line); border-radius: 14px; padding: 0 12px;
   background: var(--surface); color: var(--blue); font-size: 11px; font-weight: 800;
   text-transform: none; letter-spacing: normal; box-shadow: 0 6px 22px rgba(36,64,98,.05);

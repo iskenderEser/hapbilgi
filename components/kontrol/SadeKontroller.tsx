@@ -37,13 +37,14 @@ interface SecimProps<T extends string> {
   varyant?: "kisi" | "tablo";
   triggerProps?: Omit<ComponentProps<"button">, "children" | "className" | "style" | "disabled">;
   gorunenEtiket?: string;
+  altBilgiTetikleyicide?: boolean;
 }
 
 /** Kişi/kapsam ve tablo seçiminin ortak görünümü ve etkileşimi. */
 export function SadeSecim<T extends string>({
   secenekler, deger, onDegistir, etiket, placeholder = "Seçiniz",
   aramaEtiketi = `${etiket} adıyla ara`, aranabilir = true, disabled = false,
-  className, varyant = "kisi", triggerProps, gorunenEtiket,
+  className, varyant = "kisi", triggerProps, gorunenEtiket, altBilgiTetikleyicide = true,
 }: SecimProps<T>) {
   const [acik, setAcik] = useState(false);
   const [arama, setArama] = useState("");
@@ -53,7 +54,7 @@ export function SadeSecim<T extends string>({
   return <Popover.Root open={acik && !disabled} onOpenChange={(open) => { setAcik(open); setArama(""); }}>
     <Popover.Trigger asChild>
       <button {...triggerProps} type="button" aria-label={etiket} disabled={disabled} className={cn(styles.trigger, className)} data-variant={varyant === "tablo" ? "table" : "person"}>
-        <span className={styles.value}><span className={styles.name}>{gorunenEtiket ?? secili?.etiket ?? placeholder}</span>{secili?.altBilgi && <span className={styles.sub}>{secili.altBilgi}</span>}</span>
+        <span className={styles.value}><span className={styles.name}>{gorunenEtiket ?? secili?.etiket ?? placeholder}</span>{altBilgiTetikleyicide && secili?.altBilgi && <span className={styles.sub}>{secili.altBilgi}</span>}</span>
         <SadeAsagiOk />
       </button>
     </Popover.Trigger>

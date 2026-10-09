@@ -19,7 +19,7 @@ async function mount(element) {
   await act(async () => { root.render(element); });
   return { container, async close() { await act(async () => root.unmount()); container.remove(); } };
 }
-async function click(element) { assert.ok(element); await act(async () => element.click()); }
+async function click(element) { assert.ok(element); await act(async () => element.click()); await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); }); }
 async function key(element, key) { await act(async () => element.dispatchEvent(new window.KeyboardEvent('keydown', { key, bubbles: true }))); }
 
 test('Tekli seçim: arama, klavye, seçim, kapanma ve odağın geri dönmesi', async () => {
@@ -216,5 +216,52 @@ test('Hediye Takibi sekme seçimi klavyeyle değişir ve panel ilişkisi korunur
     await key(tabs[0],'ArrowRight');
     assert.equal(tabs[1].getAttribute('aria-selected'),'true');assert.equal(tabs[0].getAttribute('aria-selected'),'false');
     assert.equal(tabs[1].getAttribute('aria-controls'),'hediye-takip-siparis-paneli');assert.ok(document.activeElement===tabs[1]);
+  } finally {await view.close();}
+});
+
+test('Kişi isimlerinde şirket rolleri kaldırılır; yalnız Ecz. ve Ecz.Tekn. önekleri korunur', async () => {
+  const { kisiGorunenAdi } = await import('../components/kontrol/KisiKontroller');
+  for (const rol of ['bm','pm','tm','utt','kd_utt','iu','gm',undefined]) assert.equal(kisiGorunenAdi('  Selin   Yılmaz ',rol),'Selin Yılmaz');
+  for (const rol of ['eczaci','ikinci_eczaci','yardimci_eczaci']) assert.equal(kisiGorunenAdi('Selin Yılmaz',rol),'Ecz. Selin Yılmaz');
+  assert.equal(kisiGorunenAdi('Selin Yılmaz','eczane_teknisyeni'),'Ecz.Tekn. Selin Yılmaz');
+});
+
+test('Kişi filtresi başlık, tümünü seçme ve kayıt kimliğini korur; ek bilgi yalnız menüde görünür', async () => {
+  const { SadeKisiSecimi } = await import('../components/kontrol/KisiKontroller');
+  let changed='';
+  function Controlled(){const [deger,setDeger]=React.useState('');return React.createElement(SadeKisiSecimi,{baslik:'Kullanıcılar',bosSecenekEtiketi:'Tüm Kullanıcılar',kisiler:[{deger:'id-1',adSoyad:'Selin Yılmaz',rol:'bm',altBilgi:'Pasif'}],deger,onDegistir:id=>{changed=id;setDeger(id);}});}
+  const view=await mount(React.createElement(Controlled));
+  try {
+    const trigger=view.container.querySelector('button');assert.equal(trigger.textContent,'Kullanıcılar');
+    await click(trigger);
+    assert.ok(Array.from(document.querySelectorAll('button.option')).some(b=>b.textContent==='Tüm Kullanıcılar'));
+    const person=Array.from(document.querySelectorAll('button.option')).find(b=>b.textContent==='Selin YılmazPasif');assert.ok(person);
+    await click(person);assert.equal(changed,'id-1');assert.equal(trigger.textContent,'Selin Yılmaz');
+    await click(trigger);await click(Array.from(document.querySelectorAll('button.option')).find(b=>b.textContent==='Tüm Kullanıcılar'));
+    assert.equal(changed,'');assert.equal(trigger.textContent,'Kullanıcılar');
+  } finally {await view.close();}
+});
+
+test('Otomatik temsilci seçimi ilk başlıkta gizlenir; kullanıcı seçimi veri kapsamını değiştirmeden adı gösterir', async () => {
+  const { SadeKisiSecimi } = await import('../components/kontrol/KisiKontroller');
+  let changed=null;
+  function Controlled(){const [secildi,setSecildi]=React.useState(false);return React.createElement(SadeKisiSecimi,{baslik:'Temsilciler',bosSecenekEtiketi:false,baslikGoster:!secildi,kisiler:[{deger:'utt-1',adSoyad:'Berk Kılıç'}],deger:'utt-1',onDegistir:id=>{changed=id;setSecildi(true);}});}
+  const view=await mount(React.createElement(Controlled));
+  try {
+    const trigger=view.container.querySelector('button');assert.equal(trigger.textContent,'Temsilciler');assert.equal(changed,null);
+    await click(trigger);const options=document.querySelectorAll('button.option');assert.equal(options.length,1);assert.equal(options[0].getAttribute('aria-pressed'),'true');
+    await click(options[0]);assert.equal(changed,'utt-1');assert.equal(trigger.textContent,'Berk Kılıç');
+  } finally {await view.close();}
+});
+
+test('Çoklu kişi seçimi unvansız ad, eczane önekleri ve seçili kişi sayısını ortak kuralla gösterir', async () => {
+  const { SadeKisiCokluSecimi } = await import('../components/kontrol/KisiKontroller');
+  function Controlled(){const [values,setValues]=React.useState([]);return React.createElement(SadeKisiCokluSecimi,{baslik:'Alıcılar',kisiler:[{deger:'bm',adSoyad:'Deniz Çetin',rol:'bm'},{deger:'ecz',adSoyad:'Selin Yılmaz',rol:'eczaci'},{deger:'tekn',adSoyad:'Berk Kılıç',rol:'eczane_teknisyeni',disabled:true}],degerler:values,onDegistir:setValues});}
+  const view=await mount(React.createElement(Controlled));
+  try {
+    const trigger=view.container.querySelector('button');assert.equal(trigger.textContent,'Alıcılar');await click(trigger);
+    const labels=Array.from(document.querySelectorAll('label.check')).map(e=>e.textContent);
+    assert.deepEqual(labels,['Deniz Çetin','Ecz. Selin Yılmaz','Ecz.Tekn. Berk Kılıç']);
+    await click(document.querySelector('input[type=checkbox]'));assert.equal(trigger.textContent,'1 kişi seçildi');assert.equal(document.querySelectorAll('input[type=checkbox]')[2].disabled,true);
   } finally {await view.close();}
 });

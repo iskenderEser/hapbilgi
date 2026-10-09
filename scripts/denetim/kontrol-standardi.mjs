@@ -5,7 +5,7 @@ import ts from "typescript";
 
 const sorunlar = [];
 let ortakKullanim = 0;
-const ortakAdlar = new Set(["SadeSecim", "SadeTabloSecimi", "SadeListeSecimi", "SadeFormSecimi", "SadeKapsulFiltre", "SadeZamanToggle", "SadeKontrolGrubu", "SadeKontrolButonu", "SadeCokluAliciSecimi", "SadeAySecimi", "SadeSecimButonu", "SadeSecimMenusu", "SadeSecimSecenegi", "SadeAramaAlani", "PeriyotButonlari", "UttYayinTuruToggle", "SelectTrigger"]);
+const ortakAdlar = new Set(["SadeKisiSecimi", "SadeKisiCokluSecimi", "SadeSecim", "SadeTabloSecimi", "SadeListeSecimi", "SadeFormSecimi", "SadeKapsulFiltre", "SadeZamanToggle", "SadeKontrolGrubu", "SadeKontrolButonu", "SadeCokluAliciSecimi", "SadeAySecimi", "SadeSecimButonu", "SadeSecimMenusu", "SadeSecimSecenegi", "SadeAramaAlani", "PeriyotButonlari", "UttYayinTuruToggle", "SelectTrigger"]);
 function tara(klasor) {
   for (const oge of fs.readdirSync(klasor, { withFileTypes: true })) {
     const dosya = path.join(klasor, oge.name);

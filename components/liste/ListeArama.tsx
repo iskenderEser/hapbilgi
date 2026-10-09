@@ -25,9 +25,11 @@ interface Props<T> {
   ipucu?: string;
   /** Giriş kutusunun genişlik sınıfı. Varsayılan: w-44 */
   genislik?: string;
+  /** Seçim kapsülüyle aynı dış ölçü için ortak seçim yüksekliği. */
+  yukseklik?: "normal" | "secim";
 }
 
-export function ListeArama<T>({ arama, ipucu, genislik }: Props<T>) {
+export function ListeArama<T>({ arama, ipucu, genislik, yukseklik = "normal" }: Props<T>) {
   const { aranan, aramaDegistir, alanAnahtari, alanDegistir, alanlar } = arama;
   if (alanlar.length === 0) return null;
 
@@ -51,7 +53,7 @@ export function ListeArama<T>({ arama, ipucu, genislik }: Props<T>) {
           value={aranan}
           onChange={(e) => aramaDegistir(e.target.value)}
           placeholder={ipucu ?? `${secili.etiket} ara`}
-          className={`max-w-full text-xs text-gray-700 bg-white border border-gray-200 rounded-lg pl-2.5 pr-7 py-1.5 outline-none focus:border-gray-300 ${genislik ?? "w-44"}`}
+          className={`max-w-full text-xs text-gray-700 bg-white border border-gray-200 rounded-lg pl-2.5 pr-7 py-1.5 outline-none focus:border-gray-300 ${yukseklik === "secim" ? "h-10" : ""} ${genislik ?? "w-44"}`}
         />
         {aranan && (
           // Temizleme: aramayı sıfırlar. Klavyeyle uğraşmadan tam listeye dönüş.
