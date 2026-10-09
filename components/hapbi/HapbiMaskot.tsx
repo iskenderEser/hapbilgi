@@ -22,10 +22,15 @@ const ekranTurunuBul = (): EkranTuru => {
   return "masaustu";
 };
 
-const konumuSinirla = (konum: MaskotKonumu): MaskotKonumu => ({
-  x: Math.min(Math.max(EKRAN_KENARI, konum.x), Math.max(EKRAN_KENARI, window.innerWidth - MASKOT_BOYUTU - EKRAN_KENARI)),
-  y: Math.min(Math.max(EKRAN_KENARI, konum.y), Math.max(EKRAN_KENARI, window.innerHeight - MASKOT_BOYUTU - EKRAN_KENARI)),
-});
+const konumuSinirla = (konum: MaskotKonumu): MaskotKonumu => {
+  const sidebar = document.querySelector('[data-panel-sidebar]')?.getBoundingClientRect();
+  // Kaydedilmiş ve sürüklenen konumlar, açılıp kapanan menünün alanına giremez.
+  const solSinir = sidebar && sidebar.width > 0 ? sidebar.right + EKRAN_KENARI : EKRAN_KENARI;
+  return {
+    x: Math.min(Math.max(solSinir, konum.x), Math.max(solSinir, window.innerWidth - MASKOT_BOYUTU - EKRAN_KENARI)),
+    y: Math.min(Math.max(EKRAN_KENARI, konum.y), Math.max(EKRAN_KENARI, window.innerHeight - MASKOT_BOYUTU - EKRAN_KENARI)),
+  };
+};
 
 export default function HapbiMaskot() {
   const { kullanici } = useAuth();
@@ -79,9 +84,17 @@ export default function HapbiMaskot() {
       if (konumRef.current) konumuAyarla(konumuSinirla(konumRef.current));
     };
 
-    ekranDegisiminiUygula();
-    window.addEventListener("resize", ekranDegisiminiUygula);
-    return () => window.removeEventListener("resize", ekranDegisiminiUygula);
+    let konumFrame = 0;
+    const yerlesimdenSonraUygula = () => {
+      window.cancelAnimationFrame(konumFrame);
+      konumFrame = window.requestAnimationFrame(ekranDegisiminiUygula);
+    };
+    yerlesimdenSonraUygula();
+    window.addEventListener("resize", yerlesimdenSonraUygula);
+    return () => {
+      window.cancelAnimationFrame(konumFrame);
+      window.removeEventListener("resize", yerlesimdenSonraUygula);
+    };
   }, []);
 
   const konumuKaydet = (yeniKonum: MaskotKonumu) => {

@@ -189,6 +189,7 @@ export default function SolListe(props: SolListeProps) {
 
   return (
     <aside
+      data-panel-sidebar
       className="hidden md:block flex-shrink-0 overflow-y-auto"
       style={{ width: "240px", borderRight: "0.5px solid #e5e7eb", padding: "16px 12px", background: "#ffffff" }}
     >
