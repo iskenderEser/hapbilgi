@@ -305,8 +305,8 @@ export default function CcLigiPage() {
           />
         </div>
 
-        <div className={`mb-3 grid gap-3 sm:grid-cols-3 ${ureticiMi ? "grid-cols-2" : "grid-cols-1"}`}>
-          <article className={`${ureticiMi ? "col-span-2 sm:col-span-1" : ""} flex min-h-[104px] items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-blue-700`}>
+        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <article className={`flex min-h-[104px] items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-blue-700`}>
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/80 shadow-sm"><Gauge className="h-4 w-4" /></span>
             <div className="min-w-0"><div className="text-[9px] font-black uppercase tracking-[0.12em] opacity-70">Firma C-Club Net Puanı</div><div className="mt-0.5 text-2xl font-black tabular-nums text-[#10213d]">{ligYukleniyor ? "—" : puanYaz(firmaNetPuani)}</div><div className="mt-1 text-[10px] font-bold leading-4 text-[#718198]">Kazanılan ve kaybedilen C-Club puanlarının farkı</div></div>
           </article>

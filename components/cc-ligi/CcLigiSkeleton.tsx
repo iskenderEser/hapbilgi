@@ -20,8 +20,8 @@ export default function CcLigiSkeleton() {
         </div>
 
         <div className="mb-3 h-12 w-full max-w-lg rounded-[14px] bg-white shadow-sm" />
-        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div className="col-span-2 h-28 rounded-2xl bg-[#e7eef8] sm:col-span-1" />
+        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="h-28 rounded-2xl bg-[#e7eef8] sm:col-span-1" />
           <div className="h-36 rounded-2xl bg-[#e7f4ee] sm:h-28" />
           <div className="h-36 rounded-2xl bg-[#f7eaec] sm:h-28" />
         </div>

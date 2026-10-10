@@ -845,7 +845,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | `/eclub/panel` rotasında E-Club kapsamındaki panel arayüzünü sunan Next.js sayfa bileşenidir. |
+| `page.tsx` | Yönlendirme | Eski `/eclub/panel` adresini sorgu parametrelerini koruyarak `/eclub/ana-sayfa` adresine yönlendirir. |
 
 ### 📁 app/(panel)/eclub/panel/_components/
 
@@ -3135,6 +3135,8 @@ Ortak görünüm ve etkileşim ortak bileşenlerden sağlanır. Sayfalarda aynı
 
 ### 13.3. Ortak etkileşim ve mobil davranışı
 
+**9 Ekim 2026 — Kullanıcı tarafından onaylanan üç stat kartı mobil standardı:** Üç stat kartından oluşan özet grupları mobilde (640 px altındaki ekranlarda) tek sütunda, üç kart alt alta ve her biri tam satır genişliğinde gösterilir. Bu kural tüm sayfalarda ve tüm rollerde geçerlidir; koşullu bir kartın gizlenmesiyle üç karta düşen grupları da kapsar. Mobilde iki kart yan yana veya bir kart tam satır, diğer iki kart yan yana düzeni kullanılmaz. 640 px ve üzerindeki yerleşim bu kararla değiştirilmez. Mevcut sayfaların bu standarda dönüştürülmesi ayrıca uygulanacaktır.
+
 - Açılır seçimlerin aşağı okları metin taban çizgisinden bağımsız, kontrolün dikey merkezine hizalanır. Kişi/kapsam, tablo içi, çoklu alıcı ve form seçimleri aynı ok biçimini kullanır. Form alanı oklarının sağ kenar boşluğu tablo içi seçimle aynıdır: kenarlık hariç 12 px (dış kenardan 13 px); metin ok alanına taşmaz.
 - Tekli seçimde menü kapanır, seçili değer kapsüle yansır ve odak seçim butonuna döner. Arama Türkçe adlarla çalışır; sonuç yoksa anlaşılır boş durum gösterilir.
 - Menüler dışarı tıklama ve `Escape` ile kapanır. Açık/kapalı, seçili ve devre dışı durumları erişilebilirlik özellikleriyle bildirilir. Klavye ile açma, arama, seçim ve kapatma kullanılabilir; sekmeler uygun klavye gezintisini destekler.
@@ -3240,6 +3242,7 @@ Her sayfada yalnız kullanılan kontrol aileleri için uygulanacak checklist:
 | 42 | Mobil öneride Temsilciler tam satır, tarihler yan yana, Gönder ayrı satır mı? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
 | 43 | E-Club mobil filtreleri ve BM T-Club kapsülleri aynı başlangıç hizasında mı? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
 | 44 | Belirtilen Rapor/Karşılaştırma ve Tümü/Kazandıranlar/Kaybettirenler içerikleri sekme çizgisinden **20 px** sonra mı başlıyor? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
+| 45 | Üç stat kartı bulunan gruplar mobilde (640 px altında) tek sütunda, üç kart alt alta ve tam satır genişliğinde mi? Koşullu olarak üç karta düşen gruplar da bu kurala uyuyor mu? | ☐ Uygun ☐ Uyumsuz ☐ Uygulanmaz |
 
 **İşlem butonları:** §13’te ayrı ölçü standardı bulunmadığından Ekle, Gönder, Kaydet, İptal, Yenile ve Kapat butonlarına seçim ölçüleri uygulanarak uyumsuzluk yazılmaz.
 
@@ -3285,3 +3288,5 @@ Bu kayıt, doğrulanmış mevcut durumu ifade eder; mutlak kusursuzluk veya tama
 5. *Önerilen Yayınlar Sekme Düzeni:* `/oneriler` (Bekleyen) ve `/oneriler/tamamlanan` (Tamamlanan) alt sekmeleri ayrılmış; `useListe` ve `IcerikFiltreBari` standardı getirilmiştir.
 
 **9 Ekim 2026 — Kullanıcı kararı:** E-Club Ligi Excel indirme özelliği tüm rollerden kaldırıldı; indirme butonu ve dışa aktarma API uç noktası kaldırıldı.
+
+**9 Ekim 2026 — Kullanıcı kararı:** E-Club kişi ana sayfası `/eclub/ana-sayfa`, firma alt sayfaları `/eclub/ana-sayfa/firma/[firma_id]` adresine taşındı. Giriş, navbar, sidebar ve öneri bildirim bağlantıları güncellendi. Eski sayfa adresleri sorgu parametreleri korunarak yeni adreslere yönlendirilir; tüketim API adresleri korunur.

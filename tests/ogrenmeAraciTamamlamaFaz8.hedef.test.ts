@@ -10,7 +10,7 @@ const etkilesim = oku("lib/etkilesim/yayinYetkisi.ts");
 test("bildirimler doğru UTT öneri, BM challenge ve E-Club öneri kimliklerini açar", () => {
   assert.match(push, /oneri_id=/);
   assert.match(push, /challenge_id=/);
-  assert.match(push, /eclub\/panel\?oneri_id=/);
+  assert.match(push, /eclub\/ana-sayfa\?oneri_id=/);
 });
 
 test("Eczanem bildirimi kesin gönderimi açar", () => {
@@ -29,7 +29,7 @@ test("ortak beğeni ve favori yetkisi dört öğrenme aracını kabul eder", () 
 test("tüketici ekranlarında çok araçlı alanlar öğrenme içeriği dilini kullanır", () => {
   for (const yol of [
     "components/ana-sayfa/UttAnaSayfa.tsx",
-    "app/(panel)/eclub/panel/page.tsx",
+    "app/(panel)/eclub/ana-sayfa/page.tsx",
     "app/eczanem/page.tsx",
   ]) assert.match(oku(yol), /[Öö]ğrenme [İi]çeri/);
 });

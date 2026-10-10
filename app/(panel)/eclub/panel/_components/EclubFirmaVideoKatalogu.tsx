@@ -24,7 +24,8 @@ function firmaIyelik(firmaAdi: string): string {
       : sonUnlu && "öü".includes(sonUnlu)
         ? "ün"
         : "in";
-  return `${firmaAdi}'${ek}`;
+  const kaynastirma = "aeıioöuü".includes(firmaAdi.toLocaleLowerCase("tr-TR").at(-1) ?? "") ? "n" : "";
+  return `${firmaAdi}'${kaynastirma}${ek}`;
 }
 
 export function EclubVideoKarti({
@@ -209,4 +210,3 @@ export default function EclubFirmaVideoKatalogu({ oneriler, seciliFirmaId, secil
     </div>
   );
 }
-

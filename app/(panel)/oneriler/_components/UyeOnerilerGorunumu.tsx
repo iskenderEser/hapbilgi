@@ -274,7 +274,7 @@ export default function UyeOnerilerGorunumu({
       </header>
 
       {/* ─── 1. Katman: Stat Kartları ─── */}
-      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 md:gap-3">
+      <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-3 md:gap-3">
         {[
           {
             id: "izlenecek" as const,
@@ -307,7 +307,7 @@ export default function UyeOnerilerGorunumu({
               type="button"
               key={kart.id}
               onClick={() => setAktifFiltre(kart.id)}
-              className={`group relative cursor-pointer rounded-2xl border border-[#dfe7f1] bg-white p-3 text-left shadow-[0_4px_14px_rgba(31,55,90,0.035)] transition-all hover:-translate-y-0.5 hover:shadow-md md:p-4 ${kart.id === "suresi_dolan" ? "col-span-2 sm:col-span-1" : ""}`}
+              className={`group relative cursor-pointer rounded-2xl border border-[#dfe7f1] bg-white p-3 text-left shadow-[0_4px_14px_rgba(31,55,90,0.035)] transition-all hover:-translate-y-0.5 hover:shadow-md md:p-4`}
               style={
                 {
                   borderLeftWidth: "4px",

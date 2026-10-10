@@ -101,7 +101,7 @@ export default function EclubGecisKarti({ hata, basari }: Props) {
       }
       basari(data.mesaj ?? "Kararınız kaydedildi.");
       if (data.tamamlandi) {
-        window.location.assign("/eclub/panel");
+        window.location.assign("/eclub/ana-sayfa");
         return;
       }
       modalKapat(true);

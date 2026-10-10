@@ -90,7 +90,7 @@ export default function LoginPage() {
     // metadata girişte iliştirilir ve bayatlayabilir, rolCozucu dersi).
     const yonlendir = async () => {
       if (kullanici.kimlik_turu === "eclub_kisi") {
-        router.replace("/eclub/panel");
+        router.replace("/eclub/ana-sayfa");
         return;
       }
       if (kullanici.kimlik_turu === "musteri") {

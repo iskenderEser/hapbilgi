@@ -20,10 +20,10 @@ function UyeOnerilerIskeleti() {
         <div className="h-8 w-52 rounded-lg bg-gray-200" />
         <div className="h-4 w-72 max-w-full rounded bg-gray-200" />
       </div>
-      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 md:gap-3">
+      <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-3 md:gap-3">
         <div className="h-28 rounded-2xl bg-white shadow-sm" />
         <div className="h-28 rounded-2xl bg-white shadow-sm" />
-        <div className="col-span-2 h-28 rounded-2xl bg-white shadow-sm sm:col-span-1" />
+        <div className="h-28 rounded-2xl bg-white shadow-sm sm:col-span-1" />
       </div>
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="h-10 w-44 rounded-[14px] bg-white shadow-sm" />

@@ -47,6 +47,7 @@ export interface PanelKisi {
 }
 
 export interface PanelFirmaOzeti {
+  eclub_store_aktif: boolean;
   firma_id: string;
   firma_adi: string;
   kazanilan_puan: number;
@@ -57,6 +58,7 @@ export interface PanelFirmaOzeti {
 }
 
 export interface PanelOzet {
+  eclub_store_aktif: boolean;
   toplam_kazanilan_puan: number;
   ileri_sarma_kaybi: number;
   harcanabilir_puan: number;
@@ -72,7 +74,7 @@ export function useEclubPanel({ hazir, hata }: UseEclubPanelArgs) {
   const [kisi, setKisi] = useState<PanelKisi | null>(null);
   const [oneriler, setOneriler] = useState<PanelOneri[]>([]);
   const [firmaOzetleri, setFirmaOzetleri] = useState<PanelFirmaOzeti[]>([]);
-  const [ozet, setOzet] = useState<PanelOzet>({ toplam_kazanilan_puan: 0, ileri_sarma_kaybi: 0, harcanabilir_puan: 0, dogru_cevap: 0 });
+  const [ozet, setOzet] = useState<PanelOzet>({ eclub_store_aktif: false, toplam_kazanilan_puan: 0, ileri_sarma_kaybi: 0, harcanabilir_puan: 0, dogru_cevap: 0 });
   const [loading, setLoading] = useState(true);
 
   const veriCek = useCallback(async (sessiz = false) => {
@@ -87,6 +89,7 @@ export function useEclubPanel({ hazir, hata }: UseEclubPanelArgs) {
         setOneriler(d.oneriler ?? []);
         setFirmaOzetleri(d.firma_ozetleri ?? []);
         setOzet({
+          eclub_store_aktif: d.ozet?.eclub_store_aktif === true,
           toplam_kazanilan_puan: d.ozet?.toplam_kazanilan_puan ?? 0,
           ileri_sarma_kaybi: d.ozet?.ileri_sarma_kaybi ?? 0,
           harcanabilir_puan: d.ozet?.harcanabilir_puan ?? 0,

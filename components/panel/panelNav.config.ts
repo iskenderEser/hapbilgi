@@ -213,11 +213,11 @@ export function eclubKisiNavOlustur(firmalar: Array<{ firma_id: string; firma_ad
     oglar: [
       {
         etiket: "Firmaların Videoları",
-        path: "/eclub/panel",
+        path: "/eclub/ana-sayfa",
         gate: (c) => c.eclubAcik,
         altOglar: firmalar.map((firma) => ({
           etiket: firma.firma_adi,
-          path: `/eclub/panel/firma/${firma.firma_id}`,
+          path: `/eclub/ana-sayfa/firma/${firma.firma_id}`,
           gate: (c) => c.eclubAcik,
         })),
       },

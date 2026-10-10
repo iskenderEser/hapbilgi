@@ -226,7 +226,7 @@ export default function EczanemDagitimPage() {
           </Card>
         ) : (
           <>
-            <section aria-label="Eczacı öğrenme içeriği dağıtım özeti" className="grid grid-cols-2 gap-2 md:grid-cols-3">
+            <section aria-label="Eczacı öğrenme içeriği dağıtım özeti" className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
               <EczanemOzetKarti ikon={Film} etiket="Gönderilecek İçerik" deger={gonderilecekVideoSayisi} detay={`${veri?.videolar.length ?? 0} içerik dağıtıma açık`} />
               <EczanemOzetKarti ikon={UsersRound} etiket="Aktif Müşteri" deger={veri?.ozet.aktif_uye_sayisi ?? 0} detay="Eczane listenizde" renk="#16865f" zemin="#eaf7f2" />
               <EczanemOzetKarti ikon={CheckCircle2} etiket="Tamamlanan Video" deger={tamamlananVideoSayisi} detay="Tüm aktif müşterilere gönderilen" renk="#b7791f" zemin="#fff7e6" />

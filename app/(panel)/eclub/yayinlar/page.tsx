@@ -214,7 +214,7 @@ function UttEclubVideolarimPage() {
           <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
         </header>
 
-        <section aria-label="E-Club öğrenme içeriği hedefleri" className="grid grid-cols-2 gap-2 md:grid-cols-3">
+        <section aria-label="E-Club öğrenme içeriği hedefleri" className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
           {HEDEF_GRUPLARI.map((grup) => {
             const secili = aktifHedef === grup.anahtar;
             const gonderilen = gruplar[grup.anahtar].filter((video) => gonderilenYayinlar.has(video.yayin_id)).length;

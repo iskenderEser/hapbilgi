@@ -47,7 +47,7 @@ export function icerikUret(olayTuru: PushOlayTuru, aliciRol: string, baglam: Pus
 
     case "eclub_oneri":
       if (ECLUB_TUKETICI_ROLLERI.includes(aliciRol)) {
-        return { baslik: "HapBilgi E-Club", govde: "Eczanenize yeni bir öğrenme içeriği önerildi.", url: baglam.bagId ? `/eclub/panel?oneri_id=${encodeURIComponent(baglam.bagId)}` : "/eclub/panel" };
+        return { baslik: "HapBilgi E-Club", govde: "Eczanenize yeni bir öğrenme içeriği önerildi.", url: baglam.bagId ? `/eclub/ana-sayfa?oneri_id=${encodeURIComponent(baglam.bagId)}` : "/eclub/ana-sayfa" };
       }
       return null;
 

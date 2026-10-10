@@ -288,7 +288,7 @@ export default function EczanemYayinlariPage() {
           </Card>
         ) : (
           <>
-            <section aria-label="Eczanem öğrenme içeriği özeti" className="grid grid-cols-2 gap-2 md:grid-cols-3">
+            <section aria-label="Eczanem öğrenme içeriği özeti" className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
               <OzetKarti ikon={Building2} etiket="Gönderilebilen Eczane Sayısı" deger={hazirEczaneler.length} detay={`Eclub takımınızda olan toplam eczane sayısı ${eczaneler.length}`} renk="#237ac8" zemin="#edf6fd" />
               <OzetKarti ikon={Send} etiket="Gönderilen Toplam Yayın" deger={veri?.aylikIstatistikler.uttGonderimSayisi ?? 0} detay="Bu ay içinde gönderdiğiniz toplam yayın adedi" renk="#16865f" zemin="#eaf7f2" />
               <OzetKarti ikon={UsersRound} etiket="Eczanelerin Gönderdiği Toplam Yayın" deger={veri?.aylikIstatistikler.eczaneGonderimSayisi ?? 0} detay="Bu ay içinde eczanelerin gönderdiği toplam yayın adedi" renk="#b7791f" zemin="#fff7e6" />

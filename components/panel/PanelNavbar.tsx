@@ -87,7 +87,7 @@ interface PanelNavbarProps {
   hbStoreGoster?: boolean;
   // E-Club Store Günleri geri sayımı — E-Club kişisi ve aktif firma E-Club Store açıkken görünür.
   eclubStoreGeriSayimGoster?: boolean;
-  // Dış müşteri ana sayfası /eclub/panel'dir; iç kullanıcıda varsayılan korunur.
+  // Dış müşteri ana sayfası /eclub/ana-sayfa'dir; iç kullanıcıda varsayılan korunur.
   anaSayfaYolu?: string;
   eclubStorePuani?: number | null;
   firmaLogoUrl?: string | null;

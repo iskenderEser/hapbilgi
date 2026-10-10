@@ -251,7 +251,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   };
   // eclub_kisi (KARAR-4) dar gezinme; diğer herkes tam ağaç.
   const gruplar = kullanici.kimlik_turu === "eclub_kisi" ? eclubKisiNavOlustur(etkinFirmalar) : PANEL_NAV;
-  const anaSayfaYolu = isEclubKisi ? "/eclub/panel" : "/ana-sayfa";
+  const anaSayfaYolu = isEclubKisi ? "/eclub/ana-sayfa" : "/ana-sayfa";
 
   return (
     <HapbiProvider>

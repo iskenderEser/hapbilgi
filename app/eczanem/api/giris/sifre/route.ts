@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     const yonlendir = kimlik.kimlikTuru === "ic_kullanici"
       ? "/login"
       : kimlik.kimlikTuru === "eclub_kisi"
-        ? "/eclub/panel"
+        ? "/eclub/ana-sayfa"
         : "/eczanem";
     return NextResponse.json({ ok: true, yonlendir }, { status: 200 });
   } catch (err) {
