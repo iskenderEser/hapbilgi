@@ -12,6 +12,7 @@ import {
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 import { eclubStoreSiparisAcikMi, eclubStoreTakvimDurumu } from "@/lib/eclub/store/takvim";
 import { eclubCekTalebiOlusturabilirMi } from "@/lib/eclub/store/cekTalebiYetkisi";
+import { ECLUB_CEK_KARTI_TEST_PUAN_IDLERI } from "@/lib/eclub/store/gorunumTesti";
 
 async function kisiCoz(adminSupabase: ReturnType<typeof createAdminClient>, authUserId: string) {
   const { data } = await adminSupabase
@@ -135,6 +136,16 @@ export async function POST(request: NextRequest) {
     if (!body.yayin_id || typeof body.yayin_id !== "string") {
       return validasyonHatasi("yayin_id zorunludur.", ["yayin_id"]);
     }
+
+    const { data: testPuani, error: testError } = await adminSupabase
+      .from("eclub_kazanilan_puanlar")
+      .select("kazanilan_puan_id")
+      .in("kazanilan_puan_id", [...ECLUB_CEK_KARTI_TEST_PUAN_IDLERI])
+      .in("eczane_id", erisim.eczane_idler)
+      .eq("yayin_id", body.yayin_id)
+      .limit(1);
+    if (testError) return hataYaniti("Görünüm testi kapsamı doğrulanamadı.", "Çek talebi test kapsamı", testError);
+    if (testPuani?.length) return isKuraluHatasi("Bu yayın kartı görünüm testi içindir; çek talebi oluşturulamaz.");
 
     const { data: rpcRes, error: rpcErr } = await adminSupabase.rpc("eclub_store_cek_talebi_olustur", {
       p_kisi_id: kisi.kisi_id,

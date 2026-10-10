@@ -29,3 +29,20 @@ Tamamlanma kapıları:
 - [ ] Siparişsiz çek ve sipariş verilmemiş isteğe bağlı çek, Sipariş Takibi listesine girmez; Çek Takibi davranışı bozulmaz.
 
 Bu maddeler gerçek uygulama ve veritabanı akışında doğrulanmadan durum `TAMAMLANDI` yapılmaz. Testi yeniden başlatmak ve test ortamındaki zaman sınırı yöntemini seçmek için kullanıcıdan açık talimat beklenir.
+
+## Hediye Çeki kartları — geçici görünüm verisi
+
+**Durum:** Test verisi eklendi; kartlar Chrome'da doğrulandı. Temizlik bekliyor (9 Ekim 2026).
+
+Kapsam, Adil Güçlü'nün `1110000000003` GLN'li Test Eczanesi 003 hesabında kart tasarımını gerçek veri okumasıyla çalışmaktır. Abilon için 100, Laropen için 300, Forma XL için 650 örnek puan hazırlanmıştır. Yalnız üç işaretli izleme ve üç sabit UUID'li puan kaydı eklenir. Üretim hattı, gönderim, gerçek tüketim, sipariş, onay, çek teslimatı ve iki aylık takvim sınırları bu çalışma kapsamında test edilmez. Çek talep butonları ve uygulamanın talep API'si bu örnek kayıtlar için kapalıdır.
+
+- Ekleme: `scripts/sql/eclub_cek_karti_test_verisi_ekle.sql`.
+- Temizlik: `scripts/sql/eclub_cek_karti_test_verisi_temizle.sql`.
+- Kimlikler: `lib/eclub/store/gorunumTesti.ts` içindeki `e120...101–103` puan kayıtları; `e120...001–003` izleme kayıtları.
+- Sayfanın okuma fonksiyonunda yanlış `k.urun_adi` referansı varsa ekleme SQL'i bunu `urunler` bağıyla düzeltir; bu hata düzeltmesi temizlikte geri alınmaz.
+- Kayıtlar kullanıcı açıkça temizlik istediğinde silinecek. Temizlik sonucu kullanıcı tarafından doğrulanmadan silinmiş sayılmayacak.
+- Önceki Hediye Takibi (`e110...`) test kayıtları bu iki SQL'in kapsamı dışındadır ve korunur.
+
+Bu görünüm çalışması Hediye Takibi uçtan uca testinin yerine geçmez; onun durumu `BEKLEMEDE` kalır.
+
+**Doğrulama — 9 Ekim 2026:** Kullanıcı SQL sonucunda Abilon 100, Laropen 300 ve Forma XL 650 puanı `2026-P4` döneminde doğruladı. Sayfa yenilendiğinde üç test kartı ve salt okunur etiketleri göründü; Laropen ve Forma XL talep butonları pasif, Abilon ise puan eşiğinin altında. Ekranın toplam puanı 1.050. Henüz düzeltilmeyen mevcut gösterimler: puanı sıfır olan diğer yayınlar da listeleniyor; Abilon'da 200 puan eşiği sağlanmadığı hâlde 20 TL çek tutarı gösteriliyor. Görünüm düzenlemesinde bu iki konu ele alınacak. Test verileri silinmedi.

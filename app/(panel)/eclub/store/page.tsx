@@ -62,11 +62,14 @@ export default function EclubStorePage() {
 
   if (authYukleniyor || !kullanici || loading) return <EclubKisiYukleniyor />;
 
+  const ornekGosterim = cekYayinlar.some((item) => item.gorunum_testi_mi);
+
   const handleTalepVer = async (
     yayinId: string,
     siparisVerilsinMi: boolean,
     urunAdi: string,
   ) => {
+    if (cekYayinlar.some((item) => item.yayin_id === yayinId && item.gorunum_testi_mi)) return;
     if (!cekTalebiOlusturabilir) {
       hata("Hediye çeki talebini yalnız ana eczacı oluşturabilir.");
       return;
@@ -102,9 +105,10 @@ export default function EclubStorePage() {
     <EclubKisiSayfa>
       <EclubKisiBaslik
         ikon={Store}
+        ustEtiket=""
         baslik="Hediye Çeki"
         rehberAnahtar="eclub-store-magaza"
-        aciklama="Eczane çalışanlarının kazandığı puanlar eczane havuzunda toplanır ve satış şartına göre Migros Hediye Çeki'ne dönüşür."
+        aciklama="Eczanenizin kazandığı puanları Hediye Çeki'ne dönüştürebilirsiniz"
         aksiyon={
           <div className="flex gap-2">
             <YenileButonu
@@ -153,41 +157,56 @@ export default function EclubStorePage() {
       </section>
 
       {/* Çek talebi ve devir kuralı bilgi kutusu */}
-      <section className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-purple-50/50 to-white p-4 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow">
+      <section aria-labelledby="hediye-ceki-sorular" className="space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow">
             <Info size={16} />
           </div>
-          <div className="text-xs leading-relaxed text-slate-700">
-            <h3 className="text-sm font-bold text-slate-900">
-              📌 Migros Hediye Çeki Kuralları
-            </h3>
-            <ul className="mt-1.5 list-disc space-y-1 pl-4 text-slate-600">
-              <li>
-                <strong>Talep Penceresi:</strong> Çek talepleri 2 ayda bir, takip eden ayın ilk 7 gününde oluşturulur.
-              </li>
-              <li>
-                <strong>Puan Karşılığı:</strong> Toplanan puanlar yayında tanımlanan puan/TL karşılığıyla Migros Hediye Çeki&apos;ne dönüştürülür.
-              </li>
-              <li>
-                <strong>Devir & Bakiye Kuralı:</strong> İlk baremin altında kalan puanlar ile son baremin üzerindeki artık puanlar sonraki iki aylık döneme devreder.
-              </li>
-              <li>
-                <strong>Zaman Aşımı:</strong> Talep dönemi içerisinde kullanılmayan barem puanları dönem bitiminde yanar.
-              </li>
-            </ul>
-          </div>
+          <h3 id="hediye-ceki-sorular" className="text-sm font-bold text-slate-900">
+            Hediye Çeki Hakkında Yararlı Bilgiler
+          </h3>
         </div>
+        <dl className="grid grid-cols-1 gap-3 text-xs leading-relaxed text-slate-600 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="min-w-0 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-white to-white p-4 shadow-sm">
+                <dt className="font-bold text-slate-900">Eczane Havuz Puanı</dt>
+                <dd className="mt-3">Platformda tamamladığınız yayınlar sonrası kazandığınız puanlar, firmanın belirlediği oranda hediye çekine dönüştürülür. Eczane havuz puanı olarak tanımlanır.</dd>
+              </div>
+              <div className="min-w-0 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-white to-white p-4 shadow-sm">
+                <dt className="font-bold text-slate-900">Puan Limitleri ve Puanların Devri</dt>
+                <dd className="mt-3">Firma, her yayın için hediye çeki talebinde kullanılabilecek en az ve en çok puanı belirler. Talepler bu limitler dahilinde verilebilir. Sipariş zorunlu yayınlar hariç diğer yayınlardan kazanılan puanlar, devredilebilir.</dd>
+              </div>
+              <div className="min-w-0 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-white to-white p-4 shadow-sm">
+                <dt className="font-bold text-slate-900">Sipariş ve Hediye Çeki İlişkisi</dt>
+                <dd className="mt-3 space-y-2">
+                  <p>Firma, her yayın için sipariş koşulunu belirleyebilir. Üç seçenek vardır:</p>
+                  <ul className="list-disc space-y-1 pl-4">
+                    <li><strong>Sipariş gerekmiyorsa:</strong> Sipariş vermeden puanlarınızı hediye çekine dönüştürebilirsiniz.</li>
+                    <li><strong>Sipariş isteğe bağlıysa:</strong> Sipariş vermeden de hediye çeki talep edebilirsiniz. Siparişi vermeniz durumunda hediye çeki tutarı firmanın belirlediği orandan daha fazla olabilir.</li>
+                    <li><strong>Sipariş zorunluysa:</strong> Firmanın belirlediği siparişi verdiğinizde puanlarınız hediye çekine dönüşür. Sipariş vermezseniz puanlarınız devredilmez ve silinir.</li>
+                  </ul>
+                </dd>
+              </div>
+              <div className="min-w-0 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-white to-white p-4 shadow-sm">
+                <dt className="font-bold text-slate-900">Talep Takibi ve İptali</dt>
+                <dd className="mt-3 space-y-2">
+                  <p>Hediye çeki talebini yalnızca eczane sahibi oluşturabilir.</p>
+                  <p>Hediye çeki talebinizin durumunu <strong>Çek Taleplerim</strong> sayfasından takip edebilirsiniz.</p>
+                  <p>Talebiniz firma yöneticisinin onayını beklerken iptal edebilirsiniz. İptal sonrası puanlarınız eczanenizin havuzuna geri eklenir.</p>
+                </dd>
+              </div>
+        </dl>
       </section>
 
       {/* Çek & Satış Şartı Listesi */}
-      {cekYayinlar.length === 0 ? (
-        <EclubKisiBosDurum
-          ikon={Gift}
-          baslik="Henüz puan biriken yayın bulunmuyor"
-          aciklama="Eczane çalışanlarınız eğitimleri izleyip soruları yanıtladıkça firmanızın ürünleri ve hak ettiğiniz hediye çekleri burada listelenecektir."
-        />
-      ) : (
+      {cekYayinlar.length === 0 && (
+        <EclubKisiBosDurum ikon={Gift} baslik="Henüz puan biriken yayın bulunmuyor"
+          aciklama="Eczane çalışanlarınız eğitimleri izleyip soruları yanıtladıkça firmanızın ürünleri ve hak ettiğiniz hediye çekleri burada listelenecektir." />
+      )}
+      {ornekGosterim && (
+        <p className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
+          <strong>Görünüm testi:</strong> Örnek puanlar veritabanından yüklenmiştir. “Test verisi” etiketli kartlar tasarım çalışması içindir; bu kartlardan çek talebi oluşturulamaz.
+        </p>
+      )}
         <div className="grid gap-4">
           {cekYayinlar.map((item) => {
             const toplananPuan = item.havuz_toplam_puan ?? item.toplanan_puan ?? 0;
@@ -213,6 +232,9 @@ export default function EclubStorePage() {
                   {/* Sol: Ürün & Firma & Şart Rozeti */}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
+                      {item.gorunum_testi_mi && (
+                        <span className="rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-800">Test verisi · Salt okunur</span>
+                      )}
                       <span className="rounded-md bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-700">
                         {item.firma_adi || "Firma"}
                       </span>
@@ -326,7 +348,7 @@ export default function EclubStorePage() {
                             Çek için en az {minimumPuan.toLocaleString("tr-TR")} puan gerekir. (Kalan puanlar devredilir).
                           </div>
                         ) : siparissiz ? (
-                          <button type="button" onClick={() => handleTalepVer(item.yayin_id, false, item.urun_adi)} disabled={Boolean(islemLoading) || !storeAcik} className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300">
+                          <button type="button" onClick={() => handleTalepVer(item.yayin_id, false, item.urun_adi)} disabled={Boolean(item.gorunum_testi_mi) || Boolean(islemLoading) || !storeAcik} className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300">
                             {islemId === item.yayin_id ? "İşleniyor..." : `${bazCek} TL Çekimi Al`}
                           </button>
                         ) : !isSerbest ? (
@@ -336,7 +358,7 @@ export default function EclubStorePage() {
                             onClick={() =>
                               handleTalepVer(item.yayin_id, true, item.urun_adi)
                             }
-                            disabled={Boolean(islemLoading) || !storeAcik}
+                            disabled={Boolean(item.gorunum_testi_mi) || Boolean(islemLoading) || !storeAcik}
                             className="rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                           >
                             {islemId === item.yayin_id
@@ -351,7 +373,7 @@ export default function EclubStorePage() {
                               onClick={() =>
                                 handleTalepVer(item.yayin_id, false, item.urun_adi)
                               }
-                              disabled={Boolean(islemLoading) || !storeAcik}
+                              disabled={Boolean(item.gorunum_testi_mi) || Boolean(islemLoading) || !storeAcik}
                               className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               Siparişsiz {bazCek} TL Çekimi Al
@@ -361,7 +383,7 @@ export default function EclubStorePage() {
                               onClick={() =>
                                 handleTalepVer(item.yayin_id, true, item.urun_adi)
                               }
-                              disabled={Boolean(islemLoading) || !storeAcik}
+                              disabled={Boolean(item.gorunum_testi_mi) || Boolean(islemLoading) || !storeAcik}
                               className="rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-extrabold text-white shadow-md hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                             >
                               {uygunAdet} Kutu + {uygunMf} MF Sipariş Ver & %{katlamaOrani} Katla ({katlanmisCek} TL Çek)
@@ -376,7 +398,6 @@ export default function EclubStorePage() {
             );
           })}
         </div>
-      )}
 
       <HataMesajiContainer mesajlar={mesajlar} />
     </EclubKisiSayfa>
